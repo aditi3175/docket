@@ -6,10 +6,11 @@ can change it without asking.**
 Docket reads that, for any account on NEAR mainnet, from the chain alone — and
 then hands the DAO the one proposal that closes the gap.
 
-**v2.** v1 was a reader. v2 adds three layers on the same chain reads: **Fix**
-(a DAO opts out of no-vote upgrades in one proposal, §16), **Guard** (an AI
-delegate that may hold a council seat but cannot vote past a Docket flag, §17)
-and **Watch** (alerts with no server, §18).
+**v2.** v1 was a reader. v2 adds **Fix** (a DAO opts out of no-vote upgrades in
+one proposal, §16) and a **"fix shipped?"** badge (§18), both on the same chain
+reads. **Guard** (an AI delegate that may hold a council seat but cannot vote
+past a Docket flag, §17) is a stretch goal, built only if everything else is
+done, and cut the moment anything slips.
 
 ---
 
@@ -40,7 +41,7 @@ because a specification that hides its own corrections is not a specification
 anyone should build from.
 
 §16–§18 are new in v2 and describe what will be built, not what has been
-measured. Any statement there that depends on contract behaviour not yet
+measured. §17 is a stretch goal (§14). Any statement there that depends on contract behaviour not yet
 exercised on mainnet is marked **[verify]**, and the build order (§14) has a
 step that removes each marker by running it. A **[verify]** that survives to
 submission is a bug.
@@ -565,11 +566,11 @@ DAO. Docket itself never holds a key (I13).
 5. **Opt-out** (§16) — for any DAO with `auto_update: true`, the drafted
    `FactoryInfoUpdate` proposal, what it costs, who must approve it, and a
    button that submits it from the member's wallet.
-6. **Guard** (§17) — `@docket/guard`, the same checks as a JS library and an
-   MCP server, so an agent runs Docket before it signs or votes; plus a live
-   delegate agent on a Docket-owned mainnet DAO.
-7. **Watch** (§18) — a scheduled re-read of the top DAOs that alerts on new
-   critical proposals and on any change to a DAO's code identity.
+6. **Fix shipped?** (§18) — one badge: has the factory published a build
+   containing PR #233, read live from the factory on every page load.
+7. **Guard** (§17, *stretch*) — `@docket/guard`, the same checks as a JS library
+   and an MCP server, plus a live delegate on a Docket-owned mainnet DAO. Only
+   if §14's stretch row is reached.
 8. **The counter** — "DAOs that opted out: 12 → N", recomputed from the chain on
    every page load, denominator shown (I20).
 
@@ -593,25 +594,23 @@ docket/
       optout.js           §16: drafts FactoryInfoUpdate, reads bond + policy
       wallet.js           §16: wallet connection, pinned ESM import, signs nothing itself
     optout.html           §16: the fix for one DAO
-  guard/                  §17: npm package @docket/guard
+  guard/                  §17 (stretch): npm package @docket/guard
     index.mjs             checkProposal(), checkAccount() — reuses web/assets/*
     mcp.mjs               stdio MCP server exposing the two checks
-  agent/                  §17: the delegate
+  agent/                  §17 (stretch): the delegate
     delegate.mjs          poll -> guard -> vote or escalate
     policy.json           what it may approve; everything else escalates
   tools/
     verify.mjs            re-runs every claim in this file against mainnet
     crawl.mjs             resumable census -> graph.json
-    watch.mjs             §18: one watch pass -> feed.json + alerts
-  .github/workflows/
-    watch.yml             §18: runs watch.mjs on a schedule
   graph.json              committed crawl output, regenerable
 ```
 
 **No backend, deliberately.** The claim is that anyone can check this
-themselves; a server between reader and chain weakens exactly that. Watch (§18)
-runs on GitHub's scheduler and publishes static files; the delegate (§17) runs
-wherever its operator runs it. Neither sits between a reader and the chain. The crawl is
+themselves; a server between reader and chain weakens exactly that. The §18
+badge is computed in the reader's browser and by `verify.mjs` from the same
+reads; the delegate (§17, stretch) runs wherever its operator runs it. Neither
+sits between a reader and the chain. The crawl is
 committed so a judge sees results instantly, and `verify.mjs` re-derives
 everything live so they can prove the committed artifact honest.
 
@@ -654,7 +653,7 @@ never counted as a value** — §3.3 depends on that distinction.
 | I16 | The delegate never votes on a proposal carrying any critical or high flag, any **unknown** (I2/I7/I8), or a kind outside `policy.json` | synthetic proposals, one per flag |
 | I17 | The delegate's key is `FunctionCall`, receiver = its one DAO, methods = `["act_proposal"]` | `verify.mjs` reads `view_access_key_list` |
 | I18 | The optional LLM layer can add a flag and can never remove one; it is off by default; `verify.mjs` never calls it | test with a model stub that tries to clear |
-| I19 | Watch detects code changes by re-reading code identity (§4), not by trusting a transaction feed | test with a swapped hash |
+| I19 | The "fix shipped?" badge is derived from a live read of the factory's `get_contracts_metadata` and `get_default_code_hash`, never from a stored value or a transaction feed; an unread factory renders **unknown** | test with a synthetic new factory build, and with the factory unreadable |
 | I20 | The opted-out counter is recomputed from the chain with its denominator and unknown bucket, never stored as a number | copy + crawl test |
 
 I7, I9 and I16 are the ones that matter. A security tool that says "safe" is worse
@@ -828,27 +827,28 @@ that day, not the last hour.
 |---|---|---|
 | Nov 5 | Novelty check: sputnik-dao-contract issues/PRs and NEAR gov forum for `auto_update` / `FactoryInfoUpdate`. RPC layer (§9); owner resolvers; code identity (§4) | §2 regenerates; `stnear` resolves as v3.2 global; prior discussion, if any, cited in §3 |
 | Nov 6 | Authority walk (§6.1); `auto_update`; access keys | **gate:** the $199.4M chain prints from `node tools/verify.mjs`, cold |
-| Nov 6 | Disclosure note sent (§11), with opt-out links | sent, timestamped |
+| Nov 6 | Report sent (§11), with opt-out links | sent, timestamped |
 | Nov 7 | `decode.js`, `lint.js` | I7, I8, I10 hold; fires on #1741/#1743, #1742/#1744 and marmaj #1016 |
 | Nov 8 | §16 opt-out; create the demo DAO; opt it out through Docket | every §16 **[verify]** removed; I15 passes; counter reads 13 |
-| Nov 9 | §17 `@docket/guard` + MCP server | Claude, given the MCP server, declines a planted #1741-style proposal |
-| Nov 10 | §17 delegate on the demo DAO | one approve and one escalation recorded on mainnet; I16, I17 hold |
-| Nov 11 | `account.html`, `docket.html`, `optout.html` | a stranger understands §3 without reading this file |
-| Nov 12 | `crawl.mjs` census complete; `register.html`; §18 watch | feed.json updating on schedule; I19, I20 hold |
-| Nov 13 | I1–I20 each have a test; README; clone into a clean machine and run the README cold | pre-screen would pass |
-| Nov 14 | Demo video, X post, submit | repo public, links live, submitted by midday UTC |
+| Nov 9 | `account.html`, `docket.html`, `optout.html` | a stranger understands §3 without reading this file |
+| Nov 10 | `crawl.mjs` census complete; `register.html`; §18 badge | I19, I20 hold |
+| Nov 11 | Each of I1–I15, I19, I20 has a test; README; clone into a clean machine and run the README cold | pre-screen would pass |
+| Nov 12 | Demo video, X post drafted | both reviewed against the README |
+| Nov 12–13 | **Stretch, only if every row above is done:** §17 `@docket/guard` + MCP server, then the delegate on the demo DAO | a planted proposal in the #1741/#1743 pattern is declined; one approve and one escalation on mainnet; I16–I18 hold. Otherwise §17 stays unbuilt and its track is not entered (§15) |
+| Nov 14 | Submit | repo public, links live, submitted by midday UTC |
 
 The Nov 6 gate stands: if the authority walk does not reproduce the $199.4M
-chain cold, stop before building anything else.
+chain cold, stop before building anything else. §17 is the first thing cut if
+any row slips; it is not moved later to make room.
 
 ---
 
 ## 15. Submission
 
 - Tracks: **Social Money** (Sputnik DAO is the named primitive; §16 is something
-  a community does with it), **AI Security & Defense** (§17: function-call
-  keys and a policy engine, which the track names) and **Open Innovation**.
-  One submission, three shots.
+  a community does with it) and **Open Innovation**. **AI Security & Defense**
+  (§17: function-call keys and a policy engine) is entered only if §17 ships
+  complete. More tracks are more chances at one prize, not more prizes.
 - Public repo, MIT `LICENSE`, AI-tooling disclosure in the README — all required.
 - README names the other project (Hallmark), per the two-project rule.
 - Demo post on X tagging `@NEARProtocol` with `#NEARHackathon`.
@@ -929,11 +929,15 @@ shown as **unknown**.
 Docket creates one DAO through `sputnik-dao.near`, reads `auto_update: true` on
 it (confirming §3.2 on a fresh account), passes the opt-out through `optout.html`,
 and re-reads `false`. `verify.mjs` checks the demo DAO on every run. That DAO
-also hosts the delegate (§17).
+also hosts the delegate, if §17 is built.
 
 ---
 
 ## 17. Guard — an AI delegate that cannot vote past a flag
+
+> **Stretch.** Built only if every non-stretch row of §14 is done, and cut the
+> moment anything slips. Nothing in §1–§16 or §18 depends on it. If it is not
+> built, the AI Security & Defense track is not entered (§15).
 
 The track asks how to give AI money without giving it the keys to everything.
 For a DAO the equivalent question is how to give an agent a council seat
@@ -962,8 +966,8 @@ tools over stdio, so any MCP-capable agent can call Docket before it acts.
 - **Loop.** Poll `get_last_proposal_id`; for each new proposal call
   `checkProposal`; vote `VoteApprove` only if the kind is in `policy.json` and
   there are no critical or high flags and no unknowns (I16). Otherwise do not
-  vote and escalate: post the Docket report to the Watch channel (§18) and
-  wait for a human.
+  vote and escalate: write the Docket report to the delegate's log, linked
+  from the README, and wait for a human.
 - **Binding the vote to what was checked.** **[verify]** whether
   `act_proposal` in the deployed version takes the proposal kind as an
   argument. If it does, the delegate passes the exact kind it analysed, so a
@@ -993,23 +997,26 @@ README.
 
 ---
 
-## 18. Watch — alerts with no server
+## 18. Watch — reduced to one badge: "fix shipped?"
 
-`watch.yml` runs `tools/watch.mjs` on GitHub Actions on a schedule (GitHub does
-not guarantee exact timing; the feed shows its last run time). Each pass, for
-the five DAOs in §2 and any listed in `watch.json`:
+The scheduled watcher, its feed and its alert channel are cut. What remains
+answers one question: **has the factory published a build containing PR
+#233?** It uses reads `verify.mjs` already makes (§0, §5). No scheduler,
+no server and no stored state are added.
 
-1. New proposals since the last pass → `checkProposal` → any critical flag is
-   an alert.
-2. Code identity (§4) re-read → any change in `code_hash`,
-   `global_contract_hash` or `global_contract_account_id` is an alert (I19).
-   This catches a factory `update()` without needing a transaction indexer.
-3. `auto_update` re-read → any change is an alert.
+- **not shipped** — `get_contracts_metadata` is exactly the §5 list, which ends
+  at v3.2 (`2b0f34a38604`), and `get_default_code_hash` is v3.2. GitHub's
+  compare (§3.4) puts the fix after that commit. Shown with the time of the read.
+- **factory changed — re-check** — the metadata list or the default hash differs
+  from §5. `verify.mjs` already reports this as a diverged §5 claim (exit 1). A
+  new build is not assumed to contain the fix. Whether it does is a question
+  for its `commit_id` against `9e96c75410a9`, and until that is answered
+  the badge does not say "shipped".
+- **unknown** — the factory could not be read (I2, I19).
 
-Output: `feed.json` committed to the Pages branch, and one message per alert to
-a public Telegram channel through a bot token held in Actions secrets.
-Per-DAO subscriptions would need a server and are out of scope; the channel
-message names the DAO and links its Docket page.
+Shown in two places from the same logic: a line in `verify.mjs`'s output, and a
+badge on `index.html` computed in the reader's browser from
+`loadFactoryVersions` (`web/assets/resolve.js`).
 
 ---
 
