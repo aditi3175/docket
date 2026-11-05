@@ -51,7 +51,7 @@ submission is a bug.
 
 | # | finding | exposure | how it was established |
 |---|---|---|---|
-| 1 | **All 5 of 5** NEAR DeFi protocols with ≥ $10M NEAR-only TVL (excluding CEX, Chain and \*Bridge\* categories) are administered by a Sputnik DAO | **$382.1M** (2026-11-05) | owner resolution across 5 protocols; the rule and every exclusion in §2 |
+| 1 | **All 5 of 5** NEAR DeFi protocols with ≥ $10M NEAR-only TVL (excluding CEX, Chain and \*Bridge\* categories) are administered by a Sputnik DAO | all 5, by rule — dollar total in §2 | owner resolution across 5 protocols; the rule and every exclusion in §2 |
 | 2 | Sputnik's `auto_update` lets the factory replace a DAO's code with **no vote**, and **`true` is the default** | **$199.4M** (2026-11-05) verified, systemic in principle | deployed v3.2 source + on-chain census |
 | 3 | The authority path from three private keys to $199.4M is public. NEAR core fixed it on 2026-03-24 (sputnik-dao-contract PR #233: a two-week delay plus a visible proposal), and **the factory has never shipped the fix** | — | `view_access_key_list` + `get_contracts_metadata` + `get_default_code_hash` + PR #233 (§3.4) |
 | 4 | Reading an account's `code_hash` no longer tells you what code it runs | all of NEAR | NEP-591 global contracts |
@@ -479,10 +479,10 @@ rather than flagging it like the others.
 
 Compares the description against the decoded action. It flags; it never clears.
 
-| check | rule | on #1741/#1743 |
+| check | rule | on #1741/#1743 and #1742/#1744 |
 |---|---|---|
 | named receiver | account ids in the description must appear in the action, and vice versa | **fires** — neither description names its target |
-| sibling collision | two proposals with equal descriptions but different `(receiver_id, method)` | **fires** — this is exactly that pair |
+| sibling collision | two proposals with equal descriptions but different `(receiver_id, method)` | **fires** — on both pairs, which is exactly that shape twice |
 | named amounts | numerals in the description must match decoded amounts at the token's decimals | passes |
 | silent reach | the action touches a contract the description never mentions | fires |
 | cross-organisation | the action targets another DAO (e.g. `act_proposal`) | fires on marmaj #1016 |
@@ -701,7 +701,7 @@ Caught by reading the repositories instead of trusting a feature request.
 
 **What survives, and is better:** decoding was always the trivial part. A voter
 can read `{"token_id":"meta-pool.near","supplied_limit":"6000000000000000000000000000000"}`
-and still not know it sets a risk parameter on a $154M lending market, that
+and still not know it sets a risk parameter on the Rhea Lend market (TVL in §2), that
 `contract.main.burrow.near` is that market, or that proposal #1741 said the
 identical words and pointed somewhere else. **The gap is semantic, not
 encoding** — which is why §6.1 and §6.2, not the decoder, are the product.
@@ -829,7 +829,7 @@ that day, not the last hour.
 | Nov 5 | Novelty check: sputnik-dao-contract issues/PRs and NEAR gov forum for `auto_update` / `FactoryInfoUpdate`. RPC layer (§9); owner resolvers; code identity (§4) | §2 regenerates; `stnear` resolves as v3.2 global; prior discussion, if any, cited in §3 |
 | Nov 6 | Authority walk (§6.1); `auto_update`; access keys | **gate:** the $199.4M chain prints from `node tools/verify.mjs`, cold |
 | Nov 6 | Disclosure note sent (§11), with opt-out links | sent, timestamped |
-| Nov 7 | `decode.js`, `lint.js` | I7, I8, I10 hold; fires on #1741/#1743 and marmaj #1016 |
+| Nov 7 | `decode.js`, `lint.js` | I7, I8, I10 hold; fires on #1741/#1743, #1742/#1744 and marmaj #1016 |
 | Nov 8 | §16 opt-out; create the demo DAO; opt it out through Docket | every §16 **[verify]** removed; I15 passes; counter reads 13 |
 | Nov 9 | §17 `@docket/guard` + MCP server | Claude, given the MCP server, declines a planted #1741-style proposal |
 | Nov 10 | §17 delegate on the demo DAO | one approve and one escalation recorded on mainnet; I16, I17 hold |
@@ -980,7 +980,7 @@ needs its own key, and nothing in `verify.mjs` touches it.
 ### 17.5 What the demo shows
 
 One routine proposal the delegate approves, and one proposal that copies the
-#1741/#1743 pattern — same description, different receiver — which it refuses
+pattern of #1741/#1743 and #1742/#1744 — same description, different receiver — which it refuses
 and escalates. Both are mainnet transactions on the demo DAO, linked from the
 README.
 
