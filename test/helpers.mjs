@@ -43,3 +43,23 @@ export function replayFetch({ override } = {}) {
 }
 
 export const noSleep = async () => {};
+
+// fetch that answers GitHub GETs from recordings (test/fixtures/*.github.*.json), keyed by URL.
+// `override(url)` may return a Response, throw, or return undefined to fall through.
+export function githubReplay({ override } = {}) {
+  const byUrl = new Map();
+  for (const f of readdirSync(DIR)) {
+    if (!f.includes('.github.')) continue;
+    const rec = JSON.parse(readFileSync(new URL(f, DIR), 'utf8'));
+    byUrl.set(rec.endpoint, rec);
+  }
+  return async (url) => {
+    if (override) {
+      const r = await override(url);
+      if (r !== undefined) return r;
+    }
+    const rec = byUrl.get(url);
+    if (!rec) throw new Error(`no GitHub recording for ${url}`);
+    return jsonResponse(rec.body, rec.http_status);
+  };
+}

@@ -1,0 +1,396 @@
+{
+  "endpoint": "https://api.github.com/repos/near-daos/sputnik-dao-contract/compare/2b0f34a3860460f285307ec2ccf36345acbe05a2...9e96c75410a97a2ea463ec777d7b14fb446c6f0e",
+  "captured_at": "2026-11-05T18:33:31.522Z",
+  "http_status": 200,
+  "body": {
+    "url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/compare/2b0f34a3860460f285307ec2ccf36345acbe05a2...9e96c75410a97a2ea463ec777d7b14fb446c6f0e",
+    "html_url": "https://github.com/near-daos/sputnik-dao-contract/compare/2b0f34a3860460f285307ec2ccf36345acbe05a2...9e96c75410a97a2ea463ec777d7b14fb446c6f0e",
+    "permalink_url": "https://github.com/near-daos/sputnik-dao-contract/compare/near-daos:2b0f34a...near-daos:9e96c75",
+    "diff_url": "https://github.com/near-daos/sputnik-dao-contract/compare/2b0f34a3860460f285307ec2ccf36345acbe05a2...9e96c75410a97a2ea463ec777d7b14fb446c6f0e.diff",
+    "patch_url": "https://github.com/near-daos/sputnik-dao-contract/compare/2b0f34a3860460f285307ec2ccf36345acbe05a2...9e96c75410a97a2ea463ec777d7b14fb446c6f0e.patch",
+    "base_commit": {
+      "sha": "2b0f34a3860460f285307ec2ccf36345acbe05a2",
+      "node_id": "C_kwDOE8yTG9oAKDJiMGYzNGEzODYwNDYwZjI4NTMwN2VjMmNjZjM2MzQ1YWNiZTA1YTI",
+      "commit": {
+        "author": {
+          "name": "Vlad Frolov",
+          "email": "frolvlad@gmail.com",
+          "date": "2026-02-25T22:10:34Z"
+        },
+        "committer": {
+          "name": "Vlad Frolov",
+          "email": "frolvlad@gmail.com",
+          "date": "2026-02-25T22:10:34Z"
+        },
+        "message": "Added more context clarification comments for the upgrade flow",
+        "tree": {
+          "sha": "10292376504d213a5a280b76ee5c8dcee8f6958e",
+          "url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/git/trees/10292376504d213a5a280b76ee5c8dcee8f6958e"
+        },
+        "url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/git/commits/2b0f34a3860460f285307ec2ccf36345acbe05a2",
+        "comment_count": 0,
+        "verification": {
+          "verified": false,
+          "reason": "unsigned",
+          "signature": null,
+          "payload": null,
+          "verified_at": null
+        }
+      },
+      "url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/commits/2b0f34a3860460f285307ec2ccf36345acbe05a2",
+      "html_url": "https://github.com/near-daos/sputnik-dao-contract/commit/2b0f34a3860460f285307ec2ccf36345acbe05a2",
+      "comments_url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/commits/2b0f34a3860460f285307ec2ccf36345acbe05a2/comments",
+      "author": {
+        "login": "frol",
+        "id": 304265,
+        "node_id": "MDQ6VXNlcjMwNDI2NQ==",
+        "avatar_url": "https://avatars.githubusercontent.com/u/304265?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/frol",
+        "html_url": "https://github.com/frol",
+        "followers_url": "https://api.github.com/users/frol/followers",
+        "following_url": "https://api.github.com/users/frol/following{/other_user}",
+        "gists_url": "https://api.github.com/users/frol/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/frol/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/frol/subscriptions",
+        "organizations_url": "https://api.github.com/users/frol/orgs",
+        "repos_url": "https://api.github.com/users/frol/repos",
+        "events_url": "https://api.github.com/users/frol/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/frol/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "frol",
+        "id": 304265,
+        "node_id": "MDQ6VXNlcjMwNDI2NQ==",
+        "avatar_url": "https://avatars.githubusercontent.com/u/304265?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/frol",
+        "html_url": "https://github.com/frol",
+        "followers_url": "https://api.github.com/users/frol/followers",
+        "following_url": "https://api.github.com/users/frol/following{/other_user}",
+        "gists_url": "https://api.github.com/users/frol/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/frol/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/frol/subscriptions",
+        "organizations_url": "https://api.github.com/users/frol/orgs",
+        "repos_url": "https://api.github.com/users/frol/repos",
+        "events_url": "https://api.github.com/users/frol/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/frol/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "fe699d3b1c4b2273989b22a829fc7059c830d736",
+          "url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/commits/fe699d3b1c4b2273989b22a829fc7059c830d736",
+          "html_url": "https://github.com/near-daos/sputnik-dao-contract/commit/fe699d3b1c4b2273989b22a829fc7059c830d736"
+        }
+      ]
+    },
+    "merge_base_commit": {
+      "sha": "2b0f34a3860460f285307ec2ccf36345acbe05a2",
+      "node_id": "C_kwDOE8yTG9oAKDJiMGYzNGEzODYwNDYwZjI4NTMwN2VjMmNjZjM2MzQ1YWNiZTA1YTI",
+      "commit": {
+        "author": {
+          "name": "Vlad Frolov",
+          "email": "frolvlad@gmail.com",
+          "date": "2026-02-25T22:10:34Z"
+        },
+        "committer": {
+          "name": "Vlad Frolov",
+          "email": "frolvlad@gmail.com",
+          "date": "2026-02-25T22:10:34Z"
+        },
+        "message": "Added more context clarification comments for the upgrade flow",
+        "tree": {
+          "sha": "10292376504d213a5a280b76ee5c8dcee8f6958e",
+          "url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/git/trees/10292376504d213a5a280b76ee5c8dcee8f6958e"
+        },
+        "url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/git/commits/2b0f34a3860460f285307ec2ccf36345acbe05a2",
+        "comment_count": 0,
+        "verification": {
+          "verified": false,
+          "reason": "unsigned",
+          "signature": null,
+          "payload": null,
+          "verified_at": null
+        }
+      },
+      "url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/commits/2b0f34a3860460f285307ec2ccf36345acbe05a2",
+      "html_url": "https://github.com/near-daos/sputnik-dao-contract/commit/2b0f34a3860460f285307ec2ccf36345acbe05a2",
+      "comments_url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/commits/2b0f34a3860460f285307ec2ccf36345acbe05a2/comments",
+      "author": {
+        "login": "frol",
+        "id": 304265,
+        "node_id": "MDQ6VXNlcjMwNDI2NQ==",
+        "avatar_url": "https://avatars.githubusercontent.com/u/304265?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/frol",
+        "html_url": "https://github.com/frol",
+        "followers_url": "https://api.github.com/users/frol/followers",
+        "following_url": "https://api.github.com/users/frol/following{/other_user}",
+        "gists_url": "https://api.github.com/users/frol/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/frol/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/frol/subscriptions",
+        "organizations_url": "https://api.github.com/users/frol/orgs",
+        "repos_url": "https://api.github.com/users/frol/repos",
+        "events_url": "https://api.github.com/users/frol/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/frol/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "frol",
+        "id": 304265,
+        "node_id": "MDQ6VXNlcjMwNDI2NQ==",
+        "avatar_url": "https://avatars.githubusercontent.com/u/304265?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/frol",
+        "html_url": "https://github.com/frol",
+        "followers_url": "https://api.github.com/users/frol/followers",
+        "following_url": "https://api.github.com/users/frol/following{/other_user}",
+        "gists_url": "https://api.github.com/users/frol/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/frol/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/frol/subscriptions",
+        "organizations_url": "https://api.github.com/users/frol/orgs",
+        "repos_url": "https://api.github.com/users/frol/repos",
+        "events_url": "https://api.github.com/users/frol/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/frol/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "fe699d3b1c4b2273989b22a829fc7059c830d736",
+          "url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/commits/fe699d3b1c4b2273989b22a829fc7059c830d736",
+          "html_url": "https://github.com/near-daos/sputnik-dao-contract/commit/fe699d3b1c4b2273989b22a829fc7059c830d736"
+        }
+      ]
+    },
+    "status": "ahead",
+    "ahead_by": 2,
+    "behind_by": 0,
+    "total_commits": 2,
+    "commits": [
+      {
+        "sha": "8b0429d5ac96162d913c59800c26c1981fc07b8f",
+        "node_id": "C_kwDOE8yTG9oAKDhiMDQyOWQ1YWM5NjE2MmQ5MTNjNTk4MDBjMjZjMTk4MWZjMDdiOGY",
+        "commit": {
+          "author": {
+            "name": "Vlad Frolov",
+            "email": "frolvlad@gmail.com",
+            "date": "2026-03-24T21:01:52Z"
+          },
+          "committer": {
+            "name": "GitHub",
+            "email": "noreply@github.com",
+            "date": "2026-03-24T21:01:52Z"
+          },
+          "message": "tests: Fixed tests after global contracts support was deployed to mainnet (#234)",
+          "tree": {
+            "sha": "870286e5fb3bf7929c715a3f6befb55fd4f4aac6",
+            "url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/git/trees/870286e5fb3bf7929c715a3f6befb55fd4f4aac6"
+          },
+          "url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/git/commits/8b0429d5ac96162d913c59800c26c1981fc07b8f",
+          "comment_count": 0,
+          "verification": {
+            "verified": true,
+            "reason": "valid",
+            "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJpwvvACRC1aQ7uu5UhlAAAlI8QACNOpW1ZouDXYbtGf01eNkp0\nZfAbo3AM8HRnbkeOC7w9XgECMyjUNdBG+QN2k5n5H0dobPeevwrE28E74Vz1NAEN\nwz0msbrpmykrMH6N9hWYNKZECFmEUkjAt/69hyDP6fYykzGMF6Sr2EWUlAev+RKp\ncjCerfmuTtbrU9byyCG0TurrWfbga8rq3c2a/Q11OmhOWhZkXv30kXi173ugyB4w\n9qvEZds6jkFtq0Z8+m557uSlxiazk/iPERLpbXYGGjTLs2PPsmac506BG5WtbBIy\nOMVUoaHsd86yGOk7QPjsLs6aM3C2uTsjoKOncbt5qwTpk935usCe4CovEojNa367\nbQoW0AKw2DDEkPLS4XGKq9NnKzO03M+jzvh6Zfo3lGb2xp2hFHTrYaRWxmcdrQiZ\nZgSejOcKfRvhZliWtfttzWpkHg0J50HM5H/6tl8/pSm2zZ+ScqhAQ1Eq0XDZYksC\nRy1+cmr/jUQMGlnU7ujE/pLOC4kJgccpmtZn1X7BAYaP+Y3Sm6pyqm3ulABgOofK\nJQQMyQWZcvznZGTfRDH1clP5A2URHcdAjqeIA+COyZs2hBZMsIS7seCV8VdcMfIm\nxVh/Bg7Y/NnHxlOKW3DM1XDftj88UEx3bYM05Q4ZhVWz03ad1BD/nODSQdslZhDG\nT+p8OpaOYDoLdfsZQAi9\n=GIoM\n-----END PGP SIGNATURE-----\n",
+            "payload": "tree 870286e5fb3bf7929c715a3f6befb55fd4f4aac6\nparent 2b0f34a3860460f285307ec2ccf36345acbe05a2\nauthor Vlad Frolov <frolvlad@gmail.com> 1774386112 +0100\ncommitter GitHub <noreply@github.com> 1774386112 +0100\n\ntests: Fixed tests after global contracts support was deployed to mainnet (#234)",
+            "verified_at": "2026-03-24T21:01:54Z"
+          }
+        },
+        "url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/commits/8b0429d5ac96162d913c59800c26c1981fc07b8f",
+        "html_url": "https://github.com/near-daos/sputnik-dao-contract/commit/8b0429d5ac96162d913c59800c26c1981fc07b8f",
+        "comments_url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/commits/8b0429d5ac96162d913c59800c26c1981fc07b8f/comments",
+        "author": {
+          "login": "frol",
+          "id": 304265,
+          "node_id": "MDQ6VXNlcjMwNDI2NQ==",
+          "avatar_url": "https://avatars.githubusercontent.com/u/304265?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/frol",
+          "html_url": "https://github.com/frol",
+          "followers_url": "https://api.github.com/users/frol/followers",
+          "following_url": "https://api.github.com/users/frol/following{/other_user}",
+          "gists_url": "https://api.github.com/users/frol/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/frol/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/frol/subscriptions",
+          "organizations_url": "https://api.github.com/users/frol/orgs",
+          "repos_url": "https://api.github.com/users/frol/repos",
+          "events_url": "https://api.github.com/users/frol/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/frol/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "committer": {
+          "login": "web-flow",
+          "id": 19864447,
+          "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+          "avatar_url": "https://avatars.githubusercontent.com/u/19864447?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/web-flow",
+          "html_url": "https://github.com/web-flow",
+          "followers_url": "https://api.github.com/users/web-flow/followers",
+          "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+          "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+          "organizations_url": "https://api.github.com/users/web-flow/orgs",
+          "repos_url": "https://api.github.com/users/web-flow/repos",
+          "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/web-flow/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "parents": [
+          {
+            "sha": "2b0f34a3860460f285307ec2ccf36345acbe05a2",
+            "url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/commits/2b0f34a3860460f285307ec2ccf36345acbe05a2",
+            "html_url": "https://github.com/near-daos/sputnik-dao-contract/commit/2b0f34a3860460f285307ec2ccf36345acbe05a2"
+          }
+        ]
+      },
+      {
+        "sha": "9e96c75410a97a2ea463ec777d7b14fb446c6f0e",
+        "node_id": "C_kwDOE8yTG9oAKDllOTZjNzU0MTBhOTdhMmVhNDYzZWM3NzdkN2IxNGZiNDQ2YzZmMGU",
+        "commit": {
+          "author": {
+            "name": "Vlad Frolov",
+            "email": "frolvlad@gmail.com",
+            "date": "2026-03-24T21:43:46Z"
+          },
+          "committer": {
+            "name": "GitHub",
+            "email": "noreply@github.com",
+            "date": "2026-03-24T21:43:46Z"
+          },
+          "message": "feat: Factory auto-updates should not be applied immediately to counter the risk of taking control if the factory account is compromised (#233)",
+          "tree": {
+            "sha": "16f931954d000191c465dbe45b3262df431bb8e5",
+            "url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/git/trees/16f931954d000191c465dbe45b3262df431bb8e5"
+          },
+          "url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/git/commits/9e96c75410a97a2ea463ec777d7b14fb446c6f0e",
+          "comment_count": 0,
+          "verification": {
+            "verified": true,
+            "reason": "valid",
+            "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJpwwWSCRC1aQ7uu5UhlAAAHtcQAK9h3LHbmE26KSHa7iZdcREh\nk999/6sd4xqbHlH2EcySN94mXjeilH6kSpXA9dbE+2vbeeNBN3oSsmUJnDcM5c54\n8yYAlYWCJ2RV+auRE60bLcPrq/y/cwqJwEFYcbhHiIiSuaFbCxKyJ2K9vuZ7kxqO\ndZ5KA979WDpBqS0BZ6G4Tv5Z8P0X4qbrPwN1VXF4XPRDQVeuXFufBT3w5R9WS8hJ\nO7vRxwmJO8X3hMXQCnjJC1SqyMzDuu2P9VLqiixn0sSy8q38bcEPgr8OoXClEnjk\nAJKB6FL1sk61uHDBmK0O4GlTYZ7Pi4WaXj2SCSkW1XvlSWRa/2WeTzOO2QMd9i9V\nlwuFcjgV/8c0GXcFe6V0oD8Ey9klZNfQIqXReNPQ8VgiCgudkQC2bBu0VLsIEqf0\neya9DTEVXMqfEIUectLYCfa1MgElF16rM1f2l5dNzVm1DPwlMCPrrn3bXEFagJxH\nUYFhUqNx6ErKY1Id+JD5mjs0i86cS/kzC4hXsPbK0/kuDdM33R307p3YvYS07Y8y\nPx/PQsxfncVM8ZjCKKAbifRMZTzkdfoOvvVBv3e8mHczRNR4tRLUj8mAyMitZZIO\nDzQkcPzYuoo83bKXPzxDokhfdqO+bYahkXf80mUBPuDf+UDAMz3TPJ1qeKOwzRJ8\nxSjaB2nT1CN7YcD/sfSG\n=IjWK\n-----END PGP SIGNATURE-----\n",
+            "payload": "tree 16f931954d000191c465dbe45b3262df431bb8e5\nparent 8b0429d5ac96162d913c59800c26c1981fc07b8f\nauthor Vlad Frolov <frolvlad@gmail.com> 1774388626 +0100\ncommitter GitHub <noreply@github.com> 1774388626 +0100\n\nfeat: Factory auto-updates should not be applied immediately to counter the risk of taking control if the factory account is compromised (#233)",
+            "verified_at": "2026-03-24T21:43:47Z"
+          }
+        },
+        "url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/commits/9e96c75410a97a2ea463ec777d7b14fb446c6f0e",
+        "html_url": "https://github.com/near-daos/sputnik-dao-contract/commit/9e96c75410a97a2ea463ec777d7b14fb446c6f0e",
+        "comments_url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/commits/9e96c75410a97a2ea463ec777d7b14fb446c6f0e/comments",
+        "author": {
+          "login": "frol",
+          "id": 304265,
+          "node_id": "MDQ6VXNlcjMwNDI2NQ==",
+          "avatar_url": "https://avatars.githubusercontent.com/u/304265?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/frol",
+          "html_url": "https://github.com/frol",
+          "followers_url": "https://api.github.com/users/frol/followers",
+          "following_url": "https://api.github.com/users/frol/following{/other_user}",
+          "gists_url": "https://api.github.com/users/frol/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/frol/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/frol/subscriptions",
+          "organizations_url": "https://api.github.com/users/frol/orgs",
+          "repos_url": "https://api.github.com/users/frol/repos",
+          "events_url": "https://api.github.com/users/frol/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/frol/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "committer": {
+          "login": "web-flow",
+          "id": 19864447,
+          "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+          "avatar_url": "https://avatars.githubusercontent.com/u/19864447?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/web-flow",
+          "html_url": "https://github.com/web-flow",
+          "followers_url": "https://api.github.com/users/web-flow/followers",
+          "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+          "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+          "organizations_url": "https://api.github.com/users/web-flow/orgs",
+          "repos_url": "https://api.github.com/users/web-flow/repos",
+          "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/web-flow/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "parents": [
+          {
+            "sha": "8b0429d5ac96162d913c59800c26c1981fc07b8f",
+            "url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/commits/8b0429d5ac96162d913c59800c26c1981fc07b8f",
+            "html_url": "https://github.com/near-daos/sputnik-dao-contract/commit/8b0429d5ac96162d913c59800c26c1981fc07b8f"
+          }
+        ]
+      }
+    ],
+    "files": [
+      {
+        "sha": "851d744a736c71f36a48e6466a7bc88e668c4679",
+        "filename": "sputnikdao-factory2/tests/test_upgrade.rs",
+        "status": "modified",
+        "additions": 43,
+        "deletions": 1,
+        "changes": 44,
+        "blob_url": "https://github.com/near-daos/sputnik-dao-contract/blob/9e96c75410a97a2ea463ec777d7b14fb446c6f0e/sputnikdao-factory2%2Ftests%2Ftest_upgrade.rs",
+        "raw_url": "https://github.com/near-daos/sputnik-dao-contract/raw/9e96c75410a97a2ea463ec777d7b14fb446c6f0e/sputnikdao-factory2%2Ftests%2Ftest_upgrade.rs",
+        "contents_url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/contents/sputnikdao-factory2%2Ftests%2Ftest_upgrade.rs?ref=9e96c75410a97a2ea463ec777d7b14fb446c6f0e",
+        "patch": "@@ -56,10 +56,23 @@ async fn test_upgrade() -> testresult::TestResult {\n             RPCEndpoint::mainnet().url,\n             sputnikdao_factory_contract.0.clone(),\n         )\n-        .initial_balance(NearToken::from_near(100))\n+        .initial_balance(NearToken::from_near(150))\n         .send()\n         .await?;\n \n+    let default_code_hash: Base58CryptoHash = sputnikdao_factory_contract\n+        .call_function(\"get_default_code_hash\", ())\n+        .read_only()\n+        .fetch_from_mainnet()\n+        .await?\n+        .data;\n+    let default_code = sputnikdao_factory_contract\n+        .call_function(\"get_code\", json!({ \"code_hash\": default_code_hash }))\n+        .read_only_raw()\n+        .fetch_from_mainnet()\n+        .await?\n+        .data;\n+\n     // Initialize the sputnik-dao factory contract\n     sputnikdao_factory_contract\n         .call_function(\"new\", ())\n@@ -70,6 +83,35 @@ async fn test_upgrade() -> testresult::TestResult {\n         .await?\n         .into_result()?;\n \n+    sputnikdao_factory_contract\n+        .call_function_raw(\"store\", default_code)\n+        .transaction()\n+        .deposit(NearToken::from_near(50))\n+        .max_gas()\n+        .with_signer(sputnikdao_factory_contract.0.clone(), signer.clone())\n+        .send_to(&sandbox_network)\n+        .await?\n+        .into_result()?;\n+\n+    sputnikdao_factory_contract\n+        .call_function(\n+            \"store_contract_metadata\",\n+            json!({\n+                \"code_hash\": default_code_hash,\n+                \"metadata\": {\n+                    \"version\": [1, 0],\n+                    \"commit_id\": \"COMMIT_ID_HASH\",\n+                },\n+                \"set_default\": true,\n+            }),\n+        )\n+        .transaction()\n+        .max_gas()\n+        .with_signer(sputnikdao_factory_contract.0.clone(), signer.clone())\n+        .send_to(&sandbox_network)\n+        .await?\n+        .into_result()?;\n+\n     // Create a testdao.sputnik-dao.near instance\n     let dao_name = \"testdao\";\n     let create_dao_args = json!({"
+      },
+      {
+        "sha": "4df60cb3749f131ec7c52712fc64180d0094f71f",
+        "filename": "sputnikdao2/src/upgrade.rs",
+        "status": "modified",
+        "additions": 85,
+        "deletions": 2,
+        "changes": 87,
+        "blob_url": "https://github.com/near-daos/sputnik-dao-contract/blob/9e96c75410a97a2ea463ec777d7b14fb446c6f0e/sputnikdao2%2Fsrc%2Fupgrade.rs",
+        "raw_url": "https://github.com/near-daos/sputnik-dao-contract/raw/9e96c75410a97a2ea463ec777d7b14fb446c6f0e/sputnikdao2%2Fsrc%2Fupgrade.rs",
+        "contents_url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/contents/sputnikdao2%2Fsrc%2Fupgrade.rs?ref=9e96c75410a97a2ea463ec777d7b14fb446c6f0e",
+        "patch": "@@ -1,9 +1,11 @@\n //! Logic to upgrade Sputnik contracts.\n \n use near_sdk::borsh::to_vec;\n+use near_sdk::json_types::{Base58CryptoHash, U64};\n use near_sdk::serde_json::json;\n use near_sdk::{Gas, GasWeight, PromiseResult};\n \n+use crate::proposals::VersionedProposal;\n use crate::*;\n \n const FACTORY_KEY: &[u8; 7] = b\"FACTORY\";\n@@ -107,10 +109,22 @@ pub(crate) fn internal_set_factory_info(factory_info: &FactoryInfo) {\n     env::storage_write(FACTORY_KEY, &serialize_buf);\n }\n \n+/// Two weeks in nanoseconds — the minimum delay before an auto-update proposal can be executed.\n+const TWO_WEEKS_NS: u64 = 14 * 24 * 60 * 60 * 1_000_000_000;\n+\n /// Function that receives new contract, updates and calls migration.\n /// Two options who call it:\n-///  - current account, in case of fetching contract code from factory;\n-///  - factory, if this contract allows to factory-update;\n+///  - current account, in case of fetching contract code from factory (self-callback);\n+///  - factory, if this contract allows to factory-update (auto-update);\n+///\n+/// For auto-update requests from the factory the flow is:\n+///  1. Check the last 5 proposals for an InProgress `UpgradeSelf` proposal whose hash\n+///     matches the incoming code.\n+///  2. If such a proposal exists **and** its `submission_time` is older than 2 weeks,\n+///     mark it Approved and proceed with deploying the code.\n+///  3. If the proposal exists but is younger than 2 weeks, do nothing (wait).\n+///  4. If no matching proposal exists, create a new `UpgradeSelf` proposal and return\n+///     without deploying.\n // NOTE: Remove the #[cfg] after https://github.com/near/cargo-near/issues/317 is resolved.\n #[cfg_attr(target_arch = \"wasm32\", unsafe(no_mangle))]\n #[cfg_attr(not(target_arch = \"wasm32\"), allow(dead_code))]\n@@ -143,6 +157,75 @@ pub fn update() {\n     };\n     let new_contract_code_hash = env::sha256_array(&new_contract_code);\n \n+    // --- Auto-update proposal gate ---\n+    // When the factory triggers an auto-update (not a self-callback), enforce a 2-week\n+    // proposal delay before the code is actually deployed, unless the contract state is broken.\n+    let is_auto_update = !is_callback && env::predecessor_account_id() == factory_info.factory_id;\n+\n+    let contract: Option<Contract> = env::state_read();\n+\n+    if let (Some(mut contract), true) = (contract, is_auto_update) {\n+        // Scan the last 5 proposals for a matching InProgress UpgradeSelf proposal.\n+        let last_id = contract.last_proposal_id;\n+        let start_id = last_id.saturating_sub(5);\n+        let mut found: Option<(u64, Proposal)> = None;\n+\n+        for id in start_id..last_id {\n+            if let Some(versioned) = contract.proposals.get(&id) {\n+                let proposal: Proposal = versioned.into();\n+                if matches!(\n+                    &proposal.kind,\n+                    ProposalKind::UpgradeSelf { hash } if *hash == new_contract_code_hash\n+                ) && proposal.status == ProposalStatus::InProgress\n+                {\n+                    found = Some((id, proposal));\n+                    break;\n+                }\n+            }\n+        }\n+\n+        match found {\n+            Some((id, mut proposal)) => {\n+                if env::block_timestamp().saturating_sub(proposal.submission_time.0) >= TWO_WEEKS_NS\n+                {\n+                    // Proposal is old enough — mark it as Approved and proceed\n+                    // with the deployment below.\n+                    proposal.status = ProposalStatus::Approved;\n+                    contract\n+                        .proposals\n+                        .insert(&id, &VersionedProposal::Latest(proposal));\n+                    env::state_write(&contract);\n+                    // Fall through to deploy the code.\n+                } else {\n+                    // Proposal exists but the 2-week waiting period has not elapsed yet.\n+                    return;\n+                }\n+            }\n+            None => {\n+                // No matching proposal found — create one and return without deploying.\n+                let proposal = Proposal {\n+                    proposer: factory_info.factory_id.clone(),\n+                    description: \"Auto-update from factory\".to_string(),\n+                    kind: ProposalKind::UpgradeSelf {\n+                        hash: new_contract_code_hash.into(),\n+                    },\n+                    status: ProposalStatus::InProgress,\n+                    vote_counts: Default::default(),\n+                    votes: Default::default(),\n+                    submission_time: U64::from(env::block_timestamp()),\n+                    last_actions_log: Default::default(),\n+                };\n+                let id = contract.last_proposal_id;\n+                contract\n+                    .proposals\n+                    .insert(&id, &VersionedProposal::Latest(proposal));\n+                contract.last_proposal_id += 1;\n+                env::state_write(&contract);\n+                return;\n+            }\n+        }\n+    };\n+\n     let promise_id = env::promise_batch_create(&current_id);\n     // Deploy the contract code.\n     env::promise_batch_action_use_global_contract(promise_id, &new_contract_code_hash);"
+      },
+      {
+        "sha": "2b44daad3c1c1e841b93ee88597e161fb56aeda6",
+        "filename": "sputnikdao2/tests/test_bounties.rs",
+        "status": "modified",
+        "additions": 17,
+        "deletions": 29,
+        "changes": 46,
+        "blob_url": "https://github.com/near-daos/sputnik-dao-contract/blob/9e96c75410a97a2ea463ec777d7b14fb446c6f0e/sputnikdao2%2Ftests%2Ftest_bounties.rs",
+        "raw_url": "https://github.com/near-daos/sputnik-dao-contract/raw/9e96c75410a97a2ea463ec777d7b14fb446c6f0e/sputnikdao2%2Ftests%2Ftest_bounties.rs",
+        "contents_url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/contents/sputnikdao2%2Ftests%2Ftest_bounties.rs?ref=9e96c75410a97a2ea463ec777d7b14fb446c6f0e",
+        "patch": "@@ -1,4 +1,4 @@\n-use near_sdk::json_types::{U128, U64};\n+use near_sdk::json_types::{U64, U128};\n use near_sdk::serde_json::{Value, json};\n \n use near_api::NearToken;\n@@ -98,14 +98,11 @@ async fn test_bounty_claim_errors() -> testresult::TestResult {\n     claim_bounty_as(&ctx, &dao, &alice, proposal_id).await?;\n     assert_eq!(\n         1u32,\n-        dao.call_function(\n-            \"get_bounty_number_of_claims\",\n-            json!({\"id\": proposal_id})\n-        )\n-        .read_only::<u32>()\n-        .fetch_from(&ctx.sandbox_network)\n-        .await?\n-        .data\n+        dao.call_function(\"get_bounty_number_of_claims\", json!({\"id\": proposal_id}))\n+            .read_only::<u32>()\n+            .fetch_from(&ctx.sandbox_network)\n+            .await?\n+            .data\n     );\n \n     let claims: Vec<Value> = dao\n@@ -121,27 +118,21 @@ async fn test_bounty_claim_errors() -> testresult::TestResult {\n     claim_bounty_as(&ctx, &dao, &alice, proposal_id).await?;\n     assert_eq!(\n         2u32,\n-        dao.call_function(\n-            \"get_bounty_number_of_claims\",\n-            json!({\"id\": proposal_id})\n-        )\n-        .read_only::<u32>()\n-        .fetch_from(&ctx.sandbox_network)\n-        .await?\n-        .data\n+        dao.call_function(\"get_bounty_number_of_claims\", json!({\"id\": proposal_id}))\n+            .read_only::<u32>()\n+            .fetch_from(&ctx.sandbox_network)\n+            .await?\n+            .data\n     );\n \n     claim_bounty_as(&ctx, &dao, &alice, proposal_id).await?;\n     assert_eq!(\n         3u32,\n-        dao.call_function(\n-            \"get_bounty_number_of_claims\",\n-            json!({\"id\": proposal_id})\n-        )\n-        .read_only::<u32>()\n-        .fetch_from(&ctx.sandbox_network)\n-        .await?\n-        .data\n+        dao.call_function(\"get_bounty_number_of_claims\", json!({\"id\": proposal_id}))\n+            .read_only::<u32>()\n+            .fetch_from(&ctx.sandbox_network)\n+            .await?\n+            .data\n     );\n \n     // All 3 slots claimed — next claim should fail\n@@ -378,10 +369,7 @@ async fn test_bounty_giveup() -> testresult::TestResult {\n         .fetch_from(&ctx.sandbox_network)\n         .await?\n         .data;\n-    assert!(\n-        claims.is_empty(),\n-        \"claim list should be empty after giveup\"\n-    );\n+    assert!(claims.is_empty(), \"claim list should be empty after giveup\");\n \n     Ok(())\n }"
+      },
+      {
+        "sha": "22232bfb624614c5a46c5640352ebee1dc046d95",
+        "filename": "test-token/src/lib.rs",
+        "status": "modified",
+        "additions": 20,
+        "deletions": 14,
+        "changes": 34,
+        "blob_url": "https://github.com/near-daos/sputnik-dao-contract/blob/9e96c75410a97a2ea463ec777d7b14fb446c6f0e/test-token%2Fsrc%2Flib.rs",
+        "raw_url": "https://github.com/near-daos/sputnik-dao-contract/raw/9e96c75410a97a2ea463ec777d7b14fb446c6f0e/test-token%2Fsrc%2Flib.rs",
+        "contents_url": "https://api.github.com/repos/near-daos/sputnik-dao-contract/contents/test-token%2Fsrc%2Flib.rs?ref=9e96c75410a97a2ea463ec777d7b14fb446c6f0e",
+        "patch": "@@ -9,7 +9,7 @@ use near_contract_standards::storage_management::{\n     StorageBalance, StorageBalanceBounds, StorageManagement,\n };\n use near_sdk::json_types::U128;\n-use near_sdk::{near, AccountId, NearToken, PanicOnDefault, PromiseOrValue};\n+use near_sdk::{AccountId, NearToken, PanicOnDefault, PromiseOrValue, near};\n \n #[near(contract_state)]\n #[derive(PanicOnDefault)]\n@@ -115,30 +115,36 @@ impl FungibleTokenMetadataProvider for Contract {\n mod tests {\n     use super::*;\n     use near_sdk::{\n-        env,\n-        test_utils::{accounts, VMContextBuilder},\n-        testing_env, NearToken,\n+        NearToken, env,\n+        test_utils::{VMContextBuilder, accounts},\n+        testing_env,\n     };\n \n     #[test]\n     fn test_basics() {\n         let mut context = VMContextBuilder::new();\n         testing_env!(context.build());\n         let mut contract = Contract::new();\n-        testing_env!(context\n-            .attached_deposit(env::storage_byte_cost().saturating_mul(125))\n-            .build());\n+        testing_env!(\n+            context\n+                .attached_deposit(env::storage_byte_cost().saturating_mul(125))\n+                .build()\n+        );\n         contract.mint(accounts(0), 1_000_000.into());\n         assert_eq!(contract.ft_balance_of(accounts(0)), 1_000_000.into());\n \n-        testing_env!(context\n-            .attached_deposit(env::storage_byte_cost().saturating_mul(125))\n-            .build());\n+        testing_env!(\n+            context\n+                .attached_deposit(env::storage_byte_cost().saturating_mul(125))\n+                .build()\n+        );\n         contract.storage_deposit(Some(accounts(1)), None);\n-        testing_env!(context\n-            .attached_deposit(NearToken::from_yoctonear(1))\n-            .predecessor_account_id(accounts(0))\n-            .build());\n+        testing_env!(\n+            context\n+                .attached_deposit(NearToken::from_yoctonear(1))\n+                .predecessor_account_id(accounts(0))\n+                .build()\n+        );\n         contract.ft_transfer(accounts(1), 1_000.into(), None);\n         assert_eq!(contract.ft_balance_of(accounts(1)), 1_000.into());\n "
+      }
+    ]
+  }
+}

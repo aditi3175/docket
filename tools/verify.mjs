@@ -6,6 +6,8 @@
 //   1  at least one structural claim diverged from mainnet
 //   2  nothing diverged, but at least one claim could not be verified (unknown after all
 //      failovers), or verify.mjs itself crashed
+// GitHub claims (§3.4) are a separate bucket with the same exit rules as structural claims:
+// diverged -> 1, unknown (network failure, rate limit) -> 2. GitHub is read unauthenticated.
 // TVL (DefiLlama) is live, dated, and warn-only: drift or DefiLlama being down never changes the exit code.
 //
 // The claim set is fixed: every claim is reported on every run. A claim whose input could not be
@@ -14,12 +16,15 @@
 // Enforces: I1 (every number printed traces to a call made in this run, with its date),
 //           I2 (unknown is its own bucket), I3/I4/I12 via resolve.js.
 //
-// Coverage today: §1/§2 (owners, coverage), §3.3 (auto_update, headline sum, liquid-staking share), §4, §5. Other sections: not yet.
+// Coverage today: chain — §1/§2 (owners), §3.3 (auto_update), §4, §5; GitHub — §3.4 (PR #233 and
+// where the fix sits relative to the deployed commit); DefiLlama — §1/§2 coverage, §3.3 headline sum
+// and liquid-staking share. Other sections: not yet.
 // Never edit an expectation here to make a check pass — report the divergence (CLAUDE.md).
 
 import { pathToFileURL } from 'node:url';
 import { createRpc } from '../web/assets/rpc.js';
 import { resolveOwner, codeIdentity, loadFactoryVersions, factoryInfo, ZERO_HASH } from '../web/assets/resolve.js';
+import { githubGet } from './github.mjs';
 import { fetchDefiLlama, nearTvlFrom, sumTvl, categoryNearTvl, applyCoverageRule, COVERAGE_RULE } from '../web/assets/value.js';
 
 const FACTORY = 'sputnik-dao.near';
@@ -67,12 +72,21 @@ const SPEC_COVERAGE_N = 5;
 // §2 — contracts that expose no owner through any §6.2 getter, and are excluded rather than guessed at
 const NO_OWNER = ['intents.near', 'wrap.near'];
 
+// §3.4 — GitHub: PR #233, and where its merge commit sits relative to the deployed v3.2 commit
+const REPO = '/repos/near-daos/sputnik-dao-contract';
+const DEPLOYED_SHA = '2b0f34a3860460f285307ec2ccf36345acbe05a2'; // v3.2, per get_contracts_metadata (§5)
+const FIX_SHA = '9e96c75410a97a2ea463ec777d7b14fb446c6f0e';
+const FIX_PR = 233;
+const SPEC_FIX_PR = [true, '2026-03-24T21:43:46Z', FIX_SHA];             // merged, merged_at, merge_commit_sha
+const SPEC_FIX_COMPARE = ['ahead', 2, 0];                               // status, ahead_by, behind_by
+const SPEC_FIX_DATES = ['2026-02-25T22:10:34Z', '2026-03-24T21:43:46Z']; // committer dates: deployed, fix
+
 function usdFmt(n) { return `$${Math.round(n).toLocaleString('en-US')}`; }
 const pctFmt = (x) => `${(100 * x).toFixed(1)}%`;
 
 // ---- collect: every claim, every run --------------------------------------------------------
 // -> { claims, warnings, ...data }. Reads only through `rpc` and `llamaFetch`, so tests can inject both.
-export async function collect({ rpc = createRpc(), llamaFetch } = {}) {
+export async function collect({ rpc = createRpc(), llamaFetch, githubFetch } = {}) {
   const claims = [];
   const warnings = [];
   // unknownReason !== undefined -> unverifiable; otherwise exact comparison with the spec.
@@ -83,9 +97,12 @@ export async function collect({ rpc = createRpc(), llamaFetch } = {}) {
   };
 
   const started = new Date();
-  const [factory, llama] = await Promise.all([
+  const gh = githubFetch ? { fetch: githubFetch } : {};
+  const [factory, llama, ghPr, ghCompare] = await Promise.all([
     loadFactoryVersions(rpc, FACTORY),
     fetchDefiLlama(llamaFetch ? { fetch: llamaFetch } : {}),
+    githubGet(`${REPO}/pulls/${FIX_PR}`, gh),
+    githubGet(`${REPO}/compare/${DEPLOYED_SHA}...${FIX_SHA}`, gh),
   ]);
   const [owners, infos, codes, stnearRaw, noOwner] = await Promise.all([
     Promise.all(PROTOCOLS.map((p) => resolveOwner(rpc, p.contract))),
@@ -142,6 +159,22 @@ export async function collect({ rpc = createRpc(), llamaFetch } = {}) {
     if (o.status === 'unknown') claim('§2', what, 'none', null, `${o.at}: ${o.reason}`);
     else claim('§2', what, 'none', o.status === 'ok' ? `${o.owner} via ${o.via}` : o.status);
   });
+
+  // ---- GitHub (§3.4): same exit rules as structural; any failed read is unknown (I2) ----
+  const ghClaim = (what, expected, read, pick) => {
+    const actual = read.status === 'ok' ? pick(read.body) : null;
+    const status = read.status !== 'ok' ? 'unverifiable'
+      : JSON.stringify(expected) === JSON.stringify(actual) ? 'confirmed' : 'diverged';
+    claims.push({ kind: 'github', section: '§3.4', what, expected, actual, status,
+      unknownReason: read.status === 'ok' ? undefined : read.reason, url: read.url, readAt: read.readAt });
+  };
+  ghClaim(`PR #${FIX_PR} merged (merged, merged_at, merge_commit_sha)`, SPEC_FIX_PR, ghPr,
+    (b) => [b.merged ?? null, b.merged_at ?? null, b.merge_commit_sha ?? null]);
+  ghClaim(`fix ${FIX_SHA.slice(0, 12)} vs deployed ${DEPLOYED_SHA.slice(0, 12)} (status, ahead_by, behind_by)`, SPEC_FIX_COMPARE, ghCompare,
+    (b) => [b.status ?? null, b.ahead_by ?? null, b.behind_by ?? null]);
+  ghClaim('committer dates (deployed v3.2, fix)', SPEC_FIX_DATES, ghCompare,
+    (b) => [b.base_commit?.sha === DEPLOYED_SHA ? b.base_commit.commit?.committer?.date ?? null : null,
+      (b.commits ?? []).find((c) => c.sha === FIX_SHA)?.commit?.committer?.date ?? null]);
 
   // ---- TVL (warn-only) ----
   const tvl = PROTOCOLS.map((p) => (llama.status === 'ok' ? nearTvlFrom(llama.protocols, p.slug) : { status: 'unknown', slug: p.slug, reason: llama.reason }));
@@ -226,9 +259,9 @@ export async function collect({ rpc = createRpc(), llamaFetch } = {}) {
   return { started, claims, warnings, factory, llama, owners, infos, codes, tvl, numTerms, numerator, autoTrue, headline, ls, lsTrue, coverage, covRows, covM, covN, noOwner };
 }
 
-// Exit code from structural claims only; TVL never decides it.
+// Exit code from structural and GitHub claims; TVL never decides it.
 export function exitCodeFor(claims) {
-  const s = claims.filter((c) => c.kind === 'structural');
+  const s = claims.filter((c) => c.kind === 'structural' || c.kind === 'github');
   return s.some((c) => c.status === 'diverged') ? 1 : s.some((c) => c.status === 'unverifiable') ? 2 : 0;
 }
 
@@ -288,14 +321,20 @@ function print(r, rpc) {
   }
 
   const st = claims.filter((c) => c.kind === 'structural');
+  const gh = claims.filter((c) => c.kind === 'github');
   const tv = claims.filter((c) => c.kind === 'tvl');
   const by = (s) => st.filter((c) => c.status === s);
   const [ok, bad, unk] = [by('confirmed'), by('diverged'), by('unverifiable')];
-  console.log(`\nClaims: ${claims.length} total = ${st.length} structural + ${tv.length} TVL`);
-  console.log(`Structural (these decide the exit code): ${ok.length} confirmed, ${bad.length} diverged, ${unk.length} could not be verified`);
+  console.log(`\nClaims: ${claims.length} total = ${st.length} structural (chain) + ${gh.length} GitHub + ${tv.length} TVL`);
+  console.log(`Structural, chain (decide the exit code): ${ok.length} confirmed, ${bad.length} diverged, ${unk.length} could not be verified`);
   for (const c of ok) console.log(`  ✓ ${c.section} ${c.what}`);
   for (const c of bad) console.log(`  ✗ DIVERGED ${c.section} ${c.what}\n      spec:    ${JSON.stringify(c.expected)}\n      mainnet: ${JSON.stringify(c.actual)}`);
   for (const c of unk) console.log(`  ? UNKNOWN  ${c.section} ${c.what} — ${c.unknownReason}`);
+  const gby = (s) => gh.filter((c) => c.status === s);
+  console.log(`GitHub, unauthenticated (decide the exit code, same rules; read ${gh[0]?.readAt ?? 'unknown'}): ${gby('confirmed').length} confirmed, ${gby('diverged').length} diverged, ${gby('unverifiable').length} could not be verified`);
+  for (const c of gby('confirmed')) console.log(`  ✓ ${c.section} ${c.what}`);
+  for (const c of gby('diverged')) console.log(`  ✗ DIVERGED ${c.section} ${c.what}\n      spec:   ${JSON.stringify(c.expected)}\n      GitHub: ${JSON.stringify(c.actual)}  (${c.url})`);
+  for (const c of gby('unverifiable')) console.log(`  ? UNKNOWN  ${c.section} ${c.what} — ${c.unknownReason}`);
   const n = (s) => tv.filter((c) => c.status === s).length;
   console.log(`TVL (warn-only, DefiLlama ${llamaDate}): ${n('read')} read, ${n('moved')} moved >${TVL_DRIFT_WARN * 100}%, ${n('unverifiable')} unknown`);
   for (const c of tv) {

@@ -63,6 +63,18 @@ for (const [name, endpoint, params] of selected) {
   }
 }
 
+// GitHub (§3.4), unauthenticated, recorded whole. Run with no filter, or with the filter `github`.
+const GITHUB = [
+  ['github.pulls.233', 'https://api.github.com/repos/near-daos/sputnik-dao-contract/pulls/233'],
+  ['github.compare.2b0f34a38604...9e96c75410a9', 'https://api.github.com/repos/near-daos/sputnik-dao-contract/compare/2b0f34a3860460f285307ec2ccf36345acbe05a2...9e96c75410a97a2ea463ec777d7b14fb446c6f0e'],
+];
+if (!only.length || only.includes('github')) for (const [name, url] of GITHUB) try {
+  const res = await fetch(url, { headers: { accept: 'application/vnd.github+json', 'user-agent': 'docket-verify' }, signal: AbortSignal.timeout(15000) });
+  const rec = { endpoint: url, captured_at: new Date().toISOString(), http_status: res.status, body: await res.json() };
+  await writeFile(new URL(`${DATE}.${name}.json`, DIR), JSON.stringify(rec, null, 2) + '\n');
+  console.log('ok  ', res.status, name);
+} catch (e) { console.log('FAIL', name, e.message); }
+
 // DefiLlama /protocols is several MB; keep only entries that report NEAR TVL. Entries are unmodified.
 if (!only.length) try {
   const all = await (await fetch('https://api.llama.fi/protocols', { signal: AbortSignal.timeout(30000) })).json();

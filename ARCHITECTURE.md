@@ -23,6 +23,17 @@ is dated, and `verify.mjs` re-reads it live from DefiLlama's API
 (`api.llama.fi/protocols`, `chainTvls.Near`). Figures marked illustrative are
 explanation, dated, and not re-run.
 
+`verify.mjs` reads from three sources and reports each in its own bucket:
+
+| source | claims | decides the exit code |
+|---|---|---|
+| **chain** (NEAR mainnet RPC, §9) | owners (§2), `auto_update` (§3.3), code identity (§4, §5), the factory's version list and default (§5) | yes: diverged → 1, unknown → 2 |
+| **GitHub** (`api.github.com`, unauthenticated) | PR #233 merged and its merge commit; the fix two commits ahead of and none behind the deployed `2b0f34a38604`; both commit dates (§3.4) | yes, same rules; a failed read or rate limit is unknown → 2 |
+| **DefiLlama** (`api.llama.fi`) | TVL, the coverage count, the liquid-staking share (§2, §3.3) | no — warn-only |
+
+The chain says which build the factory publishes. GitHub says that build
+predates the fix. Neither source alone establishes "the fix is undeployed".
+
 Several claims in the first draft of this document were **wrong**, and they were
 found wrong by running them. They are kept in §12 with what the error was,
 because a specification that hides its own corrections is not a specification
