@@ -18,7 +18,9 @@ and **Watch** (alerts with no server, §18).
 Every factual claim below was produced by running a command against NEAR
 mainnet, and the command is printed beside it. `tools/verify.mjs` re-runs all of
 them and exits non-zero on any divergence. Nothing here is modelled, estimated,
-remembered, or quoted from a dashboard. Figures marked illustrative are
+or remembered. TVL figures are not quoted as static dashboard numbers: each one
+is dated, and `verify.mjs` re-reads it live from DefiLlama's API
+(`api.llama.fi/protocols`, `chainTvls.Near`). Figures marked illustrative are
 explanation, dated, and not re-run.
 
 Several claims in the first draft of this document were **wrong**, and they were
