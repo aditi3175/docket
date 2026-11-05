@@ -679,7 +679,8 @@ administering DAO reads `auto_update: true` from `get_factory_info` in the same
 run. On 2026-11-05 that is $199,412,924 (−3.4%). The structural claim — which
 three DAOs, and that they are `true` — is unchanged and verified; the dollar
 figure moved. Every $206.5M in this file is now $199.4M, dated, and `verify.mjs`
-warns when the live figure drifts more than 5% from the spec.
+warns when the live figure moves more than 15% from the spec — a warning about
+TVL movement, never a failed claim.
 
 ---
 

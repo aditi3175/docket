@@ -38,6 +38,8 @@ const PROTOCOLS = [
 ];
 const SPEC_TVL_DATE = '2026-11-05';
 const SPEC_HEADLINE = 199_412_924; // §3.3 — sum of the auto_update:true protocols
+// TVL moves daily. Beyond this relative move from the spec figure verify.mjs warns; it never fails.
+const TVL_DRIFT_WARN = 0.15;
 
 // §5 — code identity per DAO (and the factory itself)
 const CODE = [
@@ -134,7 +136,7 @@ if (llama.status !== 'ok') warnings.push(`DefiLlama unreachable (${llama.reason}
 tvl.forEach((t, i) => {
   if (t.status !== 'ok') { if (llama.status === 'ok') warnings.push(`${PROTOCOLS[i].slug}: ${t.reason}`); return; }
   const drift = (t.usd - PROTOCOLS[i].specTvl) / PROTOCOLS[i].specTvl;
-  if (Math.abs(drift) > 0.05) warnings.push(`${PROTOCOLS[i].name} TVL drifted ${(drift * 100).toFixed(1)}% from spec (${SPEC_TVL_DATE})`);
+  if (Math.abs(drift) > TVL_DRIFT_WARN) warnings.push(`${PROTOCOLS[i].name} TVL moved ${(drift * 100).toFixed(1)}% from the spec figure (${SPEC_TVL_DATE})`);
 });
 
 // ---- print ----------------------------------------------------------------------------------
@@ -203,7 +205,7 @@ console.log(`\nClaims: ${ok.length} confirmed, ${bad.length} diverged, ${unk.len
 for (const c of ok) console.log(`  ✓ ${c.section} ${c.what}`);
 for (const c of bad) console.log(`  ✗ DIVERGED ${c.section} ${c.what}\n      spec:    ${JSON.stringify(c.expected)}\n      mainnet: ${JSON.stringify(c.actual)}`);
 for (const c of unk) console.log(`  ? UNKNOWN  ${c.section} ${c.what} — ${c.unknownReason}`);
-if (warnings.length) { console.log(`\nWarnings (do not affect exit code):`); for (const w of warnings) console.log(`  ! ${w}`); }
+if (warnings.length) { console.log(`\nWarnings — TVL movement or DefiLlama availability, not failed claims (exit code unaffected; drift threshold ${TVL_DRIFT_WARN * 100}%):`); for (const w of warnings) console.log(`  ! ${w}`); }
 console.log(`\nRPC: ${rpc.stats.requests} requests, max ${rpc.stats.maxActive} concurrent, ${rpc.stats.cacheHits} cache hits, ${rpc.stats.coalesced} coalesced`);
 
 process.exitCode = bad.length ? 1 : unk.length ? 2 : 0;
