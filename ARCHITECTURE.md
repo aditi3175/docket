@@ -863,6 +863,13 @@ chain cold, stop before building anything else.
 The finding says the safe setting is reachable and almost nobody reaches it
 (§3.3). This section makes it one proposal away.
 
+The opt-out is not a stopgap that PR #233 will make redundant. Even once the fix
+ships, a factory update deploys **with no vote** after its two-week delay
+(§3.4). The delay gives members time to notice, not a vote. Setting
+`auto_update: false` is the only path that restores a vote: with it,
+the DAO's `update()` rejects the factory as caller, so new code arrives only
+through a proposal the DAO passes itself.
+
 ### 16.1 What gets drafted
 
 Sputnik v3.x has a `FactoryInfoUpdate` proposal kind (§6.4) gated by the
