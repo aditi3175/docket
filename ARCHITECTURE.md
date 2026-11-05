@@ -680,7 +680,9 @@ said so, which is the error.
 where the category boundaries fall, and moving one boundary moves the answer
 across the whole range. On the 2026-11-05 snapshot: DefiLlama's literal top 10 is
 dominated by `binance-cex`; keeping `near-bridge` (category `Canonical Bridge`,
-not `Bridge`) gives 88.9%; excluding every `*Bridge*` category gives 100% — by
+not `Bridge`) gives 88.9% (illustrative, 2026-11-05 snapshot, not checked by
+`verify.mjs`); excluding every `*Bridge*` category gives 100% (illustrative,
+2026-11-05 snapshot, not checked by `verify.mjs`) — by
 construction, because the rule then selects exactly the five protocols being
 measured. A number that the choice of filter decides is not a finding.
 
