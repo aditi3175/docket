@@ -42,7 +42,7 @@ submission is a bug.
 |---|---|---|---|
 | 1 | **All 5 of 5** NEAR DeFi protocols with ≥ $10M NEAR-only TVL (excluding CEX, Chain and \*Bridge\* categories) are administered by a Sputnik DAO | **$382.1M** (2026-11-05) | owner resolution across 5 protocols; the rule and every exclusion in §2 |
 | 2 | Sputnik's `auto_update` lets the factory replace a DAO's code with **no vote**, and **`true` is the default** | **$199.4M** (2026-11-05) verified, systemic in principle | deployed v3.2 source + on-chain census |
-| 3 | The authority path from three private keys to $199.4M is public, and nothing surfaces it | — | `view_access_key_list` + the above |
+| 3 | The authority path from three private keys to $199.4M is public. NEAR core fixed it on 2026-03-24 (sputnik-dao-contract PR #233: a two-week delay plus a visible proposal), and **the factory has never shipped the fix** | — | `view_access_key_list` + `get_contracts_metadata` + `get_default_code_hash` + PR #233 (§3.4) |
 | 4 | Reading an account's `code_hash` no longer tells you what code it runs | all of NEAR | NEP-591 global contracts |
 
 Finding 2 is the headline. Finding 4 is the one that makes the tool non-trivial
@@ -246,10 +246,41 @@ holds **three full-access keys**. Not a DAO. Not a multisig contract.
                   └── $199,412,924 of user deposits (2026-11-05)
 ```
 
-Every edge is a public view call. **None of it is a bug.** `auto_update` is a
-documented field, the contract is open source, and the rescue-a-bricked-DAO
-rationale is sound. The finding is that the path has never been assembled, so
-the depositors at the end of it cannot see the shape of the trust they are in.
+Every edge is a public view call. `auto_update` is a documented field, the
+contract is open source, and the rescue-a-bricked-DAO rationale is sound.
+
+**NEAR core has seen this edge, and has fixed it.**
+
+```bash
+gh api repos/near-daos/sputnik-dao-contract/pulls/233 \
+  --jq '{user:.user.login,head:.head.ref,merged_at,merge_commit_sha}'
+  # -> frol, feat/delay-auto-updates, 2026-03-24T21:43:46Z, 9e96c75410a97a2ea463ec777d7b14fb446c6f0e
+gh api repos/near-daos/sputnik-dao-contract/compare/2b0f34a38604...9e96c75410a9 \
+  --jq '{status,ahead_by,behind_by}'
+  # -> "ahead", 2, 0   (the fix is not in the deployed commit)
+view sputnik-dao.near get_default_code_hash
+  # -> "DtHZA1mUmGYeScEaUoUZYQGGFHSMpnjMCvkr5U9hJXuF"   (v3.2, commit 2b0f34a38604)
+```
+
+PR #233, *"Factory auto-updates should not be applied immediately to counter the
+risk of taking control if the factory account is compromised"*, changes
+`update()` in `sputnikdao2/src/upgrade.rs`. When the factory starts an update, the DAO
+first creates an `UpgradeSelf` proposal for the incoming code hash. The code
+deploys only after that proposal has been `InProgress` for at least two weeks
+(`TWO_WEEKS_NS`). The fix **delays the upgrade and makes it visible. It does not add a
+vote**: after two weeks the code still deploys without one. The gate is skipped
+when the DAO's state cannot be read, which is the rescue case.
+
+**The fix has never reached the factory.** The deployed v3.2 build is commit
+`2b0f34a38604`, dated 2026-02-25. The fix is commit `9e96c75410a9`, dated
+2026-03-24, a month later. `get_contracts_metadata` lists no build after v3.2,
+and `get_default_code_hash` still returns v3.2. `verify.mjs` checks both (§5).
+
+So the finding is not that the path is unknown. **An acknowledged,
+already-fixed risk is undeployed**, and the depositors at the end of the path
+can see neither the risk nor that it was fixed. The prior work was found by
+the §14 novelty check, via an external review. §12.9 records what this
+paragraph used to say.
 
 ### 3.5 Why publishing this is safe
 
@@ -399,7 +430,9 @@ makes a decoded argument mean something. For every proposal Docket resolves:
 Exhaustive over all **17** `ProposalKind` variants in deployed v3.2 — verified
 by parsing the enum at commit `2b0f34a38604`, not by listing from memory. Each
 kind is gated by a permission string `{kind_label}:{action_label}`, matched with
-wildcards `kind:*`, `*:action` and `*:*`.
+wildcards `kind:*`, `*:action` and `*:*`. All 17 have an explicit label in
+`to_policy_label()` (`sputnikdao2/src/proposals.rs`, lines 125–147 at
+`2b0f34a38604`). None falls through to a default.
 
 | kind | policy label | reaches | risk |
 |---|---|---|---|
@@ -408,7 +441,7 @@ wildcards `kind:*`, `*:action` and `*:*`.
 | `UpgradeSelf` | `upgrade_self` | the DAO's own code | critical |
 | `ChangePolicy` | `policy` | every future vote | critical |
 | `FactoryInfoUpdate` | `factory_info_update` | **`auto_update` itself** | critical |
-| `ChangePolicyUpdateDefaultVotePolicy` | *(default label)* | every future vote | critical |
+| `ChangePolicyUpdateDefaultVotePolicy` | `policy_update_default_vote_policy` | every future vote | critical |
 | `ChangePolicyUpdateParameters` | `policy_update_parameters` | vote parameters | high |
 | `ChangePolicyAddOrUpdateRole` | `policy_add_or_update_role` | who may propose/vote | high |
 | `ChangePolicyRemoveRole` | `policy_remove_role` | who may propose/vote | high |
@@ -452,22 +485,36 @@ to argue against.
 
 ## 7. The evidence, in production
 
-### 7.1 Two proposals, same words, different target
+### 7.1 Two pairs of proposals, same words, different target
 
-`burrow.sputnik-dao.near` — the DAO that administers $154.1M:
+`burrow.sputnik-dao.near`, the DAO that administers Rhea Lend (§2):
+
+```bash
+curl -s -X POST https://free.rpc.fastnear.com -H 'Content-Type: application/json' \
+ -d '{"jsonrpc":"2.0","id":1,"method":"query","params":{"request_type":"call_function",
+ "finality":"final","account_id":"burrow.sputnik-dao.near","method_name":"get_proposals",
+ "args_base64":"'$(printf '{"from_index":1740,"limit":5}' | base64)'"}}'
+```
 
 ```
 #1741  FunctionCall  FAILED    "Set stNEAR(meta-pool.near) supplied_limit to 6M"
        receiver: br.private-mainnet.ref-dev-team.near   method: update_asset_limit
+#1742  FunctionCall  FAILED    "Set rNEAR(lst.rhealab.near) supplied_limit to 15.5M"
+       receiver: br.private-mainnet.ref-dev-team.near   method: update_asset_limit
 #1743  FunctionCall  APPROVED  "Set stNEAR(meta-pool.near) supplied_limit to 6M"
+       receiver: contract.main.burrow.near              method: update_asset_limit
+#1744  FunctionCall  APPROVED  "Set rNEAR(lst.rhealab.near) supplied_limit to 15.5M"
        receiver: contract.main.burrow.near              method: update_asset_limit
 ```
 
-Identical descriptions, identical method, identical arguments, **different
-target contracts**. One pointed at a dev account and failed; one pointed at the
-live lending contract and passed. `update_asset_limit` sets a risk parameter on
-a $154M market. A decoder shows you the arguments; it does not tell you the
-proposal you approved last week said the same words and went somewhere else.
+**Two pairs**, each with an identical description, method and arguments but
+**different target contracts**. In each pair, one proposal pointed at a dev
+account and failed, and the other pointed at the live lending contract and
+passed. Two pairs make this a repeated pattern rather than a single anecdote,
+and both are inputs to §6.5's sibling-collision check. `update_asset_limit` sets a risk
+parameter on the live lending market. A decoder shows you the arguments. It does not
+tell you that a proposal you approved last week said the same words and went
+somewhere else.
 
 ### 7.2 A vote cast inside another organisation
 
@@ -604,18 +651,25 @@ than no tool.
 
 ---
 
-## 11. Responsible disclosure
+## 11. Reporting — the fix is undeployed
 
-Finding 2 concerns $199.4M of live deposits (2026-11-05). **Disclosure first, repository
-public second.**
+Finding 2 concerns $199.4M of live deposits (2026-11-05). The risk is not
+unknown. NEAR core acknowledged it and fixed it in PR #233 (§3.4), and the fix
+has never been published to the factory. So this is **reporting, not
+disclosure**: Docket reports that an existing fix is undeployed, says who is
+exposed until it ships, and gives the opt-out that covers the gap. The aim is
+to work with the maintainers, not against them.
 
-1. Write the technical note: the `update` assertion, the `auto_update: true`
-   default, the three affected DAOs, the factory's three full-access keys, with
-   reproduction commands.
-2. Send to Meta Pool, Stader, LiNEAR and NEAR's security contact at the same
-   time, with a link to the opt-out flow (§16) for their DAO, so the note
-   arrives with its remedy. These are public configuration facts rather than an exploit, so the
-   embargo is a courtesy — but it is the right order.
+1. Write the note: PR #233 and its merge date; the deployed build
+   (`2b0f34a38604`) and `get_default_code_hash`, showing the fix is absent; the
+   `auto_update: true` default; the three affected DAOs and their TVL; the
+   factory's three full-access keys. Include reproduction commands for each.
+2. Send it at the same time to the sputnik-dao-contract maintainers (including
+   the PR #233 author), NEAR's security contact, Meta Pool, Stader and LiNEAR,
+   with a link to the opt-out flow (§16) for each DAO. The note says: *your fix
+   is not deployed, these DAOs are affected, and this opt-out works until it
+   is.* Every fact in it is a public configuration fact, so no embargo is needed.
+   Sending before the repository is public is still the courteous order.
 3. Publish at submission with every response included verbatim, including
    "no response".
 
@@ -711,6 +765,28 @@ figure moved. Every $206.5M in this file is now $199.4M, dated, and `verify.mjs`
 warns when the live figure moves more than 15% from the spec — a warning about
 TVL movement, never a failed claim.
 
+### 12.9 "The path has never been assembled, and nothing surfaces it." **Wrong.**
+
+§1 finding 3 said nothing surfaces the path. §3.4 said "the path has never been
+assembled". Both were false. NEAR core assembled the path and fixed it:
+`near-daos/sputnik-dao-contract` PR #233 (`frol`, branch
+`feat/delay-auto-updates`, merged 2026-03-24, merge commit `9e96c75410a9`) adds a
+two-week delay and a visible `UpgradeSelf` proposal before a factory auto-update
+can deploy.
+
+**What survives, and is stronger:** the dates. The deployed v3.2 is
+`2b0f34a38604`, dated 2026-02-25, a month *before* the fix. `get_contracts_metadata`
+stops at v3.2, and `get_default_code_hash` still returns it. The fix has never been
+published to the factory. The finding changes from "an unseen risk" to "an
+acknowledged, fixed risk whose fix is undeployed", and §11 changes from
+disclosure to reporting.
+
+Caught by an external review (2026-11-05) that ran the §14 novelty check this
+spec had scheduled but not yet completed. Every fact the review supplied was
+re-run before it was written here (§3.4 has the commands). The review also caught that §6.4 listed
+`ChangePolicyUpdateDefaultVotePolicy` as *(default label)*. It has an explicit
+label, `policy_update_default_vote_policy`, at `2b0f34a38604`.
+
 ---
 
 ## 13. What Docket is not
@@ -789,10 +865,19 @@ Sputnik v3.x has a `FactoryInfoUpdate` proposal kind (§6.4) gated by the
         "factory_id": "sputnik-dao.near", "auto_update": false } } } } }
 ```
 
-**[verify]** the exact variant and field names against the enum at
-`2b0f34a38604` and against each code version in §5 (v3.0, v3.1 and v3.2 may
-differ). The drafter picks the shape by the DAO's resolved version and refuses
-to draft for a version it has not been tested against.
+The shape matches the source at every v3.x build in §5:
+`FactoryInfoUpdate { factory_info: FactoryInfo }` with
+`FactoryInfo { factory_id: AccountId, auto_update: bool }`. This was checked at
+`2b0f34a38604` (v3.2, `proposals.rs:112`, `lib.rs:54`), `3d568f9517a8` (v3.1,
+`proposals.rs:107`, `upgrade.rs:24`) and `86cc77a0808a` (v3.0,
+`proposals.rs:107`, `upgrade.rs:21`). v3.2 adds `#[serde(deny_unknown_fields)]`
+to `FactoryInfo`, so the drafter must send exactly these two fields.
+
+**[verify]** that a proposal of this shape is accepted by `add_proposal` and,
+once approved, leaves `get_factory_info` reading `auto_update: false` on
+mainnet (the demo DAO, §16.5). Reading the source is not the same as running
+it. The drafter picks the shape by the DAO's resolved version and refuses to draft for a
+version it has not been tested against.
 
 ### 16.2 What the screen shows, in order
 
@@ -914,6 +999,16 @@ message names the DAO and links its Docket page.
 
 > **$199.4M of NEAR liquid staking is governed by a vote that three keys can
 > skip — and `true` was the default.**
+
+And what makes it a report rather than an accusation:
+
+> **NEAR core found this and fixed it on 24 March 2026, with a two-week delay and
+> a visible proposal. The factory has never shipped the fix. None of the three DAOs
+> over $199.4M runs it, and `get_default_code_hash` still returns the February
+> build.**
+
+(Not "$199.4M runs the February build". Only `stnear` runs v3.2.
+`stader-nearx` runs v3.0 and `linear` runs v3.1 (§5). All three predate the fix.)
 
 And the v2 sentence, once §16.5 is done:
 
