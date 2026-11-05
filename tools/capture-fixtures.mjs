@@ -1,6 +1,8 @@
 // Records raw mainnet responses into test/fixtures/ so tests replay real data (I1).
 // Uses plain fetch, not rpc.js, so the recording is independent of the code under test.
-// Usage: node tools/capture-fixtures.mjs
+// Usage: node tools/capture-fixtures.mjs            record everything (incl. DefiLlama)
+//        node tools/capture-fixtures.mjs <substr>…  record only RPC jobs whose name contains a
+//                                                    substring; DefiLlama snapshot left as is
 import { writeFile, mkdir } from 'node:fs/promises';
 
 const DATE = new Date().toISOString().slice(0, 10);
@@ -37,6 +39,8 @@ jobs.push(['call.sputnik-dao.near.get_default_code_hash', FASTNEAR, call('sputni
 for (const c of CONTRACTS) for (const g of OWNER_GETTERS) jobs.push([`call.${c}.${g}`, FASTNEAR, call(c, g)]);
 jobs.push(["call.docket-fixture-missing-account.near.get_owner", FASTNEAR, call("docket-fixture-missing-account.near", "get_owner")]);
 for (const d of DAOS) jobs.push([`call.${d}.get_factory_info`, FASTNEAR, call(d, 'get_factory_info')]);
+// §2: accounts that expose no owner getter
+for (const c of ['intents.near', 'wrap.near']) for (const g of OWNER_GETTERS) jobs.push([`call.${c}.${g}`, FASTNEAR, call(c, g)]);
 // Error shapes from the failover endpoints, so rpc.js classifies them from data, not guesses.
 for (const e of OTHERS) {
   const host = new URL(e).host;
@@ -45,8 +49,11 @@ for (const e of OTHERS) {
   jobs.push([`${host}.view_account.stnear.sputnik-dao.near`, e, account('stnear.sputnik-dao.near')]);
 }
 
+const only = process.argv.slice(2);
+const selected = only.length ? jobs.filter(([name]) => only.some((s) => name.includes(s))) : jobs;
+
 await mkdir(DIR, { recursive: true });
-for (const [name, endpoint, params] of jobs) {
+for (const [name, endpoint, params] of selected) {
   try {
     const rec = await post(endpoint, params);
     await writeFile(new URL(`${DATE}.${name}.json`, DIR), JSON.stringify(rec, null, 2) + '\n');
@@ -57,7 +64,7 @@ for (const [name, endpoint, params] of jobs) {
 }
 
 // DefiLlama /protocols is several MB; keep only entries that report NEAR TVL. Entries are unmodified.
-try {
+if (!only.length) try {
   const all = await (await fetch('https://api.llama.fi/protocols', { signal: AbortSignal.timeout(30000) })).json();
   const near = all.filter((p) => p.chainTvls && typeof p.chainTvls.Near === 'number');
   const rec = { endpoint: 'https://api.llama.fi/protocols', captured_at: new Date().toISOString(),

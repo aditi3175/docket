@@ -14,13 +14,13 @@
 // Enforces: I1 (every number printed traces to a call made in this run, with its date),
 //           I2 (unknown is its own bucket), I3/I4/I12 via resolve.js.
 //
-// Coverage today: §2, §3.3 (auto_update, headline sum, liquid-staking share), §4, §5. Other sections: not yet.
+// Coverage today: §1/§2 (owners, coverage), §3.3 (auto_update, headline sum, liquid-staking share), §4, §5. Other sections: not yet.
 // Never edit an expectation here to make a check pass — report the divergence (CLAUDE.md).
 
 import { pathToFileURL } from 'node:url';
 import { createRpc } from '../web/assets/rpc.js';
 import { resolveOwner, codeIdentity, loadFactoryVersions, factoryInfo, ZERO_HASH } from '../web/assets/resolve.js';
-import { fetchDefiLlama, nearTvlFrom, sumTvl, topByNearTvl, categoryNearTvl } from '../web/assets/value.js';
+import { fetchDefiLlama, nearTvlFrom, sumTvl, categoryNearTvl, applyCoverageRule, COVERAGE_RULE } from '../web/assets/value.js';
 
 const FACTORY = 'sputnik-dao.near';
 
@@ -61,13 +61,11 @@ const FACTORY_VERSIONS = [
 ];
 const DEFAULT_CODE_HASH = 'DtHZA1mUmGYeScEaUoUZYQGGFHSMpnjMCvkr5U9hJXuF';
 
-// §2 — "major NEAR DeFi", the denominator of the share. Set to a slug list only once the
-// definition is unambiguous; until then the share prints as unknown (§2, §12.7).
-const MAJOR_NEAR_DEFI = {
-  slugs: null,
-  reason: "DefiLlama's top 10 by NEAR-only TVL includes CEX and Canonical Bridge entries; " +
-          'whether those count as "DeFi" is not defined',
-};
+// §1/§2 — coverage: "All 5 of 5 NEAR DeFi protocols >= $10M (COVERAGE_RULE) are administered by
+// a Sputnik DAO". N is computed live from DefiLlama; no share is computed (§12.7).
+const SPEC_COVERAGE_N = 5;
+// §2 — contracts that expose no owner through any §6.2 getter, and are excluded rather than guessed at
+const NO_OWNER = ['intents.near', 'wrap.near'];
 
 function usdFmt(n) { return `$${Math.round(n).toLocaleString('en-US')}`; }
 const pctFmt = (x) => `${(100 * x).toFixed(1)}%`;
@@ -89,11 +87,12 @@ export async function collect({ rpc = createRpc(), llamaFetch } = {}) {
     loadFactoryVersions(rpc, FACTORY),
     fetchDefiLlama(llamaFetch ? { fetch: llamaFetch } : {}),
   ]);
-  const [owners, infos, codes, stnearRaw] = await Promise.all([
+  const [owners, infos, codes, stnearRaw, noOwner] = await Promise.all([
     Promise.all(PROTOCOLS.map((p) => resolveOwner(rpc, p.contract))),
     Promise.all(PROTOCOLS.map((p) => factoryInfo(rpc, p.dao))),
     Promise.all(CODE.map((c) => codeIdentity(rpc, c.account, factory))),
     rpc.viewAccount('stnear.sputnik-dao.near'),
+    Promise.all(NO_OWNER.map((id) => resolveOwner(rpc, id))),
   ]);
 
   // §5 factory list
@@ -135,6 +134,14 @@ export async function collect({ rpc = createRpc(), llamaFetch } = {}) {
   // §4 specifically: the trap — zero code_hash, contract running anyway
   if (stnearRaw.status !== 'ok') claim('§4', 'stnear code_hash is 32 zero bytes', ZERO_HASH, null, stnearRaw.reason ?? stnearRaw.status);
   else claim('§4', 'stnear code_hash is 32 zero bytes', ZERO_HASH, stnearRaw.value.code_hash);
+
+  // §2 — no owner through any §6.2 getter
+  NO_OWNER.forEach((id, i) => {
+    const o = noOwner[i];
+    const what = `${id} exposes no owner via the §6.2 getters`;
+    if (o.status === 'unknown') claim('§2', what, 'none', null, `${o.at}: ${o.reason}`);
+    else claim('§2', what, 'none', o.status === 'ok' ? `${o.owner} via ${o.via}` : o.status);
+  });
 
   // ---- TVL (warn-only) ----
   const tvl = PROTOCOLS.map((p) => (llama.status === 'ok' ? nearTvlFrom(llama.protocols, p.slug) : { status: 'unknown', slug: p.slug, reason: llama.reason }));
@@ -186,7 +193,37 @@ export async function collect({ rpc = createRpc(), llamaFetch } = {}) {
   tvlClaim('§3.3', 'share of NEAR liquid staking held by auto_update:true protocols', SPEC_LS_SHARE,
     lsShareUnknown ? undefined : lsTrue.usd / ls.usd, pctFmt, lsShareUnknown);
 
-  return { started, claims, warnings, factory, llama, owners, infos, codes, tvl, numTerms, numerator, autoTrue, headline, ls, lsTrue };
+  // §1/§2 coverage: every protocol the rule selects, checked for a Sputnik owner. Never rounded up:
+  // a protocol with no mapped contract, an unreadable owner, or a non-Sputnik owner is named and
+  // not counted. Warn-only because N moves with TVL; the owner claims above stay structural.
+  const coverage = llama.status === 'ok' ? applyCoverageRule(llama.protocols) : null;
+  const bySlug = new Map(PROTOCOLS.map((p, i) => [p.slug, i]));
+  const covRows = (coverage?.included ?? []).map((e) => {
+    const i = bySlug.get(e.slug);
+    if (i === undefined) return { ...e, sputnik: false, why: 'owner unknown: no contract mapped for this slug' };
+    const o = owners[i];
+    if (sputnikAdministered[i] === true) return { ...e, sputnik: true, owner: o.owner };
+    if (sputnikAdministered[i] === 'unknown') return { ...e, sputnik: false, why: `owner unknown${o.status === 'unknown' ? ` (${o.at}: ${o.reason})` : ''}` };
+    return { ...e, sputnik: false, why: o.status === 'ok' ? `owner ${o.owner} does not run factory-published Sputnik code` : `no owner (${o.status})` };
+  });
+  const covM = covRows.filter((r) => r.sputnik).length;
+  const covN = covRows.length;
+  {
+    const what = `NEAR DeFi protocols >= $${COVERAGE_RULE.minUsd / 1e6}M (NEAR-only, excl. ${COVERAGE_RULE.excludeCategories.join(', ')}, *${COVERAGE_RULE.excludeCategorySubstring}*) administered by a Sputnik DAO`;
+    const fmt = ([m, n]) => `${m} of ${n}`;
+    let status = 'unverifiable';
+    if (coverage) {
+      status = covM === covN && covN === SPEC_COVERAGE_N ? 'read' : 'moved';
+      if (status === 'moved') {
+        const gaps = covRows.filter((r) => !r.sputnik).map((r) => `${r.slug}: ${r.why}`);
+        warnings.push(`coverage is ${covM} of ${covN} (spec: ${SPEC_COVERAGE_N} of ${SPEC_COVERAGE_N})${gaps.length ? ' — ' + gaps.join('; ') : ''}`);
+      }
+    }
+    claims.push({ kind: 'tvl', section: '§1/§2', what, expected: [SPEC_COVERAGE_N, SPEC_COVERAGE_N],
+      actual: coverage ? [covM, covN] : undefined, status, unknownReason: coverage ? undefined : llama.reason, fmt });
+  }
+
+  return { started, claims, warnings, factory, llama, owners, infos, codes, tvl, numTerms, numerator, autoTrue, headline, ls, lsTrue, coverage, covRows, covM, covN, noOwner };
 }
 
 // Exit code from structural claims only; TVL never decides it.
@@ -201,7 +238,7 @@ const usd = usdFmt;
 const pad = (s, n) => String(s).padEnd(n);
 
 function print(r, rpc) {
-  const { claims, warnings, factory, llama, owners, codes, tvl, numTerms, numerator, autoTrue, headline, ls, lsTrue } = r;
+  const { claims, warnings, factory, llama, owners, codes, tvl, numTerms, numerator, autoTrue, headline, ls, lsTrue, coverage, covRows, covM, covN, noOwner } = r;
   const llamaDate = llama.readAt.slice(0, 10);
   console.log(`Docket verify — mainnet, ${r.started.toISOString()}\n`);
   console.log(`§2  who administers NEAR DeFi   (TVL: DefiLlama chainTvls.Near, read ${llama.readAt})\n`);
@@ -216,16 +253,17 @@ function print(r, rpc) {
 
   console.log();
   console.log(`Administered by Sputnik DAOs: ${numerator.status === 'ok' ? usd(numerator.usd) : 'unknown'}  (${numTerms.length} of ${PROTOCOLS.length} protocols, DefiLlama ${llamaDate})`);
-  if (MAJOR_NEAR_DEFI.slugs && llama.status === 'ok') {
-    const den = sumTvl(MAJOR_NEAR_DEFI.slugs.map((s) => nearTvlFrom(llama.protocols, s)));
-    if (den.status === 'ok' && numerator.status === 'ok') console.log(`Share of major NEAR DeFi: ${(100 * numerator.usd / den.usd).toFixed(1)}% of ${usd(den.usd)} (${llamaDate})`);
-    else console.log('Share of major NEAR DeFi: unknown (a term is unreadable)');
-  } else {
-    console.log(`Share of major NEAR DeFi: unknown — ${MAJOR_NEAR_DEFI.slugs ? 'DefiLlama unreachable' : MAJOR_NEAR_DEFI.reason}`);
-  }
-  if (llama.status === 'ok') {
-    console.log(`\n  DefiLlama top 10 by NEAR-only TVL, ${llamaDate} (for the denominator definition):`);
-    for (const t of topByNearTvl(llama.protocols, 10)) console.log(`    ${pad(usd(t.usd), 14)} ${pad(t.slug, 20)} ${t.category}`);
+  NO_OWNER.forEach((id, i) => console.log(`No owner via any §6.2 getter: \`${id}\` -> ${noOwner[i].status}`));
+
+  const rule = `NEAR-only TVL >= ${usd(COVERAGE_RULE.minUsd)}, excluding DefiLlama categories ${COVERAGE_RULE.excludeCategories.join(', ')} and any category containing "${COVERAGE_RULE.excludeCategorySubstring}"`;
+  console.log(`\nCoverage — rule: ${rule} (DefiLlama ${llamaDate})`);
+  if (!coverage) console.log(`  unknown — DefiLlama unreachable (${llama.reason})`);
+  else {
+    const all = covM === covN;
+    console.log(`  ${all ? 'All ' : ''}${covM} of ${covN} NEAR DeFi protocols selected by the rule are administered by a Sputnik DAO.`);
+    for (const c of covRows) console.log(`    ${c.sputnik ? '✓' : '✗'} ${pad(c.slug, 20)} ${pad(c.category, 16)} ${pad(usd(c.usd), 14)} ${c.sputnik ? c.owner : c.why}`);
+    console.log(`  Excluded by the rule (>= ${usd(COVERAGE_RULE.minUsd)}), shown so the filter is visible:`);
+    for (const c of coverage.excluded) console.log(`    - ${pad(c.slug, 20)} ${pad(c.category, 16)} ${usd(c.usd)}`);
   }
 
   console.log(`\n§3.3  auto_update: true — factory can replace the code with no vote`);

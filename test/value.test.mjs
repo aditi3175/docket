@@ -1,7 +1,7 @@
 // value.js — I1/I2 for TVL, replaying DefiLlama /protocols recorded 2026-11-05 (NEAR entries).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { nearTvlFrom, sumTvl, topByNearTvl, fetchDefiLlama, categoryNearTvl } from '../web/assets/value.js';
+import { nearTvlFrom, sumTvl, fetchDefiLlama, categoryNearTvl, applyCoverageRule, isExcludedCategory, COVERAGE_RULE } from '../web/assets/value.js';
 import { loadFixture, jsonResponse } from './helpers.mjs';
 
 const protocols = loadFixture('2026-11-05.defillama.protocols.near.json').body;
@@ -46,10 +46,32 @@ test('categoryNearTvl: "Liquid Staking" on NEAR, exact category match', () => {
   assert.equal(categoryNearTvl(protocols, 'No Such Category').status, 'unknown');
 });
 
-test('topByNearTvl is sorted descending', () => {
-  const top = topByNearTvl(protocols, 10);
-  assert.equal(top.length, 10);
-  for (let i = 1; i < top.length; i++) assert.ok(top[i - 1].usd >= top[i].usd);
+test('coverage rule on the 2026-11-05 snapshot: the five §2 protocols in, seven entries excluded', () => {
+  const { included, excluded } = applyCoverageRule(protocols);
+  assert.deepEqual(included.map((p) => p.slug), ['rhea-lend', 'meta-pool-near', 'rhea-lst', 'linear-protocol', 'rhea-dex']);
+  assert.deepEqual(excluded.map((p) => [p.slug, p.category]), [
+    ['binance-cex', 'CEX'], ['near-intents', 'Bridge'], ['near-bridge', 'Canonical Bridge'],
+    ['bitget', 'CEX'], ['kucoin', 'CEX'], ['gate', 'CEX'], ['bitfinex', 'CEX']]);
+  for (const list of [included, excluded]) for (let i = 1; i < list.length; i++) assert.ok(list[i - 1].usd >= list[i].usd);
+  assert.ok([...included, ...excluded].every((p) => p.usd >= COVERAGE_RULE.minUsd));
+});
+
+test('coverage rule: CEX and Chain exact, Bridge by substring', () => {
+  assert.equal(isExcludedCategory('CEX'), true);
+  assert.equal(isExcludedCategory('Chain'), true);
+  assert.equal(isExcludedCategory('Bridge'), true);
+  assert.equal(isExcludedCategory('Canonical Bridge'), true);
+  assert.equal(isExcludedCategory('Cross Chain Bridge'), true);   // SYNTHETIC category name
+  assert.equal(isExcludedCategory('Chain Abstraction'), false);   // "Chain" is exact, not substring
+  assert.equal(isExcludedCategory('Liquid Staking'), false);
+  assert.equal(isExcludedCategory(null), false);
+});
+
+test('coverage rule: $10M floor is inclusive', () => {
+  // SYNTHETIC entries at the boundary
+  const mk = (slug, usd) => ({ slug, name: slug, category: 'Dexs', chainTvls: { Near: usd } });
+  const { included } = applyCoverageRule([mk('at', 10_000_000), mk('below', 9_999_999.99)]);
+  assert.deepEqual(included.map((p) => p.slug), ['at']);
 });
 
 test('I2: DefiLlama down is unknown with a reason and a timestamp (I1)', async () => {

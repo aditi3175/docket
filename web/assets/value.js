@@ -55,11 +55,29 @@ export function categoryNearTvl(protocols, category) {
   return { status: 'ok', usd: Math.round(members.reduce((s, m) => s + m.usd, 0)), members };
 }
 
-// Top N protocols by NEAR-only TVL — used to show what the literal "top 10" reading contains.
-export function topByNearTvl(protocols, n) {
-  return protocols
-    .filter((p) => typeof p.chainTvls?.Near === 'number')
-    .sort((a, b) => b.chainTvls.Near - a.chainTvls.Near)
-    .slice(0, n)
-    .map((p) => ({ slug: p.slug, name: p.name, category: p.category ?? null, usd: p.chainTvls.Near }));
+// §2 coverage rule: NEAR DeFi protocols at or above a NEAR-only TVL floor, excluding categories
+// that are custody or chain-level rather than DeFi. Exclusions are returned too, so the filter is
+// shown rather than trusted.
+export const COVERAGE_RULE = Object.freeze({
+  minUsd: 10_000_000,
+  excludeCategories: Object.freeze(['CEX', 'Chain']), // exact match
+  excludeCategorySubstring: 'Bridge',                  // Bridge, Canonical Bridge, any future *Bridge*
+});
+
+export function isExcludedCategory(category, rule = COVERAGE_RULE) {
+  return rule.excludeCategories.includes(category) ||
+    (typeof category === 'string' && category.includes(rule.excludeCategorySubstring));
+}
+
+// -> { included: [{slug,name,category,usd}], excluded: [...] }, each sorted by NEAR TVL desc,
+//    both limited to protocols at or above rule.minUsd.
+export function applyCoverageRule(protocols, rule = COVERAGE_RULE) {
+  const above = protocols
+    .filter((p) => typeof p.chainTvls?.Near === 'number' && p.chainTvls.Near >= rule.minUsd)
+    .map((p) => ({ slug: p.slug, name: p.name, category: p.category ?? null, usd: p.chainTvls.Near }))
+    .sort((a, b) => b.usd - a.usd);
+  return {
+    included: above.filter((p) => !isExcludedCategory(p.category, rule)),
+    excluded: above.filter((p) => isExcludedCategory(p.category, rule)),
+  };
 }

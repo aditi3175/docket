@@ -6,8 +6,8 @@ import { createRpc } from '../web/assets/rpc.js';
 import { collect, exitCodeFor } from '../tools/verify.mjs';
 import { replayFetch, loadFixture, jsonResponse, noSleep } from './helpers.mjs';
 
-const STRUCTURAL = 24;
-const TVL = 2;
+const STRUCTURAL = 26;
+const TVL = 3;
 const TOTAL = STRUCTURAL + TVL;
 const blocked = async () => { throw new TypeError('blocked'); };
 const llamaFixture = async () => jsonResponse(loadFixture('2026-11-05.defillama.protocols.near.json').body);
@@ -25,9 +25,38 @@ test('§3.3 liquid staking from the recorded DefiLlama snapshot: 99.4% held by a
   const r = await collect({ rpc: createRpc({ fetch: replayFetch(), sleep: noSleep }), llamaFetch: llamaFixture });
   const tvl = r.claims.filter((c) => c.kind === 'tvl');
   assert.equal(tvl.length, TVL);
-  assert.deepEqual(tvl.map((c) => c.status), ['read', 'read']);
+  assert.deepEqual(tvl.map((c) => c.status), ['read', 'read', 'read']);
   assert.equal(r.ls.usd, 200_526_770);
   assert.equal((100 * r.lsTrue.usd / r.ls.usd).toFixed(1), '99.4');
+});
+
+test('§1/§2 coverage on the snapshot: all 5 of 5, exclusions listed', async () => {
+  const r = await collect({ rpc: createRpc({ fetch: replayFetch(), sleep: noSleep }), llamaFetch: llamaFixture });
+  assert.deepEqual([r.covM, r.covN], [5, 5]);
+  assert.ok(r.coverage.excluded.some((e) => e.slug === 'near-intents' && e.category === 'Bridge'));
+  assert.deepEqual(r.noOwner.map((o) => o.status), ['none', 'none']);
+});
+
+test('coverage: an unreadable owner is named and not counted — 4 of 5, never rounded up', async () => {
+  const f = replayFetch({ override: (p) => (p.account_id === 'meta-pool.near' ? jsonResponse({}, 503) : undefined) });
+  const r = await collect({ rpc: createRpc({ fetch: f, sleep: noSleep }), llamaFetch: llamaFixture });
+  assert.deepEqual([r.covM, r.covN], [4, 5]);
+  const gap = r.covRows.find((c) => !c.sputnik);
+  assert.equal(gap.slug, 'meta-pool-near');
+  assert.match(gap.why, /owner unknown/);
+  assert.equal(r.claims.find((c) => c.section === '§1/§2').status, 'moved');
+  assert.ok(r.warnings.some((w) => /4 of 5/.test(w) && /meta-pool-near/.test(w)));
+  assert.equal(exitCodeFor(r.claims), 2); // the structural owner claim is unknown
+});
+
+test('coverage: a protocol the rule selects but Docket has no contract for is named — 5 of 6', async () => {
+  // SYNTHETIC DefiLlama entry added to the recorded snapshot
+  const body = [...loadFixture('2026-11-05.defillama.protocols.near.json').body,
+    { slug: 'docket-synthetic-lend', name: 'Synthetic', category: 'Lending', chainTvls: { Near: 12_000_000 } }];
+  const r = await collect({ rpc: createRpc({ fetch: replayFetch(), sleep: noSleep }), llamaFetch: async () => jsonResponse(body) });
+  assert.deepEqual([r.covM, r.covN], [5, 6]);
+  assert.match(r.covRows.find((c) => c.slug === 'docket-synthetic-lend').why, /no contract mapped/);
+  assert.equal(exitCodeFor(r.claims), 0); // coverage is warn-only
 });
 
 test('TVL claims never decide the exit code, even when they move', async () => {

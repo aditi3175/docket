@@ -37,7 +37,7 @@ submission is a bug.
 
 | # | finding | exposure | how it was established |
 |---|---|---|---|
-| 1 | Five major NEAR DeFi protocols are administered by Sputnik DAOs; their share of major NEAR DeFi is **unknown** until the denominator is narrowed (§2) | **$382.1M** (2026-11-05) | owner resolution across 5 protocols |
+| 1 | **All 5 of 5** NEAR DeFi protocols with ≥ $10M NEAR-only TVL (excluding CEX, Chain and \*Bridge\* categories) are administered by a Sputnik DAO | **$382.1M** (2026-11-05) | owner resolution across 5 protocols; the rule and every exclusion in §2 |
 | 2 | Sputnik's `auto_update` lets the factory replace a DAO's code with **no vote**, and **`true` is the default** | **$199.4M** (2026-11-05) verified, systemic in principle | deployed v3.2 source + on-chain census |
 | 3 | The authority path from three private keys to $199.4M is public, and nothing surfaces it | — | `view_access_key_list` + the above |
 | 4 | Reading an account's `code_hash` no longer tells you what code it runs | all of NEAR | NEP-591 global contracts |
@@ -58,33 +58,43 @@ to build correctly, and is the reason the first version of this spec was wrong.
 | Rhea Dex | $23,964,823 | `v2.ref-finance.near` | `ref-finance.sputnik-dao.near` | `get_owner` |
 
 **$382,067,428 is administered by Sputnik DAOs** (sum of the rows above,
-DefiLlama `chainTvls.Near`, 2026-11-05). **Share of major NEAR DeFi: unknown** —
-see below. `intents.near` and `wrap.near` expose no owner through any known
-getter and are excluded rather than guessed at.
+DefiLlama `chainTvls.Near`, 2026-11-05).
 
-**"Major NEAR DeFi", defined.** The denominator is the five protocols above plus
-every other protocol in DefiLlama's top 10 by NEAR-only TVL (`chainTvls.Near`),
-by hardcoded slug. On 2026-11-05 that list is:
+**Coverage.** *All 5 of 5 NEAR DeFi protocols with ≥ $10M NEAR-only TVL are
+administered by a Sputnik DAO.* The set is selected by a rule, not a list:
 
-| # | slug | DefiLlama category | NEAR TVL, 2026-11-05 |
-|---|---|---|---|
-| 1 | `binance-cex` | CEX | $535,049,691 |
-| 2 | `rhea-lend` | Lending | $158,689,681 |
-| 3 | `near-intents` | Bridge | $101,833,038 |
-| 4 | `meta-pool-near` | Liquid Staking | $80,306,704 |
-| 5 | `rhea-lst` | Liquid Staking | $70,553,120 |
-| 6 | `linear-protocol` | Liquid Staking | $48,553,100 |
-| 7 | `near-bridge` | Canonical Bridge | $47,755,516 |
-| 8 | `rhea-dex` | Dexs | $23,964,823 |
-| 9 | `bitget` | CEX | $19,200,701 |
-| 10 | `kucoin` | CEX | $19,158,827 |
+> DefiLlama `/protocols`, NEAR-only TVL (`chainTvls.Near`) ≥ $10,000,000,
+> excluding the categories `CEX` and `Chain` (exact) and any category containing
+> `Bridge`.
 
-**This list is ambiguous, so no share is stated.** Four of its ten entries —
-`binance-cex`, `bitget`, `kucoin` (CEX) and `near-bridge` (Canonical
-Bridge) — are custodial balances or bridge escrow, and whether they count as
-"DeFi" is not defined. `node tools/verify.mjs` prints the absolute figure live,
-prints this list live, and prints the share as **unknown** until the list is
-narrowed (§12.7).
+`verify.mjs` applies the rule live, names every protocol it selects with its
+owner, and reports "M of N" — a protocol whose contract Docket has not mapped,
+whose owner is unreadable, or whose owner does not run factory-published Sputnik
+code is named and not counted. No share is stated: the rule picks the
+denominator, so any percentage would measure the category boundaries (§12.7).
+
+**Excluded by the rule**, every entry ≥ $10M, so the filter is visible rather
+than trusted:
+
+| slug | DefiLlama category | NEAR TVL, 2026-11-05 |
+|---|---|---|
+| `binance-cex` | CEX | $535,049,691 |
+| `near-intents` | Bridge | $101,833,038 |
+| `near-bridge` | Canonical Bridge | $47,755,516 |
+| `bitget` | CEX | $19,200,701 |
+| `kucoin` | CEX | $19,158,827 |
+| `gate` | CEX | $17,340,693 |
+| `bitfinex` | CEX | $11,798,610 |
+
+`near-intents` is the exclusion that matters. Its category is `Bridge`, but
+`intents.near` does hold deposits: it implements the NEP-245 multi-token ledger
+(`mt_tokens` lists `nep141:wrap.near`, `nep141:usdt.tether-token.near`, …), and
+on 2026-11-05 it held 16,750,153.99 wNEAR (`wrap.near ft_balance_of`, 24
+decimals) and 634,981.18 USDt (`usdt.tether-token.near ft_balance_of`, 6
+decimals). It is excluded because of its category, not because it is small or
+safe. It also cannot be counted either way: `intents.near` and `wrap.near`
+expose no owner through any §6.2 getter (all five return `MethodNotFound`;
+`verify.mjs` checks both), and are excluded rather than guessed at.
 
 Four different getters appear in five protocols. There is no ownership standard
 on NEAR, which is exactly why this table did not exist before. §6.2 handles it.
@@ -661,20 +671,29 @@ resumable and separates `unknown` from `false` (I11).
 
 ### 12.7 "79% of $486.4M." **No stated denominator.**
 
-79% / $486.4M had no stated denominator; now defined as the five §2 protocols
-plus the rest of DefiLlama's top 10 by NEAR-only TVL — `binance-cex`,
-`near-intents`, `near-bridge`, `bitget`, `kucoin` on 2026-11-05 — recomputed
-live by `verify.mjs`. That list contains three CEX entries and a canonical
-bridge, so it is ambiguous as a definition of "DeFi", and the share is printed
-as **unknown** rather than chosen.
+79% / $486.4M had no stated denominator. The old denominator minus the old
+numerator is $101,834,700, within $2K of `near-intents`' NEAR TVL on 2026-11-05
+($101,833,038), so it was probably "the five plus NEAR Intents" — but it never
+said so, which is the error.
 
-For the record, and not assumed: the old denominator minus the old numerator
-is $101,834,700, within $2K of `near-intents`' NEAR TVL on 2026-11-05
-($101,833,038). The old figure was probably "the five plus NEAR Intents", but it
-never said so, which is the error.
+**How it was resolved: the share was dropped.** Any percentage here depends on
+where the category boundaries fall, and moving one boundary moves the answer
+across the whole range. On the 2026-11-05 snapshot: DefiLlama's literal top 10 is
+dominated by `binance-cex`; keeping `near-bridge` (category `Canonical Bridge`,
+not `Bridge`) gives 88.9%; excluding every `*Bridge*` category gives 100% — by
+construction, because the rule then selects exactly the five protocols being
+measured. A number that the choice of filter decides is not a finding.
+
+It is replaced by two things `verify.mjs` recomputes live: the **coverage claim**
+("All N of N NEAR DeFi protocols ≥ $10M, excluding CEX, Chain and \*Bridge\*, are
+administered by a Sputnik DAO", reported as "M of N" with names when short), and
+the **exclusion list** beside it, so a reader sees what the filter removed —
+including `near-intents`, which holds deposits and is excluded only by category
+(§2).
 
 Caught by trying to make `verify.mjs` recompute it and finding nothing to
-recompute it from.
+recompute it from; the replacement was caught by noticing that the rule's 100%
+was circular.
 
 ### 12.8 "$206.5M." **A stale constant.**
 
