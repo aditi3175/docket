@@ -44,6 +44,17 @@ export function sumTvl(items) {
   return { status: 'ok', usd: Math.round(items.reduce((s, i) => s + i.usd, 0)) };
 }
 
+// NEAR-only TVL of every protocol in one DefiLlama category (exact category string match).
+// -> { status:'ok', usd, members:[{slug, usd}] }
+export function categoryNearTvl(protocols, category) {
+  const members = protocols
+    .filter((p) => p.category === category && typeof p.chainTvls?.Near === 'number' && Number.isFinite(p.chainTvls.Near))
+    .map((p) => ({ slug: p.slug, usd: p.chainTvls.Near }))
+    .sort((a, b) => b.usd - a.usd);
+  if (!members.length) return { status: 'unknown', reason: `no NEAR protocols in category "${category}"` };
+  return { status: 'ok', usd: Math.round(members.reduce((s, m) => s + m.usd, 0)), members };
+}
+
 // Top N protocols by NEAR-only TVL — used to show what the literal "top 10" reading contains.
 export function topByNearTvl(protocols, n) {
   return protocols

@@ -171,7 +171,12 @@ that nobody downstream can see it.
 | `burrow.sputnik-dao.near` | Rhea Lend | $158,689,681 | false |
 | `ref-finance.sputnik-dao.near` | Rhea Dex + DCL | $23,964,823 | false |
 
-**$199,412,924 (DefiLlama, 2026-11-05) — the whole NEAR liquid staking sector — is `true`.**
+**$199,412,924 (DefiLlama, 2026-11-05) — 99.4% of NEAR liquid staking — is `true`.**
+
+"NEAR liquid staking" is every protocol DefiLlama categorises as `Liquid Staking`,
+NEAR-only TVL: $200,526,770 across six entries on 2026-11-05 (the three above,
+plus `here-wallet-staking`, `trustake` and `stader` at $0). `verify.mjs`
+recomputes the total and the share live and warns if either moves more than 15%.
 
 **The population census.** `tools/crawl.mjs` resolved **1,786 of the factory's
 2,065 DAOs** (279 unread, resumable — the crawl is paced to stay under the rate

@@ -1,7 +1,7 @@
 // value.js — I1/I2 for TVL, replaying DefiLlama /protocols recorded 2026-11-05 (NEAR entries).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { nearTvlFrom, sumTvl, topByNearTvl, fetchDefiLlama } from '../web/assets/value.js';
+import { nearTvlFrom, sumTvl, topByNearTvl, fetchDefiLlama, categoryNearTvl } from '../web/assets/value.js';
 import { loadFixture, jsonResponse } from './helpers.mjs';
 
 const protocols = loadFixture('2026-11-05.defillama.protocols.near.json').body;
@@ -34,6 +34,16 @@ test('I2: an unlisted slug is unknown, never 0, and makes the sum unknown', () =
 test('name matching would be wrong: "Stader" is a different, non-NEAR protocol', () => {
   const stader = protocols.find((p) => p.slug === 'stader');
   assert.equal(stader.chainTvls.Near, 0);
+});
+
+test('categoryNearTvl: "Liquid Staking" on NEAR, exact category match', () => {
+  const ls = categoryNearTvl(protocols, 'Liquid Staking');
+  assert.equal(ls.status, 'ok');
+  assert.deepEqual(ls.members.map((m) => m.slug),
+    ['meta-pool-near', 'rhea-lst', 'linear-protocol', 'here-wallet-staking', 'trustake', 'stader']);
+  assert.equal(ls.usd, 200_526_770);
+  assert.ok(!ls.members.some((m) => m.slug === 'allstake')); // "Restaking" is a different category
+  assert.equal(categoryNearTvl(protocols, 'No Such Category').status, 'unknown');
 });
 
 test('topByNearTvl is sorted descending', () => {

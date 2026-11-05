@@ -14,13 +14,13 @@
 // Enforces: I1 (every number printed traces to a call made in this run, with its date),
 //           I2 (unknown is its own bucket), I3/I4/I12 via resolve.js.
 //
-// Coverage today: §2, §3.3 (auto_update + headline sum), §4, §5. Other sections: not yet.
+// Coverage today: §2, §3.3 (auto_update, headline sum, liquid-staking share), §4, §5. Other sections: not yet.
 // Never edit an expectation here to make a check pass — report the divergence (CLAUDE.md).
 
 import { pathToFileURL } from 'node:url';
 import { createRpc } from '../web/assets/rpc.js';
 import { resolveOwner, codeIdentity, loadFactoryVersions, factoryInfo, ZERO_HASH } from '../web/assets/resolve.js';
-import { fetchDefiLlama, nearTvlFrom, sumTvl, topByNearTvl } from '../web/assets/value.js';
+import { fetchDefiLlama, nearTvlFrom, sumTvl, topByNearTvl, categoryNearTvl } from '../web/assets/value.js';
 
 const FACTORY = 'sputnik-dao.near';
 
@@ -37,6 +37,10 @@ const SPEC_TVL_DATE = '2026-11-05';
 const SPEC_HEADLINE = 199_412_924; // §3.3 — sum of the auto_update:true protocols
 // TVL moves daily. Beyond this relative move from the spec figure verify.mjs warns; it never fails.
 const TVL_DRIFT_WARN = 0.15;
+// §3.3 — NEAR liquid staking: DefiLlama category "Liquid Staking", chainTvls.Near (2026-11-05)
+const LIQUID_STAKING = 'Liquid Staking';
+const SPEC_LS_TOTAL = 200_526_770;
+const SPEC_LS_SHARE = 0.994; // share held by the auto_update:true protocols, as written in §3.3 (99.4%)
 
 // §5 — code identity per DAO (and the factory itself)
 const CODE = [
@@ -64,6 +68,9 @@ const MAJOR_NEAR_DEFI = {
   reason: "DefiLlama's top 10 by NEAR-only TVL includes CEX and Canonical Bridge entries; " +
           'whether those count as "DeFi" is not defined',
 };
+
+function usdFmt(n) { return `$${Math.round(n).toLocaleString('en-US')}`; }
+const pctFmt = (x) => `${(100 * x).toFixed(1)}%`;
 
 // ---- collect: every claim, every run --------------------------------------------------------
 // -> { claims, warnings, ...data }. Reads only through `rpc` and `llamaFetch`, so tests can inject both.
@@ -157,7 +164,29 @@ export async function collect({ rpc = createRpc(), llamaFetch } = {}) {
   const headlineUnknown = infos.some((f) => f.status !== 'ok') || owners.some((o) => o.status !== 'ok');
   const headline = headlineUnknown ? { status: 'unknown' } : sumTvl(autoTrue.map((x) => x.t));
 
-  return { started, claims, warnings, factory, llama, owners, infos, codes, tvl, numTerms, numerator, autoTrue, headline };
+  // ---- TVL claims: live, dated, warn-only. 'read' within TVL_DRIFT_WARN of the spec, 'moved' beyond.
+  const tvlClaim = (section, what, expected, actual, fmt, unknownReason) => {
+    let status = 'unverifiable';
+    if (unknownReason === undefined) {
+      const drift = (actual - expected) / expected;
+      status = Math.abs(drift) > TVL_DRIFT_WARN ? 'moved' : 'read';
+      if (status === 'moved') warnings.push(`${what}: ${fmt(actual)} vs spec ${fmt(expected)} (${(drift * 100).toFixed(1)}%)`);
+    }
+    claims.push({ kind: 'tvl', section, what, expected, actual, status, unknownReason, fmt });
+  };
+
+  // §3.3 liquid staking: sector total, and the share held by auto_update:true protocols in that category
+  const ls = llama.status === 'ok' ? categoryNearTvl(llama.protocols, LIQUID_STAKING) : { status: 'unknown', reason: llama.reason };
+  const lsMembers = new Set(ls.status === 'ok' ? ls.members.map((m) => m.slug) : []);
+  const lsTrue = headline.status === 'ok' ? sumTvl(autoTrue.filter((x) => lsMembers.has(x.p.slug)).map((x) => x.t)) : { status: 'unknown' };
+  tvlClaim('§3.3', `NEAR liquid staking total (DefiLlama "${LIQUID_STAKING}", NEAR-only)`, SPEC_LS_TOTAL,
+    ls.usd, usdFmt, ls.status === 'ok' ? undefined : ls.reason);
+  const lsShareUnknown = ls.status !== 'ok' ? ls.reason
+    : lsTrue.status !== 'ok' ? 'auto_update:true set, or its TVL, unknown' : undefined;
+  tvlClaim('§3.3', 'share of NEAR liquid staking held by auto_update:true protocols', SPEC_LS_SHARE,
+    lsShareUnknown ? undefined : lsTrue.usd / ls.usd, pctFmt, lsShareUnknown);
+
+  return { started, claims, warnings, factory, llama, owners, infos, codes, tvl, numTerms, numerator, autoTrue, headline, ls, lsTrue };
 }
 
 // Exit code from structural claims only; TVL never decides it.
@@ -168,11 +197,11 @@ export function exitCodeFor(claims) {
 
 // ---- print ----------------------------------------------------------------------------------
 const short = (h) => (h && h.length > 12 ? `${h.slice(0, 8)}…${h.slice(-3)}` : h ?? '—');
-const usd = (n) => `$${Math.round(n).toLocaleString('en-US')}`;
+const usd = usdFmt;
 const pad = (s, n) => String(s).padEnd(n);
 
 function print(r, rpc) {
-  const { claims, warnings, factory, llama, owners, codes, tvl, numTerms, numerator, autoTrue, headline } = r;
+  const { claims, warnings, factory, llama, owners, codes, tvl, numTerms, numerator, autoTrue, headline, ls, lsTrue } = r;
   const llamaDate = llama.readAt.slice(0, 10);
   console.log(`Docket verify — mainnet, ${r.started.toISOString()}\n`);
   console.log(`§2  who administers NEAR DeFi   (TVL: DefiLlama chainTvls.Near, read ${llama.readAt})\n`);
@@ -202,6 +231,11 @@ function print(r, rpc) {
   console.log(`\n§3.3  auto_update: true — factory can replace the code with no vote`);
   for (const { p, t } of autoTrue) console.log(`    ${pad(p.dao, 32)} ${pad(p.name, 10)} ${t.status === 'ok' ? usd(t.usd) : 'unknown'}`);
   console.log(`    headline: ${headline.status === 'ok' ? usd(headline.usd) : 'unknown'}  (DefiLlama, ${llamaDate}; spec says ${usd(SPEC_HEADLINE)} at ${SPEC_TVL_DATE})`);
+  if (ls.status === 'ok') {
+    console.log(`\n    NEAR liquid staking (DefiLlama "${LIQUID_STAKING}", NEAR-only, ${llamaDate}): ${usd(ls.usd)}`);
+    for (const m of ls.members) console.log(`      ${pad(usd(m.usd), 14)} ${pad(m.slug, 22)}${autoTrue.some((x) => x.p.slug === m.slug) ? 'auto_update: true' : ''}`);
+    console.log(`    held by auto_update:true protocols: ${lsTrue.status === 'ok' ? pctFmt(lsTrue.usd / ls.usd) : 'unknown'}`);
+  } else console.log(`\n    NEAR liquid staking: unknown (${ls.reason})`);
 
   console.log(`\n§5  which code these DAOs run`);
   CODE.forEach((c, i) => {
@@ -215,12 +249,21 @@ function print(r, rpc) {
     for (const [h, v] of factory.versions) console.log(`    ${pad(short(h), 14)} ${pad(v.version, 5)} commit ${v.commit?.slice(0, 12)}${h === factory.defaultHash ? '   (= get_default_code_hash)' : ''}`);
   }
 
-  const by = (s) => claims.filter((c) => c.status === s);
+  const st = claims.filter((c) => c.kind === 'structural');
+  const tv = claims.filter((c) => c.kind === 'tvl');
+  const by = (s) => st.filter((c) => c.status === s);
   const [ok, bad, unk] = [by('confirmed'), by('diverged'), by('unverifiable')];
-  console.log(`\nClaims: ${claims.length} total — ${ok.length} confirmed, ${bad.length} diverged, ${unk.length} could not be verified`);
+  console.log(`\nClaims: ${claims.length} total = ${st.length} structural + ${tv.length} TVL`);
+  console.log(`Structural (these decide the exit code): ${ok.length} confirmed, ${bad.length} diverged, ${unk.length} could not be verified`);
   for (const c of ok) console.log(`  ✓ ${c.section} ${c.what}`);
   for (const c of bad) console.log(`  ✗ DIVERGED ${c.section} ${c.what}\n      spec:    ${JSON.stringify(c.expected)}\n      mainnet: ${JSON.stringify(c.actual)}`);
   for (const c of unk) console.log(`  ? UNKNOWN  ${c.section} ${c.what} — ${c.unknownReason}`);
+  const n = (s) => tv.filter((c) => c.status === s).length;
+  console.log(`TVL (warn-only, DefiLlama ${llamaDate}): ${n('read')} read, ${n('moved')} moved >${TVL_DRIFT_WARN * 100}%, ${n('unverifiable')} unknown`);
+  for (const c of tv) {
+    if (c.status === 'unverifiable') console.log(`  ? ${c.section} ${c.what} — unknown: ${c.unknownReason}`);
+    else console.log(`  ${c.status === 'moved' ? '!' : '·'} ${c.section} ${c.what}: ${c.fmt(c.actual)} (spec ${c.fmt(c.expected)})`);
+  }
   if (warnings.length) {
     console.log(`\nWarnings — TVL movement or DefiLlama availability, not failed claims (exit code unaffected; drift threshold ${TVL_DRIFT_WARN * 100}%):`);
     for (const w of warnings) console.log(`  ! ${w}`);
