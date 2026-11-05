@@ -1,0 +1,28 @@
+{
+  "endpoint": "https://free.rpc.fastnear.com",
+  "captured_at": "2026-11-05T17:20:18.800Z",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "docket",
+    "method": "query",
+    "params": {
+      "request_type": "view_account",
+      "finality": "final",
+      "account_id": "burrow.sputnik-dao.near"
+    }
+  },
+  "http_status": 200,
+  "body": {
+    "jsonrpc": "2.0",
+    "result": {
+      "amount": "1546248229006287246360520466",
+      "block_hash": "d7VtZbnpMPV7z1epfRdUpfVacQapH8WwVT5hG8zGeeX",
+      "block_height": 223196164,
+      "code_hash": "4zSoHkLjJWZm34Psd4Eq2WUXHELt6LxtKmUXpsZWAECp",
+      "locked": "0",
+      "storage_paid_at": 0,
+      "storage_usage": 2904462
+    },
+    "id": "docket"
+  }
+}

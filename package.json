@@ -1,13 +1,16 @@
 {
   "name": "docket",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Who can change a NEAR account without asking, read from the chain alone",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test \"test/*.test.mjs\"",
+    "verify": "node tools/verify.mjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs"
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  }
 }

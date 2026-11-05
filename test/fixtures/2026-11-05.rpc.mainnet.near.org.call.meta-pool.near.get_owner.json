@@ -1,0 +1,27 @@
+{
+  "endpoint": "https://rpc.mainnet.near.org",
+  "captured_at": "2026-11-05T17:20:35.405Z",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "docket",
+    "method": "query",
+    "params": {
+      "request_type": "call_function",
+      "finality": "final",
+      "account_id": "meta-pool.near",
+      "method_name": "get_owner",
+      "args_base64": "e30="
+    }
+  },
+  "http_status": 200,
+  "body": {
+    "jsonrpc": "2.0",
+    "result": {
+      "block_hash": "2hRsVWmGXQtRV6cfPv446pTqX7pE2fwD4GgzSWBz9nH7",
+      "block_height": 223196194,
+      "error": "wasm execution failed with error: MethodResolveError(MethodNotFound)",
+      "logs": []
+    },
+    "id": "docket"
+  }
+}

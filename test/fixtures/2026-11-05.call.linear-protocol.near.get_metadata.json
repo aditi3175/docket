@@ -1,0 +1,27 @@
+{
+  "endpoint": "https://free.rpc.fastnear.com",
+  "captured_at": "2026-11-05T17:20:26.605Z",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "docket",
+    "method": "query",
+    "params": {
+      "request_type": "call_function",
+      "finality": "final",
+      "account_id": "linear-protocol.near",
+      "method_name": "get_metadata",
+      "args_base64": "e30="
+    }
+  },
+  "http_status": 200,
+  "body": {
+    "jsonrpc": "2.0",
+    "result": {
+      "block_hash": "2hvmSma6hCV16rJgPKyHLR4grkEgYFfpVoGw2fvgRcj7",
+      "block_height": 223196178,
+      "error": "wasm execution failed with error: MethodResolveError(MethodNotFound)",
+      "logs": []
+    },
+    "id": "docket"
+  }
+}

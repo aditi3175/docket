@@ -1,0 +1,33 @@
+{
+  "endpoint": "https://near.drpc.org",
+  "captured_at": "2026-11-05T17:20:44.099Z",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "docket",
+    "method": "query",
+    "params": {
+      "request_type": "view_account",
+      "finality": "final",
+      "account_id": "docket-fixture-missing-account.near"
+    }
+  },
+  "http_status": 200,
+  "body": {
+    "id": "docket",
+    "jsonrpc": "2.0",
+    "error": {
+      "name": "HANDLER_ERROR",
+      "cause": {
+        "info": {
+          "block_hash": "HSHFv4cp1Rfzw7rY6BvAx88hFhEy4MaMkFjYkJBid8sf",
+          "block_height": 223196209,
+          "requested_account_id": "docket-fixture-missing-account.near"
+        },
+        "name": "UNKNOWN_ACCOUNT"
+      },
+      "code": -32000,
+      "message": "Server error",
+      "data": "account docket-fixture-missing-account.near does not exist while viewing"
+    }
+  }
+}

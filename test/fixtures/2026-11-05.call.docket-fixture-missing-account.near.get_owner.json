@@ -1,0 +1,35 @@
+{
+  "endpoint": "https://free.rpc.fastnear.com",
+  "captured_at": "2026-11-05T17:20:29.359Z",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "docket",
+    "method": "query",
+    "params": {
+      "request_type": "call_function",
+      "finality": "final",
+      "account_id": "docket-fixture-missing-account.near",
+      "method_name": "get_owner",
+      "args_base64": "e30="
+    }
+  },
+  "http_status": 200,
+  "body": {
+    "jsonrpc": "2.0",
+    "error": {
+      "name": "HANDLER_ERROR",
+      "cause": {
+        "info": {
+          "block_hash": "Hd1X64bC7Q9xCEByHEYhBbngcbHPQkQ2SCBLiFVjKG8d",
+          "block_height": 223196183,
+          "requested_account_id": "docket-fixture-missing-account.near"
+        },
+        "name": "UNKNOWN_ACCOUNT"
+      },
+      "code": -32000,
+      "message": "Server error",
+      "data": "account docket-fixture-missing-account.near does not exist while viewing"
+    },
+    "id": "docket"
+  }
+}

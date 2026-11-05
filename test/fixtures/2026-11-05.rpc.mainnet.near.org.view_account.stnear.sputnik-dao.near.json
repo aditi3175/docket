@@ -1,0 +1,29 @@
+{
+  "endpoint": "https://rpc.mainnet.near.org",
+  "captured_at": "2026-11-05T17:20:42.609Z",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "docket",
+    "method": "query",
+    "params": {
+      "request_type": "view_account",
+      "finality": "final",
+      "account_id": "stnear.sputnik-dao.near"
+    }
+  },
+  "http_status": 200,
+  "body": {
+    "jsonrpc": "2.0",
+    "result": {
+      "amount": "5000037710607219300000000",
+      "block_hash": "6M2mkxkDmAx7ZjLGZfZQqvRCXzdtDgfJkJoV8BP8oUiu",
+      "block_height": 223196207,
+      "code_hash": "11111111111111111111111111111111",
+      "global_contract_hash": "DtHZA1mUmGYeScEaUoUZYQGGFHSMpnjMCvkr5U9hJXuF",
+      "locked": "0",
+      "storage_paid_at": 0,
+      "storage_usage": 853
+    },
+    "id": "docket"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "endpoint": "https://near.drpc.org",
+  "captured_at": "2026-11-05T17:20:43.556Z",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "docket",
+    "method": "query",
+    "params": {
+      "request_type": "call_function",
+      "finality": "final",
+      "account_id": "meta-pool.near",
+      "method_name": "get_owner",
+      "args_base64": "e30="
+    }
+  },
+  "http_status": 200,
+  "body": {
+    "id": "docket",
+    "jsonrpc": "2.0",
+    "result": {
+      "block_hash": "5AVk3fZtapXbdXWjGGFeEEpbZCbr9CRAjFNRT3tsMS5S",
+      "block_height": 223196208,
+      "error": "wasm execution failed with error: MethodResolveError(MethodNotFound)",
+      "logs": []
+    }
+  }
+}
