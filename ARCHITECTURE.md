@@ -37,9 +37,9 @@ submission is a bug.
 
 | # | finding | exposure | how it was established |
 |---|---|---|---|
-| 1 | 79% of major NEAR DeFi TVL is administered by Sputnik DAOs | **$384.5M** | owner resolution across 5 protocols |
-| 2 | Sputnik's `auto_update` lets the factory replace a DAO's code with **no vote**, and **`true` is the default** | **$206.5M** verified, systemic in principle | deployed v3.2 source + on-chain census |
-| 3 | The authority path from three private keys to $206.5M is public, and nothing surfaces it | — | `view_access_key_list` + the above |
+| 1 | Five major NEAR DeFi protocols are administered by Sputnik DAOs; their share of major NEAR DeFi is **unknown** until the denominator is narrowed (§2) | **$382.1M** (2026-11-05) | owner resolution across 5 protocols |
+| 2 | Sputnik's `auto_update` lets the factory replace a DAO's code with **no vote**, and **`true` is the default** | **$199.4M** (2026-11-05) verified, systemic in principle | deployed v3.2 source + on-chain census |
+| 3 | The authority path from three private keys to $199.4M is public, and nothing surfaces it | — | `view_access_key_list` + the above |
 | 4 | Reading an account's `code_hash` no longer tells you what code it runs | all of NEAR | NEP-591 global contracts |
 
 Finding 2 is the headline. Finding 4 is the one that makes the tool non-trivial
@@ -49,16 +49,42 @@ to build correctly, and is the reason the first version of this spec was wrong.
 
 ## 2. Finding 1 — who administers NEAR DeFi
 
-| protocol | TVL (DefiLlama, 2026-11-03) | contract | administered by | resolved via |
+| protocol | TVL (DefiLlama `chainTvls.Near`, 2026-11-05) | contract | administered by | resolved via |
 |---|---|---|---|---|
-| Rhea Lend | $154,129,612 | `contract.main.burrow.near` | `burrow.sputnik-dao.near` | `get_config.owner_id` |
-| Meta Pool | $84,039,710 | `meta-pool.near` | `stnear.sputnik-dao.near` | `get_owner_id` |
-| RHEA LST | $72,776,123 | `nearx.stader-labs.near` | `stader-nearx.sputnik-dao.near` | `get_owner_id` |
-| LiNEAR | $49,685,032 | `linear-protocol.near` | `linear.sputnik-dao.near` | `get_owner_id` |
-| Rhea Dex | $23,912,281 | `v2.ref-finance.near` | `ref-finance.sputnik-dao.near` | `get_owner` |
+| Rhea Lend | $158,689,681 | `contract.main.burrow.near` | `burrow.sputnik-dao.near` | `get_config.owner_id` |
+| Meta Pool | $80,306,704 | `meta-pool.near` | `stnear.sputnik-dao.near` | `get_owner_id` |
+| RHEA LST | $70,553,120 | `nearx.stader-labs.near` | `stader-nearx.sputnik-dao.near` | `get_owner_id` |
+| LiNEAR | $48,553,100 | `linear-protocol.near` | `linear.sputnik-dao.near` | `get_owner_id` |
+| Rhea Dex | $23,964,823 | `v2.ref-finance.near` | `ref-finance.sputnik-dao.near` | `get_owner` |
 
-**$384,542,758 of $486,377,458 — 79%.** `intents.near` and `wrap.near` expose no
-owner through any known getter and are excluded rather than guessed at.
+**$382,067,428 is administered by Sputnik DAOs** (sum of the rows above,
+DefiLlama `chainTvls.Near`, 2026-11-05). **Share of major NEAR DeFi: unknown** —
+see below. `intents.near` and `wrap.near` expose no owner through any known
+getter and are excluded rather than guessed at.
+
+**"Major NEAR DeFi", defined.** The denominator is the five protocols above plus
+every other protocol in DefiLlama's top 10 by NEAR-only TVL (`chainTvls.Near`),
+by hardcoded slug. On 2026-11-05 that list is:
+
+| # | slug | DefiLlama category | NEAR TVL, 2026-11-05 |
+|---|---|---|---|
+| 1 | `binance-cex` | CEX | $535,049,691 |
+| 2 | `rhea-lend` | Lending | $158,689,681 |
+| 3 | `near-intents` | Bridge | $101,833,038 |
+| 4 | `meta-pool-near` | Liquid Staking | $80,306,704 |
+| 5 | `rhea-lst` | Liquid Staking | $70,553,120 |
+| 6 | `linear-protocol` | Liquid Staking | $48,553,100 |
+| 7 | `near-bridge` | Canonical Bridge | $47,755,516 |
+| 8 | `rhea-dex` | Dexs | $23,964,823 |
+| 9 | `bitget` | CEX | $19,200,701 |
+| 10 | `kucoin` | CEX | $19,158,827 |
+
+**This list is ambiguous, so no share is stated.** Four of its ten entries —
+`binance-cex`, `bitget`, `kucoin` (CEX) and `near-bridge` (Canonical
+Bridge) — are custodial balances or bridge escrow, and whether they count as
+"DeFi" is not defined. `node tools/verify.mjs` prints the absolute figure live,
+prints this list live, and prints the share as **unknown** until the list is
+narrowed (§12.7).
 
 Four different getters appear in five protocols. There is no ownership standard
 on NEAR, which is exactly why this table did not exist before. §6.2 handles it.
@@ -137,15 +163,15 @@ that nobody downstream can see it.
 
 ### 3.3 The census
 
-| DAO | administers | TVL | `auto_update` |
+| DAO | administers | TVL (DefiLlama, 2026-11-05) | `auto_update` |
 |---|---|---|---|
-| `stnear.sputnik-dao.near` | Meta Pool | $84,039,710 | **true** |
-| `stader-nearx.sputnik-dao.near` | RHEA LST | $72,776,123 | **true** |
-| `linear.sputnik-dao.near` | LiNEAR | $49,685,032 | **true** |
-| `burrow.sputnik-dao.near` | Rhea Lend | $154,129,612 | false |
-| `ref-finance.sputnik-dao.near` | Rhea Dex + DCL | $23,912,281 | false |
+| `stnear.sputnik-dao.near` | Meta Pool | $80,306,704 | **true** |
+| `stader-nearx.sputnik-dao.near` | RHEA LST | $70,553,120 | **true** |
+| `linear.sputnik-dao.near` | LiNEAR | $48,553,100 | **true** |
+| `burrow.sputnik-dao.near` | Rhea Lend | $158,689,681 | false |
+| `ref-finance.sputnik-dao.near` | Rhea Dex + DCL | $23,964,823 | false |
 
-**$206,500,865 — the whole NEAR liquid staking sector — is `true`.**
+**$199,412,924 (DefiLlama, 2026-11-05) — the whole NEAR liquid staking sector — is `true`.**
 
 **The population census.** `tools/crawl.mjs` resolved **1,786 of the factory's
 2,065 DAOs** (279 unread, resumable — the crawl is paced to stay under the rate
@@ -169,7 +195,7 @@ neardragons · testgfdg · unrlzd · nearlytrade
 ```
 
 So opting out is achievable, is known, and exactly one team does it as policy.
-The liquid-staking protocols holding $206.5M are not that team. This is what
+The liquid-staking protocols holding $199.4M are not that team. This is what
 turns §3.2 from a default-value curiosity into a finding: the safe setting is
 reachable and almost nobody reaches it.
 
@@ -199,7 +225,7 @@ holds **three full-access keys**. Not a DAO. Not a multisig contract.
    └── update(code) → use_global_contract(sha256(code))     [no vote; auto_update]
         └── stnear / stader-nearx / linear .sputnik-dao.near
              └── owner of meta-pool.near, nearx.stader-labs.near, linear-protocol.near
-                  └── $206,500,865 of user deposits
+                  └── $199,412,924 of user deposits (2026-11-05)
 ```
 
 Every edge is a public view call. **None of it is a bug.** `auto_update` is a
@@ -562,7 +588,7 @@ than no tool.
 
 ## 11. Responsible disclosure
 
-Finding 2 concerns $206.5M of live deposits. **Disclosure first, repository
+Finding 2 concerns $199.4M of live deposits (2026-11-05). **Disclosure first, repository
 public second.**
 
 1. Write the technical note: the `update` assertion, the `auto_update: true`
@@ -628,6 +654,33 @@ An early run resolved 666 of 2,065 and would have been quoted as a percentage of
 everything. 1,399 were rate-limit failures, not data. `crawl.mjs` is now
 resumable and separates `unknown` from `false` (I11).
 
+### 12.7 "79% of $486.4M." **No stated denominator.**
+
+79% / $486.4M had no stated denominator; now defined as the five §2 protocols
+plus the rest of DefiLlama's top 10 by NEAR-only TVL — `binance-cex`,
+`near-intents`, `near-bridge`, `bitget`, `kucoin` on 2026-11-05 — recomputed
+live by `verify.mjs`. That list contains three CEX entries and a canonical
+bridge, so it is ambiguous as a definition of "DeFi", and the share is printed
+as **unknown** rather than chosen.
+
+For the record, and not assumed: the old denominator minus the old numerator
+is $101,834,700, within $2K of `near-intents`' NEAR TVL on 2026-11-05
+($101,833,038). The old figure was probably "the five plus NEAR Intents", but it
+never said so, which is the error.
+
+Caught by trying to make `verify.mjs` recompute it and finding nothing to
+recompute it from.
+
+### 12.8 "$206.5M." **A stale constant.**
+
+The headline was DefiLlama on 2026-11-03, written into the text as a number.
+`verify.mjs` now derives it live: the NEAR-only TVL of every §2 protocol whose
+administering DAO reads `auto_update: true` from `get_factory_info` in the same
+run. On 2026-11-05 that is $199,412,924 (−3.4%). The structural claim — which
+three DAOs, and that they are `true` — is unchanged and verified; the dollar
+figure moved. Every $206.5M in this file is now $199.4M, dated, and `verify.mjs`
+warns when the live figure drifts more than 5% from the spec.
+
 ---
 
 ## 13. What Docket is not
@@ -657,7 +710,7 @@ that day, not the last hour.
 | date | deliverable | done when |
 |---|---|---|
 | Nov 5 | Novelty check: sputnik-dao-contract issues/PRs and NEAR gov forum for `auto_update` / `FactoryInfoUpdate`. RPC layer (§9); owner resolvers; code identity (§4) | §2 regenerates; `stnear` resolves as v3.2 global; prior discussion, if any, cited in §3 |
-| Nov 6 | Authority walk (§6.1); `auto_update`; access keys | **gate:** the $206.5M chain prints from `node tools/verify.mjs`, cold |
+| Nov 6 | Authority walk (§6.1); `auto_update`; access keys | **gate:** the $199.4M chain prints from `node tools/verify.mjs`, cold |
 | Nov 6 | Disclosure note sent (§11), with opt-out links | sent, timestamped |
 | Nov 7 | `decode.js`, `lint.js` | I7, I8, I10 hold; fires on #1741/#1743 and marmaj #1016 |
 | Nov 8 | §16 opt-out; create the demo DAO; opt it out through Docket | every §16 **[verify]** removed; I15 passes; counter reads 13 |
@@ -668,7 +721,7 @@ that day, not the last hour.
 | Nov 13 | I1–I20 each have a test; README; clone into a clean machine and run the README cold | pre-screen would pass |
 | Nov 14 | Demo video, X post, submit | repo public, links live, submitted by midday UTC |
 
-The Nov 6 gate stands: if the authority walk does not reproduce the $206.5M
+The Nov 6 gate stands: if the authority walk does not reproduce the $199.4M
 chain cold, stop before building anything else.
 
 ---
@@ -684,7 +737,7 @@ chain cold, stop before building anything else.
 - Demo post on X tagging `@NEARProtocol` with `#NEARHackathon`.
 - The AI pre-screen checks the repo runs and does what the README says, so the
   README's first command is `node tools/verify.mjs`, and it must print the
-  $206.5M chain with no key, no account and no configuration.
+  $199.4M chain with no key, no account and no configuration.
 
 ---
 
@@ -829,7 +882,7 @@ message names the DAO and links its Docket page.
 
 ## 19. The sentence
 
-> **$206.5M of NEAR liquid staking is governed by a vote that three keys can
+> **$199.4M of NEAR liquid staking is governed by a vote that three keys can
 > skip — and `true` was the default.**
 
 And the v2 sentence, once §16.5 is done:
