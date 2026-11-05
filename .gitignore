@@ -1,1 +1,4 @@
-node_modules/\n.env\n*.key\n.near-credentials/
+node_modules/
+.env
+*.key
+.near-credentials/
