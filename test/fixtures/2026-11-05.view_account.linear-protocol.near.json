@@ -1,0 +1,28 @@
+{
+  "endpoint": "https://free.rpc.fastnear.com",
+  "captured_at": "2026-11-05T18:42:30.130Z",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "docket",
+    "method": "query",
+    "params": {
+      "request_type": "view_account",
+      "finality": "final",
+      "account_id": "linear-protocol.near"
+    }
+  },
+  "http_status": 200,
+  "body": {
+    "jsonrpc": "2.0",
+    "result": {
+      "amount": "1086867605780767460461595885461",
+      "block_hash": "DAvDc8Zk4Tm7bfZ7cE4BaQXQiPCWoUmioXsjp2bhPmuh",
+      "block_height": 223204714,
+      "code_hash": "5LiDVDd1gh7ofVNbiA9VXrWwkv2m8tw46jZqYeuoC3SG",
+      "locked": "0",
+      "storage_paid_at": 0,
+      "storage_usage": 13345717
+    },
+    "id": "docket"
+  }
+}

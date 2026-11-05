@@ -28,7 +28,7 @@ explanation, dated, and not re-run.
 
 | source | claims | decides the exit code |
 |---|---|---|
-| **chain** (NEAR mainnet RPC, §9) | owners (§2), `auto_update` (§3.3), code identity (§4, §5), the factory's version list and default (§5) | yes: diverged → 1, unknown → 2 |
+| **chain** (NEAR mainnet RPC, §9) | owners (§2), `auto_update` (§3.3), the factory's owner and keys and the §6.1 walk from each protocol (§3.4), code identity (§4, §5), the factory's version list and default (§5) | yes: diverged → 1, unknown → 2 |
 | **GitHub** (`api.github.com`, unauthenticated) | PR #233 merged and its merge commit; the fix two commits ahead of and none behind the deployed `2b0f34a38604`; both commit dates (§3.4) | yes, same rules; a failed read or rate limit is unknown → 2 |
 | **DefiLlama** (`api.llama.fi`) | TVL, the coverage count, the liquid-staking share (§2, §3.3) | no — warn-only |
 

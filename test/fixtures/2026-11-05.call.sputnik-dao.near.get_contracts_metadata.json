@@ -1,6 +1,6 @@
 {
   "endpoint": "https://free.rpc.fastnear.com",
-  "captured_at": "2026-11-05T17:20:20.009Z",
+  "captured_at": "2026-11-05T18:39:44.630Z",
   "request": {
     "jsonrpc": "2.0",
     "id": "docket",
@@ -17,8 +17,8 @@
   "body": {
     "jsonrpc": "2.0",
     "result": {
-      "block_hash": "4mEfjqG8FfezsEKYBwAUqqu1cWUeCp4ncSF8xcvSYqL4",
-      "block_height": 223196166,
+      "block_hash": "C3hf3ixKic9pB1puRFqZz5gtbegsHnDPtRQPm4ja5C1f",
+      "block_height": 223204426,
       "logs": [],
       "result": [
         91,

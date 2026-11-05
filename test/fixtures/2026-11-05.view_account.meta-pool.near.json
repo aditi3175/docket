@@ -1,0 +1,28 @@
+{
+  "endpoint": "https://free.rpc.fastnear.com",
+  "captured_at": "2026-11-05T18:42:29.506Z",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "docket",
+    "method": "query",
+    "params": {
+      "request_type": "view_account",
+      "finality": "final",
+      "account_id": "meta-pool.near"
+    }
+  },
+  "http_status": 200,
+  "body": {
+    "jsonrpc": "2.0",
+    "result": {
+      "amount": "285280132853098252014642396537",
+      "block_hash": "8EAbGiwVrdFNT9z9Ge3mtC7UiB6WiHYCbEgYpD5ncqoC",
+      "block_height": 223204713,
+      "code_hash": "J6pS9R23vzbwxGB8eMq4qrn8UhciEYHsVbR9UJPyLNxh",
+      "locked": "0",
+      "storage_paid_at": 0,
+      "storage_usage": 8748396
+    },
+    "id": "docket"
+  }
+}

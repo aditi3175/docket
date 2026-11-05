@@ -1,0 +1,28 @@
+{
+  "endpoint": "https://free.rpc.fastnear.com",
+  "captured_at": "2026-11-05T18:42:30.452Z",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "docket",
+    "method": "query",
+    "params": {
+      "request_type": "view_account",
+      "finality": "final",
+      "account_id": "v2.ref-finance.near"
+    }
+  },
+  "http_status": 200,
+  "body": {
+    "jsonrpc": "2.0",
+    "result": {
+      "amount": "32606071806434352134096564341",
+      "block_hash": "7VgEJbMeANACKmvZgZiNdNVtrfed5LDNC1ntxHuXxtBw",
+      "block_height": 223204715,
+      "code_hash": "GZmkbfVLcN7ErxU9RDxP24YTaKmoVixhM6XyycP15Qvi",
+      "locked": "0",
+      "storage_paid_at": 0,
+      "storage_usage": 111120093
+    },
+    "id": "docket"
+  }
+}

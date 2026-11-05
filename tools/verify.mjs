@@ -16,14 +16,14 @@
 // Enforces: I1 (every number printed traces to a call made in this run, with its date),
 //           I2 (unknown is its own bucket), I3/I4/I12 via resolve.js.
 //
-// Coverage today: chain — §1/§2 (owners), §3.3 (auto_update), §4, §5; GitHub — §3.4 (PR #233 and
+// Coverage today: chain — §1/§2 (owners), §3.3 (auto_update), §3.4 (factory owner + keys, §6.1 walk), §4, §5; GitHub — §3.4 (PR #233 and
 // where the fix sits relative to the deployed commit); DefiLlama — §1/§2 coverage, §3.3 headline sum
 // and liquid-staking share. Other sections: not yet.
 // Never edit an expectation here to make a check pass — report the divergence (CLAUDE.md).
 
 import { pathToFileURL } from 'node:url';
 import { createRpc } from '../web/assets/rpc.js';
-import { resolveOwner, codeIdentity, loadFactoryVersions, factoryInfo, ZERO_HASH } from '../web/assets/resolve.js';
+import { resolveOwner, codeIdentity, loadFactoryVersions, factoryInfo, accessKeys, authorityWalk, WALK_NOT_EVALUATED, ZERO_HASH } from '../web/assets/resolve.js';
 import { githubGet } from './github.mjs';
 import { fetchDefiLlama, nearTvlFrom, sumTvl, categoryNearTvl, applyCoverageRule, COVERAGE_RULE } from '../web/assets/value.js';
 
@@ -72,6 +72,14 @@ const SPEC_COVERAGE_N = 5;
 // §2 — contracts that expose no owner through any §6.2 getter, and are excluded rather than guessed at
 const NO_OWNER = ['intents.near', 'wrap.near'];
 
+// §3.4 — the root: the factory is self-owned and holds three full-access keys
+const FACTORY_KEYS = ['FullAccess', 'FullAccess', 'FullAccess'];
+// §3.4/§6.1 — no-vote roots per protocol: [roots "account kind", paths "a>b>c", vote gates].
+// auto_update:true -> the factory's three keys through the DAO; false -> no root, the DAO is a vote gate.
+const walkExpect = (p) => (p.autoUpdate
+  ? [FACTORY_KEYS.map((k) => `${FACTORY} ${k}`), [`${p.contract}>${p.dao}>${FACTORY}`], []]
+  : [[], [], [p.dao]]);
+
 // §3.4 — GitHub: PR #233, and where its merge commit sits relative to the deployed v3.2 commit
 const REPO = '/repos/near-daos/sputnik-dao-contract';
 const DEPLOYED_SHA = '2b0f34a3860460f285307ec2ccf36345acbe05a2'; // v3.2, per get_contracts_metadata (§5)
@@ -104,12 +112,15 @@ export async function collect({ rpc = createRpc(), llamaFetch, githubFetch } = {
     githubGet(`${REPO}/pulls/${FIX_PR}`, gh),
     githubGet(`${REPO}/compare/${DEPLOYED_SHA}...${FIX_SHA}`, gh),
   ]);
-  const [owners, infos, codes, stnearRaw, noOwner] = await Promise.all([
+  const [owners, infos, codes, stnearRaw, noOwner, factoryOwner, factoryKeys, walks] = await Promise.all([
     Promise.all(PROTOCOLS.map((p) => resolveOwner(rpc, p.contract))),
     Promise.all(PROTOCOLS.map((p) => factoryInfo(rpc, p.dao))),
     Promise.all(CODE.map((c) => codeIdentity(rpc, c.account, factory))),
     rpc.viewAccount('stnear.sputnik-dao.near'),
     Promise.all(NO_OWNER.map((id) => resolveOwner(rpc, id))),
+    resolveOwner(rpc, FACTORY),
+    accessKeys(rpc, FACTORY),
+    Promise.all(PROTOCOLS.map((p) => authorityWalk(rpc, p.contract))),
   ]);
 
   // §5 factory list
@@ -158,6 +169,26 @@ export async function collect({ rpc = createRpc(), llamaFetch, githubFetch } = {
     const what = `${id} exposes no owner via the §6.2 getters`;
     if (o.status === 'unknown') claim('§2', what, 'none', null, `${o.at}: ${o.reason}`);
     else claim('§2', what, 'none', o.status === 'ok' ? `${o.owner} via ${o.via}` : o.status);
+  });
+
+  // §3.4 — the root, and §6.1 — the walk from each protocol contract (cold: nothing assumed)
+  {
+    const whatO = `${FACTORY} owner + getter (self-owned)`;
+    if (factoryOwner.status === 'unknown') claim('§3.4', whatO, [FACTORY, 'get_owner'], null, `${factoryOwner.at}: ${factoryOwner.reason}`);
+    else claim('§3.4', whatO, [FACTORY, 'get_owner'], factoryOwner.status === 'ok' ? [factoryOwner.owner, factoryOwner.via] : [factoryOwner.status]);
+    const whatK = `${FACTORY} access keys (view_access_key_list)`;
+    if (factoryKeys.status === 'unknown') claim('§3.4', whatK, FACTORY_KEYS, null, factoryKeys.reason);
+    else claim('§3.4', whatK, FACTORY_KEYS, factoryKeys.status === 'ok' ? factoryKeys.keys.map((k) => k.kind).sort() : [factoryKeys.status]);
+  }
+  PROTOCOLS.forEach((p, i) => {
+    const w = walks[i];
+    const what = `${p.contract} no-vote roots, paths, vote gates (§6.1 walk)`;
+    if (w.status === 'unknown') { const u = w.unknowns[0]; claim('§3.4', what, walkExpect(p), null, `${u.at} ${u.read}: ${u.reason}`); return; }
+    claim('§3.4', what, walkExpect(p), [
+      w.roots.map((r) => `${r.account} ${r.kind}`).sort(),
+      [...new Set(w.roots.map((r) => r.path.join('>')))].sort(),
+      [...w.voteGates].sort(),
+    ]);
   });
 
   // ---- GitHub (§3.4): same exit rules as structural; any failed read is unknown (I2) ----
@@ -256,7 +287,7 @@ export async function collect({ rpc = createRpc(), llamaFetch, githubFetch } = {
       actual: coverage ? [covM, covN] : undefined, status, unknownReason: coverage ? undefined : llama.reason, fmt });
   }
 
-  return { started, claims, warnings, factory, llama, owners, infos, codes, tvl, numTerms, numerator, autoTrue, headline, ls, lsTrue, coverage, covRows, covM, covN, noOwner };
+  return { started, claims, warnings, factory, llama, owners, infos, codes, tvl, numTerms, numerator, autoTrue, headline, ls, lsTrue, coverage, covRows, covM, covN, noOwner, factoryOwner, factoryKeys, walks };
 }
 
 // Exit code from structural and GitHub claims; TVL never decides it.
@@ -270,10 +301,37 @@ const short = (h) => (h && h.length > 12 ? `${h.slice(0, 8)}…${h.slice(-3)}` :
 const usd = usdFmt;
 const pad = (s, n) => String(s).padEnd(n);
 
+// §3.4 — the chain, assembled from this run's reads only. A protocol is on it when its §6.1 walk
+// reaches a full-access key on the factory; its TVL is summed only then. Any unknown walk makes the
+// total unknown (I2) rather than a smaller number.
+function printChain({ walks, tvl, factoryOwner, factoryKeys, llama }) {
+  const date = llama.readAt.slice(0, 10);
+  console.log('§3.4  the chain — every edge a public view call, read in this run\n');
+  const nKeys = factoryKeys.status === 'ok' ? factoryKeys.keys.filter((k) => k.kind === 'FullAccess') : null;
+  const owner = factoryOwner.status === 'ok' ? `get_owner -> ${factoryOwner.owner}${factoryOwner.owner === FACTORY ? ' (self-owned)' : ''}` : `owner ${factoryOwner.status}`;
+  console.log(`  ${nKeys ? nKeys.length : 'unknown'} full-access keys on ${FACTORY}   [${owner}]`);
+  if (nKeys) console.log(`    ${nKeys.map((k) => `${k.publicKey.slice(0, 18)}…`).join('  ')}`);
+  const onChain = PROTOCOLS.map((p, i) => ({ p, w: walks[i], t: tvl[i] }))
+    .filter(({ w }) => w.roots.some((x) => x.account === FACTORY && x.kind === 'FullAccess'));
+  console.log(`   └── update(code) → DAO update(), no vote: auto_update: true on`);
+  onChain.forEach(({ p, t }, i) => {
+    const branch = i === onChain.length - 1 ? '└──' : '├──';
+    console.log(`        ${branch} ${pad(p.dao, 30)} owner of ${pad(p.contract, 24)} ${t.status === 'ok' ? usd(t.usd) : 'unknown'}`);
+  });
+  const anyUnknown = walks.some((w) => w.status !== 'ok');
+  const total = anyUnknown ? { status: 'unknown' } : sumTvl(onChain.map((x) => x.t));
+  console.log(`  = ${total.status === 'ok' ? usd(total.usd) : 'unknown'} of user deposits (DefiLlama ${date}) reachable from ${nKeys ? nKeys.length : 'unknown'} keys with no vote`);
+  const gated = PROTOCOLS.map((p, i) => ({ p, w: walks[i] })).filter(({ w }) => w.status === 'ok' && w.voteGates.length && !w.roots.length);
+  if (gated.length) console.log(`  needs a vote (auto_update: false): ${gated.map(({ p, w }) => `${w.voteGates.join(', ')} (${p.name})`).join('; ')}`);
+  for (const w of walks.filter((x) => x.status !== 'ok')) console.log(`  ? ${w.account}: walk unknown — ${w.unknowns.map((u) => `${u.at} ${u.read}: ${u.reason}`).join('; ')}`);
+  console.log(`  a floor, not a total: not yet evaluated — ${WALK_NOT_EVALUATED.join('; ')}\n`);
+}
+
 function print(r, rpc) {
   const { claims, warnings, factory, llama, owners, codes, tvl, numTerms, numerator, autoTrue, headline, ls, lsTrue, coverage, covRows, covM, covN, noOwner } = r;
   const llamaDate = llama.readAt.slice(0, 10);
   console.log(`Docket verify — mainnet, ${r.started.toISOString()}\n`);
+  printChain(r);
   console.log(`§2  who administers NEAR DeFi   (TVL: DefiLlama chainTvls.Near, read ${llama.readAt})\n`);
   console.log(`| protocol | TVL (DefiLlama, ${llamaDate}) | contract | administered by | resolved via |`);
   console.log('|---|---|---|---|---|');

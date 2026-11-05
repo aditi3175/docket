@@ -6,7 +6,7 @@ import { createRpc } from '../web/assets/rpc.js';
 import { collect, exitCodeFor } from '../tools/verify.mjs';
 import { replayFetch, githubReplay, loadFixture, jsonResponse, noSleep } from './helpers.mjs';
 
-const STRUCTURAL = 26;
+const STRUCTURAL = 33;
 const GITHUB = 3;
 const TVL = 3;
 const TOTAL = STRUCTURAL + GITHUB + TVL;
@@ -80,8 +80,11 @@ test('only the factory unreadable: version claims become unknown, totals unchang
   assert.equal(structural(r).length, STRUCTURAL);
   const unknown = r.claims.filter((c) => c.status === 'unverifiable').map((c) => c.what);
   // 2 factory claims + 5 DAO version claims + the factory's own code claim
-  assert.equal(unknown.length, 8, unknown.join('\n'));
-  assert.ok(unknown.every((w) => /sputnik-dao\.near|get_default_code_hash|version/.test(w)));
+  // + §3.4 factory owner and keys + the 3 walks that reach the factory (auto_update:true)
+  assert.equal(unknown.length, 13, unknown.join('\n'));
+  assert.ok(unknown.every((w) => /sputnik-dao\.near|get_default_code_hash|version|§6\.1 walk/.test(w)));
+  assert.deepEqual(unknown.filter((w) => /§6\.1 walk/.test(w)).sort(),
+    ['linear-protocol.near', 'meta-pool.near', 'nearx.stader-labs.near'].map((c) => `${c} no-vote roots, paths, vote gates (§6.1 walk)`));
 });
 
 test('claim names are the same whether or not reads succeed', async () => {

@@ -33,7 +33,7 @@ const CONTRACTS = ['contract.main.burrow.near', 'meta-pool.near', 'nearx.stader-
 const DAOS = ['stnear', 'stader-nearx', 'linear', 'burrow', 'ref-finance'].map((d) => `${d}.sputnik-dao.near`);
 
 const jobs = [];
-for (const id of [...DAOS, 'sputnik-dao.near', 'docket-fixture-missing-account.near']) jobs.push([`view_account.${id}`, FASTNEAR, account(id)]);
+for (const id of [...DAOS, 'sputnik-dao.near', 'docket-fixture-missing-account.near', ...CONTRACTS]) jobs.push([`view_account.${id}`, FASTNEAR, account(id)]);
 jobs.push(['call.sputnik-dao.near.get_contracts_metadata', FASTNEAR, call('sputnik-dao.near', 'get_contracts_metadata')]);
 jobs.push(['call.sputnik-dao.near.get_default_code_hash', FASTNEAR, call('sputnik-dao.near', 'get_default_code_hash')]);
 for (const c of CONTRACTS) for (const g of OWNER_GETTERS) jobs.push([`call.${c}.${g}`, FASTNEAR, call(c, g)]);
@@ -41,6 +41,12 @@ jobs.push(["call.docket-fixture-missing-account.near.get_owner", FASTNEAR, call(
 for (const d of DAOS) jobs.push([`call.${d}.get_factory_info`, FASTNEAR, call(d, 'get_factory_info')]);
 // §2: accounts that expose no owner getter
 for (const c of ['intents.near', 'wrap.near']) for (const g of OWNER_GETTERS) jobs.push([`call.${c}.${g}`, FASTNEAR, call(c, g)]);
+// §6.1 authority walk (Nov 6): keys on every account the walk visits; owner getters and
+// get_factory_info on the accounts not covered above.
+const keys = (id) => ({ request_type: 'view_access_key_list', finality: 'final', account_id: id });
+for (const id of [...CONTRACTS, ...DAOS, 'sputnik-dao.near']) jobs.push([`access_keys.${id}`, FASTNEAR, keys(id)]);
+for (const id of [...DAOS, 'sputnik-dao.near']) for (const g of OWNER_GETTERS) jobs.push([`call.${id}.${g}`, FASTNEAR, call(id, g)]);
+for (const id of [...CONTRACTS, 'sputnik-dao.near']) jobs.push([`call.${id}.get_factory_info`, FASTNEAR, call(id, 'get_factory_info')]);
 // Error shapes from the failover endpoints, so rpc.js classifies them from data, not guesses.
 for (const e of OTHERS) {
   const host = new URL(e).host;

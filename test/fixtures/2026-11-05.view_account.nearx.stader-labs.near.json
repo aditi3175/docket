@@ -1,0 +1,28 @@
+{
+  "endpoint": "https://free.rpc.fastnear.com",
+  "captured_at": "2026-11-05T18:42:29.794Z",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "docket",
+    "method": "query",
+    "params": {
+      "request_type": "view_account",
+      "finality": "final",
+      "account_id": "nearx.stader-labs.near"
+    }
+  },
+  "http_status": 200,
+  "body": {
+    "jsonrpc": "2.0",
+    "result": {
+      "amount": "100224566123609918800000003",
+      "block_hash": "DAvDc8Zk4Tm7bfZ7cE4BaQXQiPCWoUmioXsjp2bhPmuh",
+      "block_height": 223204714,
+      "code_hash": "3e9bgYYY6Qitb1H8DDxEEEmy1ve9ak7hvM68mqNQhGCw",
+      "locked": "0",
+      "storage_paid_at": 0,
+      "storage_usage": 704812
+    },
+    "id": "docket"
+  }
+}

@@ -1,9 +1,9 @@
-// resolve.js — owner resolution (§6.2) and code identity (§4, §5).
-// The authority walk (§6.1) lands here on Nov 6.
+// resolve.js — owner resolution (§6.2), the authority walk (§6.1) and code identity (§4, §5).
 //
 // Enforces:
 //   I2   any read that fails after failover makes the answer 'unknown' — never "no owner",
-//        never "no contract"
+//        never "no contract", never "no keys"; a walk with any unknown read is itself unknown
+//   I6   the authority walk terminates: cycle detection, depth cap 6
 //   I3   code identity reads code_hash, global_contract_hash AND global_contract_account_id
 //   I4   global_contract_account_id is always flagged as a third-party upgrade path
 //   I12  every code hash is joined to a factory version + commit where one exists
@@ -118,4 +118,89 @@ export async function factoryInfo(rpc, daoId) {
     return { status: 'unknown', reason: 'unexpected get_factory_info shape' };
   }
   return { status: 'ok', factoryId: factory_id, autoUpdate: auto_update };
+}
+
+// view_access_key_list -> { status:'ok', keys:[{ publicKey, kind:'FullAccess' }
+//                                         | { publicKey, kind:'FunctionCall', receiver, methods }] }
+//   | { status:'no-account' } | { status:'unknown', reason }
+// Recorded shape (2026-11-05): { keys: [{ public_key, access_key: { nonce, permission } }] },
+// permission = "FullAccess" | { FunctionCall: { allowance, receiver_id, method_names } }
+export async function accessKeys(rpc, accountId) {
+  const r = await rpc.query({ request_type: 'view_access_key_list', finality: 'final', account_id: accountId });
+  if (r.status === 'unknown') return { status: 'unknown', reason: r.reason };
+  if (r.status === 'absent' && r.what === 'account') return { status: 'no-account' };
+  if (r.status !== 'ok' || !Array.isArray(r.value?.keys)) return { status: 'unknown', reason: 'unexpected view_access_key_list shape' };
+  const keys = [];
+  for (const k of r.value.keys) {
+    const perm = k?.access_key?.permission;
+    if (perm === 'FullAccess') keys.push({ publicKey: k.public_key, kind: 'FullAccess' });
+    else if (perm?.FunctionCall) {
+      keys.push({ publicKey: k.public_key, kind: 'FunctionCall', receiver: perm.FunctionCall.receiver_id,
+        methods: perm.FunctionCall.method_names ?? [] });
+    } else return { status: 'unknown', reason: 'unrecognised access key permission' };
+  }
+  return { status: 'ok', keys };
+}
+
+export const WALK_MAX_DEPTH = 6;
+// §6.1 edges this walk does not evaluate yet. Their existence makes every root set a floor.
+export const WALK_NOT_EVALUATED = Object.freeze([
+  'policy threshold: a role with *:* whose group can pass a proposal alone (get_policy)',
+]);
+
+// §6.1 — who can change `accountId` without a vote.
+// -> { status:'ok'|'unknown', account, tree, roots, voteGates, unknowns, notEvaluated }
+//   roots      — keys that act with no vote, deduplicated, each with the account path that reaches it
+//   voteGates  — Sputnik DAOs on the way that read auto_update:false (a vote is required past them)
+//   unknowns   — every read that failed; non-empty means status 'unknown' (I2): the roots shown are
+//                what was reached, never presented as the whole set
+// Edges followed: keys on the account; global_contract_account_id (the publisher can swap the
+// code, I4); get_factory_info auto_update:true -> the factory; the §6.2 owner. Terminates on a cycle,
+// at depth WALK_MAX_DEPTH, or on an account with nothing further to follow (I6).
+export async function authorityWalk(rpc, accountId, { maxDepth = WALK_MAX_DEPTH } = {}) {
+  const roots = new Map(); // `${account} ${publicKey}` -> root
+  const voteGates = new Set();
+  const unknowns = [];
+
+  async function visit(account, depth, path) {
+    if (path.includes(account)) return { account, depth, terminal: 'cycle', edges: [] };
+    if (depth > maxDepth) {
+      unknowns.push({ at: account, read: 'walk', reason: `depth cap ${maxDepth} reached` });
+      return { account, depth, terminal: 'depth', edges: [] };
+    }
+    const here = [...path, account];
+    const [keys, code, fi, owner] = await Promise.all([
+      accessKeys(rpc, account), codeIdentity(rpc, account, null), factoryInfo(rpc, account), resolveOwner(rpc, account),
+    ]);
+    const node = { account, depth, edges: [], keys: keys.status === 'ok' ? keys.keys : null };
+    const children = [];
+
+    if (keys.status === 'unknown') unknowns.push({ at: account, read: 'view_access_key_list', reason: keys.reason });
+    else if (keys.status === 'ok') {
+      for (const k of keys.keys) {
+        roots.set(`${account} ${k.publicKey}`, { account, path: here, ...k });
+        node.edges.push({ type: k.kind === 'FullAccess' ? 'full-access-key' : 'function-call-key', key: k, needsVote: false });
+      }
+    }
+    if (code.form === 'unknown') unknowns.push({ at: account, read: 'view_account', reason: code.reason });
+    else if (code.form === 'global_account') children.push(['global_contract_account_id', code.account]);
+    if (fi.status === 'unknown') unknowns.push({ at: account, read: 'get_factory_info', reason: fi.reason });
+    else if (fi.status === 'ok') {
+      if (fi.autoUpdate) children.push(['auto_update', fi.factoryId]);
+      else { voteGates.add(account); node.edges.push({ type: 'vote', via: 'auto_update:false', needsVote: true }); }
+    }
+    if (owner.status === 'unknown') unknowns.push({ at: account, read: `owner (${owner.at})`, reason: owner.reason });
+    else if (owner.status === 'ok') children.push([`owner via ${owner.via}`, owner.owner]);
+
+    const kids = await Promise.all(children.map(([, to]) => visit(to, depth + 1, here)));
+    children.forEach(([type, to], i) => node.edges.push({ type, to, needsVote: false, node: kids[i] }));
+    node.locked = keys.status === 'ok' && node.edges.length === 0;
+    return node;
+  }
+
+  const tree = await visit(accountId, 0, []);
+  return {
+    status: unknowns.length ? 'unknown' : 'ok', account: accountId, tree,
+    roots: [...roots.values()], voteGates: [...voteGates], unknowns, notEvaluated: WALK_NOT_EVALUATED,
+  };
 }
