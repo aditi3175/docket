@@ -1,45 +1,45 @@
 # DRAFT — not sent
 
-> Status: draft for review (2026-11-06). Not sent to anyone. Per ARCHITECTURE.md
-> §11 it goes to every recipient at the same time, before the repository is
-> public. Every figure below is dated, and comes with the command that
-> reproduces it.
+> Status: final text, ready to send (2026-11-06). **Not sent to anyone.** Per
+> ARCHITECTURE.md §11 it goes to every recipient at the same time, before the
+> repository is public. The send time is recorded here when it goes out.
+> Everything between the two `✂` lines is the text to paste.
 
----
+✂ ----------------------------------------------------------------------------
 
-**To:** the sputnik-dao-contract maintainers (including frol, author of PR #233);
-NEAR security; Meta Pool; Stader Labs / RHEA LST (NearX); LiNEAR
-
-**Subject:** The PR #233 auto-update fix is not deployed. Three liquid-staking DAOs are exposed until it is, and here is an opt-out
-
-Hello all,
+Hello,
 
 We're building Docket, a read-only tool that shows, for any NEAR account, who
-can change it without a vote. While building it we followed one path from end
-to end, and we'd like to share it before we publish. Everything here is a
-public configuration fact. None of it is an exploit, and nothing below needs
-an embargo. We're sending it because the people at the end of the path can't
-currently see it, and because a fix already exists.
+can change it without a vote. While building it we traced one path end to end,
+and we'd like to share it with you before we publish. Everything below is a
+public configuration fact with the command that reproduces it (section 6).
+None of it is an exploit, and it needs no embargo. We're writing because the
+depositors at the end of the path can't currently see it, and because a fix
+already exists.
+
+All chain reads and figures are from **2026-11-06** unless another date is
+given.
 
 ## 1. The fix exists and has not shipped
 
-- [PR #233](https://github.com/near-daos/sputnik-dao-contract/pull/233),
-  *"Factory auto-updates should not be applied immediately to counter the risk
-  of taking control if the factory account is compromised"*, by frol, merged
-  **2026-03-24** (merge commit `9e96c75410a9`). It makes a factory-initiated
-  `update()` open an `UpgradeSelf` proposal and wait `TWO_WEEKS_NS` before
-  deploying. Thank you for it. It is exactly the right instinct.
-- The factory still publishes **v3.2, commit `2b0f34a38604`** (2026-02-25), as
-  its default. `get_contracts_metadata` lists no build after v3.2. GitHub's
-  compare puts the fix **2 commits ahead of, 0 behind** the deployed commit.
+- **PR #233** in near-daos/sputnik-dao-contract, *"Factory auto-updates should
+  not be applied immediately to counter the risk of taking control if the
+  factory account is compromised"*, by frol, merged **2026-03-24**, merge
+  commit `9e96c75410a9`. A factory-initiated `update()` then waits for an
+  `UpgradeSelf` proposal to have been open for two weeks (`TWO_WEEKS_NS`)
+  before it deploys. [A1, A2] Thank you for it. It is the right instinct.
+- The factory `sputnik-dao.near` still publishes **v3.2, commit
+  `2b0f34a38604`** (committed 2026-02-25), as its default. `get_contracts_metadata`
+  lists no build after v3.2. GitHub's compare puts the fix **2 commits ahead,
+  0 behind** that commit. [A3, A4]
 
 ## 2. Who is exposed today
 
 A Sputnik DAO that never wrote factory info reads `auto_update: true`. That is
-the default in `internal_get_factory_info` (`upgrade.rs:95` at `2b0f34a38604`).
-With `true`, the DAO's `update()` accepts the factory as caller, with no
-proposal and no vote. The factory `sputnik-dao.near` is self-owned and holds
-**three full-access keys**:
+the default in `internal_get_factory_info`. [B1] With `true`, the DAO's
+`update()` accepts the factory as caller, with no proposal and no vote. [B2]
+The factory is self-owned, and its only authority is **three full-access
+keys** [B3]:
 
 ```
 ed25519:2gtDEwdLuUBawzFLAnCS9gUso3Ph76bRzMpVrtb66f3J
@@ -47,43 +47,47 @@ ed25519:3z2MnvQqD3dsUPynZpV8CFtyXhFiTksjZhjDr26isEXv
 ed25519:7ReZXfft58fzSLyCB6A5qQ719DCaDo8etYrat75KFXp3
 ```
 
-So the path is: those keys → factory `update(account_id, code_hash)` → the
-DAO's `update()` (no vote, `auto_update: true`) → the DAO's protocol contract.
+The path: those keys → factory `update(account_id, code_hash)` [B4] → the
+DAO's `update()` (no vote while `auto_update: true`) → the protocol contract
+the DAO owns.
 
-| DAO | `auto_update` | code it runs | owner of | NEAR TVL (DefiLlama `chainTvls.Near`, 2026-11-06) |
+| DAO | `auto_update` [C1] | code it runs [C2] | owner of [C3] | value |
 |---|---|---|---|---|
-| `stnear.sputnik-dao.near` | **true** | v3.2 (`global_contract_hash` DtHZ…XuF) | `meta-pool.near` (Meta Pool) | $79,933,156 |
-| `stader-nearx.sputnik-dao.near` | **true** | v3.0 (`code_hash` 2Zof…HnK) | `nearx.stader-labs.near` (RHEA LST) | $69,171,320 |
-| `linear.sputnik-dao.near` | **true** | v3.1 (`code_hash` 4zSo…ECp) | `linear-protocol.near` (LiNEAR) | $46,856,045 |
-| | | | **total** | **$195,960,520** |
+| `stnear.sputnik-dao.near` | **true** | v3.2 | `meta-pool.near` (Meta Pool) | $79,933,156 (DefiLlama) [C4] |
+| `linear.sputnik-dao.near` | **true** | v3.1 | `linear-protocol.near` (LiNEAR) | $46,732,391 (DefiLlama) [C4] |
+| `stader-nearx.sputnik-dao.near` | **true** | v3.0 | `nearx.stader-labs.near` (NearX) | 2,553,885 NEAR staked (on chain) [C5] |
 
-That is 99.4% of NEAR liquid-staking TVL on DefiLlama on the same date. For
-comparison, `burrow.sputnik-dao.near` and `ref-finance.sputnik-dao.near` read
-`auto_update: false` (they opted out on 2026-10-24, proposals #1725 and #968).
+**$126,665,546** (DefiLlama, Meta Pool + LiNEAR) plus **2,553,885 NEAR** in
+NearX. DefiLlama doesn't value NearX, so it's stated in NEAR. At $3.69 per NEAR
+that is about $9.4M (on-chain amount × price, not a DefiLlama figure).
 
 The mechanism has a real purpose: rescuing a bricked DAO. We don't suggest
-otherwise. The concern is that the depositors can see neither the path nor
-that a fix exists.
+otherwise. The concern is that depositors can see neither the path nor that
+a fix exists.
 
 ## 3. Shipping the fix does not close it by itself
 
-Our reading of the source, which we'd be grateful if you'd correct:
+This is our reading of the source. We'd be grateful for corrections.
 
 1. **The fix's first delivery uses the ungated `update()`.** The two-week gate
-   lives in the *new* code. Delivering that code to a DAO goes through the DAO's
-   *current* `update()`, which is the same immediate check at v3.0, v3.1 and
-   v3.2. So the upgrade that installs the gate is itself a no-vote,
-   no-delay deploy from the factory keys.
-2. **After the fix, the factory path is delayed and visible, but still needs no
-   vote.** After two weeks the code deploys without one. The gate is skipped
-   when the DAO's state cannot be read (the rescue case).
-3. **A voted upgrade may be delayed too.** `UpgradeSelf` runs through
-   `factory.update(self)`, so under PR #233 the DAO's `update()` sees the
-   factory as caller and treats it as an auto-update. We have not run this.
+   lives in the *new* code. Delivering that code to a DAO goes through the
+   DAO's *current* `update()`, which has the same immediate check at v3.0,
+   v3.1 and v3.2 [B2]. So the upgrade that installs the gate is itself a
+   no-vote, no-delay deploy from the factory keys.
+2. **After the fix, a factory update is delayed and visible, but still needs
+   no vote.** After two weeks the code deploys without one. The gate is
+   skipped when the DAO's state can't be read, which is the rescue case. [D1]
+3. **A voted upgrade may be delayed too.** `UpgradeSelf` reaches `update()`
+   through the factory (section 4), so under PR #233 the DAO sees the factory
+   as caller and treats it as an auto-update [D1]. We have not run this.
+
+One caveat on our own reading: the factory's own code hash
+(`BXd5idTX…nnY`) is not in its `get_contracts_metadata`, so we can't confirm
+which commit the factory runs. We read its `update()` at `2b0f34a38604`. [B4]
 
 ## 4. The opt-out, and what it costs
 
-Each DAO can opt out today with one `FactoryInfoUpdate` proposal:
+A DAO opts out with one `FactoryInfoUpdate` proposal:
 
 ```json
 { "proposal": {
@@ -92,73 +96,132 @@ Each DAO can opt out today with one `FactoryInfoUpdate` proposal:
         "factory_id": "sputnik-dao.near", "auto_update": false } } } } }
 ```
 
-This exact shape has passed on twelve DAOs between 2026-10-05 and 2026-10-29,
-seven on v3.1 (`burrow`, `ref-finance`, `ref-labs`, `rhea-conversion`,
-`rhea-lostfound`, `rhea-ccdfm`, `rhea-airdrop`) and five on v3.2 (`rhea-lsd`,
-`neardragons`, `testgfdg`, `unrlzd`, `nearlytrade`). Each now reads
-`auto_update: false`. None of those twelve runs v3.0, which is what
-`stader-nearx` runs. The source shape is identical at v3.0 (`86cc77a0808a`),
-but it has not been exercised there.
+Twelve DAOs passed exactly this kind between 2026-10-05 and 2026-10-29, and
+each now reads `auto_update: false`. Seven run v3.1 and five run v3.2. They
+include `burrow` (#1725) and `ref-finance` (#968). [E1] None of them runs
+v3.0, which is what `stader-nearx` runs. The source shape is the same at v3.0
+(`86cc77a0808a`), but it has not been run there.
 
-Per DAO, read from `get_policy` on 2026-11-06:
+Per DAO [E2]:
 
-| DAO | bond (`proposal_bond`, attached to `add_proposal`) | who can propose and approve `factory_info_update` |
-|---|---|---|
-| `stnear` | 1 NEAR | `council` holds `*:AddProposal` and `*:VoteApprove`, default threshold 55/100. `stnear` has never had a proposal (`get_last_proposal_id` reads 0, `get_proposals` is empty, 2026-11-06), so an opt-out would be its first |
-| `linear` | 0.1 NEAR | `Council` holds `*:AddProposal` and `*:VoteApprove`, default threshold 1/2 |
-| `stader-nearx` | 0.1 NEAR | **no role holds a permission matching `factory_info_update`.** A `policy` proposal granting it (the council holds `policy:AddProposal` / `policy:VoteApprove`) has to pass first |
+| DAO | bond (`proposal_bond`) | who can propose and approve it | steps |
+|---|---|---|---|
+| `stnear` | 1 NEAR | `council` (4 members) holds `*:AddProposal` and `*:VoteApprove`; default threshold 55/100 | **1 proposal.** `stnear` has never had a proposal (`get_last_proposal_id` = 0), so this would be its first [E3] |
+| `linear` | 0.1 NEAR | `Council` (5 members) holds `*:AddProposal` and `*:VoteApprove`; default threshold 1/2 | **1 proposal** |
+| `stader-nearx` | 0.1 NEAR | **No role holds any permission matching `factory_info_update`.** The council holds `policy:AddProposal` and `policy:VoteApprove`, but not `policy_add_or_update_role` | **2 proposals:** first a `ChangePolicy` that grants `factory_info_update`, then the opt-out |
 
-**What it costs, honestly.**
+### What opting out costs
 
-- **The factory can no longer rescue the DAO** if a migration bricks it.
-- **From the source, the DAO probably also loses `UpgradeSelf`.** At v3.0,
-  v3.1, v3.2 and at the PR #233 commit, `UpgradeSelf` only calls
-  `factory.update(dao, hash)`. The factory then calls the DAO's `update()` as
-  the factory, which an opted-out DAO rejects with `ERR_MUST_BE_SELF_OR_FACTORY`.
-  If so, upgrading an opted-out DAO takes three proposals:
-  `FactoryInfoUpdate → true`, then `UpgradeSelf`, then `FactoryInfoUpdate → false`.
-  While `true` is in force, the no-vote path is open again. None of the twelve
-  opted-out DAOs has attempted an `UpgradeSelf` since opting out, so mainnet
-  hasn't answered this yet. We will test it on our own demo DAO on
-  2026-11-08 and send you the transaction either way.
+1. **The factory can no longer rescue the DAO** if a migration bricks it.
+2. **Upgrading becomes a three-proposal process, and the no-vote path reopens
+   during it.** This is from the source and has not yet been run on mainnet.
+   At v3.0, v3.1, v3.2 and at the PR #233 commit, an approved `UpgradeSelf`
+   does only one thing: the DAO calls `factory.update(dao, hash)`. The factory
+   then calls the DAO's `update(code)` *as the factory*, and an opted-out DAO
+   rejects that call (`ERR_MUST_BE_SELF_OR_FACTORY`). [F1, B2, B4] So an
+   opted-out DAO upgrades like this:
 
-In exchange, the opt-out is currently the only setting that puts a vote in
-front of every code change. That stays true after PR #233 ships.
+   1. a `FactoryInfoUpdate` proposal setting `auto_update: true`;
+   2. an `UpgradeSelf` proposal for the new code;
+   3. a `FactoryInfoUpdate` proposal setting `auto_update: false`.
 
-## 5. Reproduce
+   Between steps 1 and 3, the factory's three keys can again replace the
+   code with no vote.
+
+   None of the twelve opted-out DAOs has tried an `UpgradeSelf` since opting
+   out, so mainnet hasn't answered this yet [E1]. We will test it on our own
+   demo DAO on 2026-11-08 and send you the transaction either way.
+
+In exchange, opting out is the only setting today that puts a vote in front
+of every code change, and that stays true after PR #233 ships.
+
+## 5. What we'll do
+
+- Publish on or after 2026-11-14, including each response verbatim. Any
+  reply, including none, will be shown as it is.
+- Correct anything above that you tell us is wrong before then, and credit
+  you for it.
+- Send you the `UpgradeSelf` test result (section 4) as soon as it runs.
+
+## 6. Reproduce
 
 ```bash
 RPC=https://free.rpc.fastnear.com
 viewa(){ curl -s -X POST $RPC -H 'Content-Type: application/json' \
  -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"query\",\"params\":{\"request_type\":\"call_function\",\"finality\":\"final\",\"account_id\":\"$1\",\"method_name\":\"$2\",\"args_base64\":\"$(printf '%s' "$3" | base64 -w0)\"}}" \
  | python3 -c 'import sys,json;r=json.load(sys.stdin)["result"];print(bytes(r["result"]).decode())'; }
+rpcq(){ curl -s -X POST $RPC -H 'Content-Type: application/json' \
+ -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"query\",\"params\":{\"request_type\":\"$1\",\"finality\":\"final\",\"account_id\":\"$2\"}}"; }
+GH=https://api.github.com/repos/near-daos/sputnik-dao-contract
+SRC=https://raw.githubusercontent.com/near-daos/sputnik-dao-contract
 
-viewa sputnik-dao.near get_owner '{}'                 # "sputnik-dao.near"
-curl -s -X POST $RPC -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"query","params":{"request_type":"view_access_key_list","finality":"final","account_id":"sputnik-dao.near"}}'
-viewa sputnik-dao.near get_default_code_hash '{}'     # DtHZA1mU…XuF = v3.2
-viewa sputnik-dao.near get_contracts_metadata '{}'    # last entry v3.2, commit 2b0f34a38604
-for d in stnear stader-nearx linear; do viewa $d.sputnik-dao.near get_factory_info '{}'; done
-viewa meta-pool.near get_owner_id '{}'
-viewa nearx.stader-labs.near get_owner_id '{}'
-viewa linear-protocol.near get_owner_id '{}'
-viewa stader-nearx.sputnik-dao.near get_policy '{}'
-gh api repos/near-daos/sputnik-dao-contract/compare/2b0f34a38604...9e96c75410a9 --jq '{status,ahead_by,behind_by}'
+# A1  PR #233: merged, merged_at, merge commit
+curl -s $GH/pulls/233 | python3 -c 'import sys,json;p=json.load(sys.stdin);print(p["merged"],p["merged_at"],p["merge_commit_sha"])'
+# A2  the gate in the fix
+curl -s $SRC/9e96c75410a9/sputnikdao2/src/upgrade.rs | grep -n TWO_WEEKS_NS
+# A3  factory versions and default (last entry v3.2, commit 2b0f34a38604; default = DtHZA1mU…XuF)
+viewa sputnik-dao.near get_contracts_metadata '{}'
+viewa sputnik-dao.near get_default_code_hash '{}'
+# A4  fix vs deployed: status, ahead_by, behind_by, deployed commit date
+curl -s $GH/compare/2b0f34a38604...9e96c75410a9 | python3 -c 'import sys,json;c=json.load(sys.stdin);print(c["status"],c["ahead_by"],c["behind_by"],c["base_commit"]["commit"]["committer"]["date"])'
+
+# B1  the auto_update: true default (v3.2)
+curl -s $SRC/2b0f34a38604/sputnikdao2/src/upgrade.rs | sed -n 95,101p
+# B2  the DAO's update() caller check (v3.0 / v3.1 / v3.2)
+curl -s $SRC/86cc77a0808a/sputnikdao2/src/upgrade.rs | sed -n 64,70p
+curl -s $SRC/3d568f9517a8/sputnikdao2/src/upgrade.rs | sed -n 67,73p
+curl -s $SRC/2b0f34a38604/sputnikdao2/src/upgrade.rs | sed -n 122,128p
+# B3  the factory: self-owned, three full-access keys
+viewa sputnik-dao.near get_owner '{}'
+rpcq view_access_key_list sputnik-dao.near
+# B4  the factory's update(): caller must be its owner or the DAO itself
+curl -s $SRC/2b0f34a38604/sputnikdao-factory2/src/lib.rs | sed -n 109,121p
+
+# C1  auto_update on the three DAOs
+for d in stnear linear stader-nearx; do viewa $d.sputnik-dao.near get_factory_info '{}'; done
+# C2  code each runs (global_contract_hash / code_hash -> versions in A3)
+for d in stnear linear stader-nearx; do rpcq view_account $d.sputnik-dao.near; done
+# C3  ownership
+viewa meta-pool.near get_owner_id '{}'; viewa linear-protocol.near get_owner_id '{}'; viewa nearx.stader-labs.near get_owner_id '{}'
+# C4  DefiLlama NEAR-only TVL, and that its adapters read these contracts
+curl -s https://api.llama.fi/protocols | python3 -c 'import sys,json;d={p["slug"]:p for p in json.load(sys.stdin)};[print(s,d[s]["chainTvls"]["Near"]) for s in ["meta-pool-near","linear-protocol"]]'
+curl -s https://raw.githubusercontent.com/DefiLlama/DefiLlama-Adapters/main/projects/metapool.js | grep -n "meta-pool.near"
+curl -s https://raw.githubusercontent.com/DefiLlama/DefiLlama-Adapters/main/projects/linear-near.js | grep -n LINA   # LINA = linear-protocol.near
+# C5  NearX staked, yoctoNEAR (24 decimals)
+viewa nearx.stader-labs.near get_total_staked_balance '{}'
+
+# D1  the PR #233 gate: is_auto_update, the state-unreadable skip, the two-week check
+curl -s $SRC/9e96c75410a9/sputnikdao2/src/upgrade.rs | sed -n '160,167p;187,192p'
+
+# E1  the twelve opt-outs: proposal kind + status, then factory info now
+for p in ref-finance:968 burrow:1725 ref-labs:285 rhea-conversion:8 rhea-lostfound:2 rhea-ccdfm:9 \
+         rhea-airdrop:13 rhea-lsd:4 neardragons:0 testgfdg:0 unrlzd:1 nearlytrade:8; do
+  d=${p%%:*}.sputnik-dao.near; viewa $d get_proposal "{\"id\":${p##*:}}"; viewa $d get_factory_info '{}'; done
+# E2  bonds, roles, permissions
+for d in stnear linear stader-nearx; do viewa $d.sputnik-dao.near get_policy '{}'; done
+# E3  stnear has never had a proposal
+viewa stnear.sputnik-dao.near get_last_proposal_id '{}'
+
+# F1  UpgradeSelf runs only upgrade_using_factory, which calls the factory's update
+curl -s $SRC/2b0f34a38604/sputnikdao2/src/proposals.rs | sed -n 394,397p
+curl -s $SRC/2b0f34a38604/sputnikdao2/src/upgrade.rs | sed -n 162,178p
 ```
-
-`node tools/verify.mjs` in the Docket repository re-runs these checks and
-prints the chain. It will link here once the repository is public.
-
-## 6. What we'll do
-
-- Publish on or after 2026-11-14 with the opt-out flow, and each response
-  verbatim. Any reply, including none, will be shown as it is.
-- Correct anything above you tell us is wrong before then, and credit you for it.
-- Report the `UpgradeSelf` test result (§4) as soon as it runs.
 
 Thank you for PR #233, and for reading this.
 
 — the Docket team
 
----
+✂ ----------------------------------------------------------------------------
 
-<!-- Sources for every figure: ARCHITECTURE.md §2, §3.3, §3.4, §5, §16.2; reads of 2026-11-06. -->
+## Send list (not part of the pasted text)
+
+| recipient | channel | subject |
+|---|---|---|
+| NEAR security, asked to forward to the sputnik-dao-contract maintainers and frol | security@near.org ([nearcore SECURITY.md](https://github.com/near/nearcore/blob/master/SECURITY.md)) | Sputnik factory: PR #233's auto-update fix is undeployed — please forward to the sputnik-dao-contract maintainers and frol |
+| Meta Pool | bug-bounty form https://forms.gle/F5BhExYc6GRjByyQ9 ([bug bounty page](https://docs.metapool.app/master/contribute-to-meta-pool/bug-bounty-program)) | stnear.sputnik-dao.near (owner of meta-pool.near) can be upgraded by the Sputnik factory with no vote |
+| Stader | admin@staderlabs.com ([GitHub org profile](https://github.com/stader-labs)) | stader-nearx.sputnik-dao.near (owner of NearX) can be upgraded by the Sputnik factory with no vote |
+| LiNEAR | X DM to @LinearProtocol | linear.sputnik-dao.near (owner of linear-protocol.near) can be upgraded by the Sputnik factory with no vote |
+
+No public GitHub issue until all four have received it.
+
+Sent: — (not yet)
