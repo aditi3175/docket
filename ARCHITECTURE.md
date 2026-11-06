@@ -573,7 +573,12 @@ makes a decoded argument mean something. For every proposal Docket resolves:
 - **the reach**: for `FunctionCall`, that it can call *any* method on *any*
   contract, including another DAO's `act_proposal`
 - **the authority delta**: for the nine policy/role kinds, who could pass what
-  before and after
+  before and after. The nine are `ChangePolicy`,
+  `ChangePolicyUpdateDefaultVotePolicy`, `ChangePolicyUpdateParameters`,
+  `ChangePolicyAddOrUpdateRole`, `ChangePolicyRemoveRole`, `AddMemberToRole`,
+  `RemoveMemberFromRole`, `SetStakingContract` (vote weighting) and
+  `FactoryInfoUpdate` (`auto_update`). In code: `AUTHORITY_KINDS` in
+  `web/assets/decode.js`
 
 ### 6.4 The risk taxonomy
 
@@ -625,8 +630,15 @@ Compares the description against the decoded action. It flags; it never clears.
 | named amounts | numerals in the description must match decoded amounts at the token's decimals | passes |
 | silent reach | the action touches a contract the description never mentions | fires |
 | cross-organisation | the action targets another DAO (e.g. `act_proposal`) | fires on marmaj #1016 |
-| empty assertion | description empty, boilerplate, or below an entropy floor | fires on marmaj #1016 |
-| authority change | the kind alters who can pass what | fires on all nine policy/role kinds |
+| empty assertion | description empty, or under 4 words once UI markers such as Astro's `$$$$$$$$ProposeCustomFunctionCall` are stripped | fires on marmaj #1016, whose description is 3 words: "Solving the Upgrade" |
+| authority change | the kind is one of the nine that alter who can pass what: `ChangePolicy`, `ChangePolicyUpdateDefaultVotePolicy`, `ChangePolicyUpdateParameters`, `ChangePolicyAddOrUpdateRole`, `ChangePolicyRemoveRole`, `AddMemberToRole`, `RemoveMemberFromRole`, `SetStakingContract`, `FactoryInfoUpdate` (§6.3) | fires on all nine |
+
+**The empty-assertion cutoff is a chosen setting, not a measurement.** "Under 4
+words" (`EMPTY_ASSERTION_MIN_WORDS` in `web/assets/lint.js`) is Docket's choice.
+It doesn't come from the Sputnik source or from any measured set of
+descriptions. It is set so that a bare title fires and a sentence naming its
+target does not. On the recorded data, marmaj #1016 has 3 words and fires, and
+burrow #1741–#1744 have 6 words each and do not.
 
 **No score.** A single number nobody can audit is the thing this project exists
 to argue against.
