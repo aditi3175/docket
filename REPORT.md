@@ -9,7 +9,7 @@ the sender, in IST (UTC+05:30), with UTC beside them.
 | NEAR security, asked to forward to the sputnik-dao-contract maintainers and frol | security@near.org | 2026-11-06 14:37 | 09:07 | automated acknowledgement: the inbox is monitored, and code bugs go to HackenProof |
 | Meta Pool | bug-bounty form | 2026-11-06 14:47 | 09:17 | none yet |
 | Stader | admin@staderlabs.com | 2026-11-06 14:50 | 09:20 | none yet |
-| LiNEAR | X DM to @LinearProtocol | **not reached** | — | **pending.** The X DM is blocked because the account accepts DMs from verified accounts only |
+| LiNEAR | X DM to @LinearProtocol | **not reached** | — | **pending.** The X DM is blocked because the account accepts DMs from verified accounts only. Contact requested instead, with no details of the finding: a public X reply to @LinearProtocol at 2026-11-06 15:07 IST (09:37 UTC; time as reported, read as PM); and [linear-protocol/LiNEAR#215](https://github.com/linear-protocol/LiNEAR/issues/215), *"Request: private security contact for LiNEAR"*, opened 2026-11-06 15:11 IST (09:41:29 UTC, `gh issue view`). The report itself is not yet sent |
 
 Every response will be published verbatim at submission, including "no
 response" (§11). Everything between the two `✂` lines is the text that was
