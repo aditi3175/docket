@@ -1214,6 +1214,7 @@ each step checked by re-reading the chain before the next):
 |---|---|---|
 | 1 create | `2dB1gehLJV4pghTBhPYRFdi3LqWnx3XdTbVCbTJWLctk` | `docket-demo.sputnik-dao.near` created; `global_contract_hash` `DtHZA1mUmGYeScEaUoUZYQGGFHSMpnjMCvkr5U9hJXuF` (v3.2); `on_create` returned `true`, no refund, the 0.1 NEAR deposit is the DAO's balance; `get_factory_info` → `{"factory_id":"sputnik-dao.near","auto_update":true}`; `get_policy` = council `[docket-aditi.near]` only; 0.0077514 NEAR burnt |
 | 2 add #0 | `D3k5f1MrHcVWdCrb4MnHUw2mNvafdC63sxaa1SRbfDNa` | returned `0`; `get_proposal(0)` InProgress, proposer `docket-aditi.near`, kind `{"FactoryInfoUpdate":{"factory_info":{"factory_id":"sputnik-dao.near","auto_update":false}}}`; 0.1 NEAR bond attached; 0.0002255 NEAR burnt |
+| 3 approve #0 | `Fx39dSVT61HJ8hfNymAgRqjF8gG9xczPcgF59wu16Vkh` | all receipts succeeded; #0 Approved, `vote_counts` `{"council":["1","0","0"]}`; 0.1 NEAR bond transferred back to `docket-aditi.near`; re-read (I15) at block 223342856: `get_factory_info` → `{"factory_id":"sputnik-dao.near","auto_update":false}`; 0.0003030 NEAR burnt |
 
 The on-chain description of #0 is `Opt out of factory auto-update(Docket). The
 factory will no longer be able to replace the code of this DAO without a vote.`
@@ -1258,12 +1259,17 @@ tools over stdio, so any MCP-capable agent can call Docket before it acts.
   there are no critical or high flags and no unknowns (I16). Otherwise do not
   vote and escalate: write the Docket report to the delegate's log, linked
   from the README, and wait for a human.
-- **Binding the vote to what was checked.** **[verify]** whether
-  `act_proposal` in the deployed version takes the proposal kind as an
-  argument. If it does, the delegate passes the exact kind it analysed, so a
-  vote cannot land on a proposal that differs from the one checked. If it does
-  not, the delegate re-reads the proposal immediately before voting and aborts
-  on any difference.
+- **Binding the vote to what was checked.** In v3.2, the version the demo DAO
+  runs, `act_proposal(id, action, proposal: ProposalKind, memo)` takes the
+  proposal kind as a required argument. It asserts
+  `proposal.kind == input_proposal_kind` with `ERR_WRONG_KIND`
+  (`sputnikdao2/src/proposals.rs:598,616` at `2b0f34a38604`). On mainnet,
+  step 3 of the demo-DAO run (`Fx39dSVT61HJ8hfNymAgRqjF8gG9xczPcgF59wu16Vkh`,
+  §16.5) passed the kind and was accepted. So the delegate passes the exact
+  kind it analysed, and a vote cannot land on a proposal of a different kind.
+  The kind is the only thing compared: the description is not checked
+  (§16.5 run log, #0). The rejection of a mismatched kind is known from the
+  source only and has not been triggered on mainnet.
 
 ### 17.3 `policy.json`
 
