@@ -1,9 +1,19 @@
-# DRAFT — not sent
+# Send log
 
-> Status: final text, ready to send (2026-11-06). **Not sent to anyone.** Per
-> ARCHITECTURE.md §11 it goes to every recipient at the same time, before the
-> repository is public. The send time is recorded here when it goes out.
-> Everything between the two `✂` lines is the text to paste.
+Sent 2026-11-06, before the repository is public (ARCHITECTURE.md §11). The
+three sends went out within 13 minutes of each other. Times are as reported by
+the sender, in IST (UTC+05:30), with UTC beside them.
+
+| recipient | channel | sent (IST) | sent (UTC) | response |
+|---|---|---|---|---|
+| NEAR security, asked to forward to the sputnik-dao-contract maintainers and frol | security@near.org | 2026-11-06 14:37 | 09:07 | automated acknowledgement: the inbox is monitored, and code bugs go to HackenProof |
+| Meta Pool | bug-bounty form | 2026-11-06 14:47 | 09:17 | none yet |
+| Stader | admin@staderlabs.com | 2026-11-06 14:50 | 09:20 | none yet |
+| LiNEAR | X DM to @LinearProtocol | **not reached** | — | **pending.** The X DM is blocked because the account accepts DMs from verified accounts only |
+
+Every response will be published verbatim at submission, including "no
+response" (§11). Everything between the two `✂` lines is the text that was
+sent.
 
 ✂ ----------------------------------------------------------------------------
 
@@ -224,6 +234,8 @@ Reply to: aditigupta3175@gmail.com
 | Stader | admin@staderlabs.com ([GitHub org profile](https://github.com/stader-labs)) | stader-nearx.sputnik-dao.near (owner of NearX) can be upgraded by the Sputnik factory with no vote |
 | LiNEAR | X DM to @LinearProtocol | linear.sputnik-dao.near (owner of linear-protocol.near) can be upgraded by the Sputnik factory with no vote |
 
-No public GitHub issue until all four have received it.
+Until LiNEAR has the report, anything public, such as a GitHub issue asking for
+a contact, may only ask for a private security contact. It must carry no
+detail of the finding.
 
-Sent: — (not yet)
+Sent: see the send log at the top. LiNEAR is pending.

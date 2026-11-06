@@ -993,7 +993,7 @@ that day, not the last hour.
 |---|---|---|
 | Nov 5 | Novelty check: sputnik-dao-contract issues/PRs and NEAR gov forum for `auto_update` / `FactoryInfoUpdate`. RPC layer (§9); owner resolvers; code identity (§4) | §2 regenerates; `stnear` resolves as v3.2 global; prior discussion, if any, cited in §3 |
 | Nov 6 | Authority walk (§6.1); `auto_update`; access keys | **gate:** the §3.4 chain prints from `node tools/verify.mjs`, cold. Passed 2026-11-06, then printing $199.4M; the figure was wrong and is now $126.7M (§12.10) |
-| Nov 6 | Report sent (§11), with opt-out links | sent, timestamped |
+| Nov 6 | Report sent (§11), with opt-out links | sent, timestamped. **Done 2026-11-06 for 3 of 4** (UTC): NEAR security 09:07 (automated ack), Meta Pool 09:17, Stader 09:20. **LiNEAR pending**: X DMs are verified-only, so another channel is being sought. The opt-out flow isn't built yet (Nov 8), so the report carried the proposal JSON instead of a link. Send log: `REPORT.md` |
 | Nov 7 | `decode.js`, `lint.js`; the §6.1 `*:*` / self-sufficient-role edge, using `decode.js` permission matching | I7, I8, I10 hold; fires on #1741/#1743, #1742/#1744 and marmaj #1016; the walk evaluates the policy edge |
 | Nov 8 | §16 opt-out; create the demo DAO; opt it out through Docket; then attempt `UpgradeSelf` on it (§16.2) | every §16 **[verify]** removed; I15 passes; counter reads 13; the `UpgradeSelf` outcome recorded |
 | Nov 9 | `account.html`, `docket.html`, `optout.html` | a stranger understands §3 without reading this file |
