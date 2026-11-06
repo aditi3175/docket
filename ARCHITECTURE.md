@@ -323,6 +323,40 @@ can see neither the risk nor that it was fixed. The prior work was found by
 the §14 novelty check, via an external review. §12.9 records what this
 paragraph used to say.
 
+**Prior discussion, novelty check part 2 (2026-11-06).** Only pages that were
+opened are cited.
+
+- **NEAR governance forum.** `gov.near.org/search.json` for `auto_update`,
+  `FactoryInfoUpdate`, `UpgradeSelf`, `sputnik factory upgrade`,
+  `auto-update sputnik` and `sputnik-dao-contract 233`. No post discusses the
+  Sputnik `auto_update` flag, `FactoryInfoUpdate`, `UpgradeSelf` or PR #233.
+  `auto_update` matches only unrelated threads. The one recent hit,
+  [*Trezu for NEAR storage*](https://gov.near.org/t/trezu-for-near-storage-security-team-audits-and-real-user-experiences/42679)
+  (2026-10-12), asks in general terms whether there are "factory,
+  administrator, or emergency powers users should understand", and does not
+  name `sputnik-dao.near`.
+- **The repository documents the default.** The sputnik-dao-contract
+  [README](https://github.com/near-daos/sputnik-dao-contract/blob/main/README.md)
+  says of `FactoryInfoUpdate`: "By default, the factory has permission to
+  upgrade the DAO, but this can be modified by using `FactoryInfoUpdate`." The
+  mechanism is documented. Who is exposed by it, and through which keys, is not.
+- **A different, earlier factory bug.** BlockSec found that the factory's
+  `update()` had no caller check, so anyone could upgrade any DAO
+  ([Odaily, 2022-04-03](https://www.odaily.news/en/post/5177656)). The article
+  says that code had not reached mainnet. It was fixed by
+  [`518ad1d`](https://github.com/near-daos/sputnik-dao-contract/commit/518ad1d97614fff4b945aba75b6c8bd2483187a2)
+  (2022-03-11, "add assert check on update method inside the factory"). That
+  check is the `caller_id == self.get_owner() || caller_id == account_id`
+  quoted above. It is why the factory's owner, which is its own three keys,
+  is the authority today.
+- **The repository's issues and PRs.** GitHub search for `auto_update` and
+  `FactoryInfoUpdate` returns nothing. `auto update` and `factory compromised`
+  return [PR #233](https://github.com/near-daos/sputnik-dao-contract/pull/233),
+  whose body and comment thread are both empty.
+
+Not found: any public note of the twelve opt-outs in §3.3, all made between
+2026-10-05 and 2026-10-29 (§16.2).
+
 ### 3.5 Why publishing this is safe
 
 Publishing enables nothing. The keys are already the authority; naming them
