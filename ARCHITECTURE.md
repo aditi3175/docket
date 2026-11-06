@@ -232,20 +232,32 @@ NEAR-only TVL: $200,526,770 across six entries on 2026-11-05 (the three above,
 plus `here-wallet-staking`, `trustake` and `stader` at $0). `verify.mjs`
 recomputes the total and the share live and warns if either moves more than 15%.
 
-**The population census.** `tools/crawl.mjs` resolved **1,786 of the factory's
-2,065 DAOs** (279 unread, resumable — the crawl is paced to stay under the rate
-limiter rather than to finish fast):
+**The population census — illustrative, not re-run.** These counts were read
+**on or before 2026-11-05**. They are in the first commit of this file
+(`4d63dee`, 2026-11-05), and the exact day of the crawl was not recorded. They
+came from a crawl that is not in this repository: `tools/crawl.mjs` lands on
+Nov 10 (§14). Until it does, nothing here re-runs them, `verify.mjs` does not
+check them (§0), and they are explanation, not a measured claim.
 
-| bucket | count |
+The crawl resolved **1,786 of the factory's 2,065 DAOs** (279 unread,
+resumable — the crawl is paced to stay under the rate limiter rather than to
+finish fast). The factory has grown since: **2,074 DAOs on 2026-11-06**
+(`get_number_daos`).
+
+| bucket | count (illustrative, read on or before 2026-11-05, not re-run until `crawl.mjs`, Nov 10) |
 |---|---|
 | `auto_update: true` — factory can replace the code, no vote | **1,405** |
 | `auto_update: false` — opted out | **12** |
 | no `get_factory_info` (pre-v2 contracts) | 369 — **unknown**, never folded into `false` |
 
-**99.2% of the DAOs that answer are factory-upgradeable.**
+**99.2% of the DAOs that answer are factory-upgradeable** (illustrative, same
+crawl, same caveat).
 
 The twelve exceptions are the most informative number here, because eight of
-them are one organisation:
+them are one organisation. Unlike the counts, each of the twelve was read
+individually on 2026-11-06: each reads `auto_update: false`, set by an approved
+`FactoryInfoUpdate` (§16.1). That they are the *only* twelve is a census claim,
+and has the same caveat as the table.
 
 ```
 ref-finance · burrow · ref-labs · rhea-conversion
