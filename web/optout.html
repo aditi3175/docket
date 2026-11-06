@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Docket — opt a DAO out of factory auto-update</title>
+<style>
+  body { font: 16px/1.5 system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem; color: #1b1b1b; }
+  h1 { font-size: 1.4rem; } h2 { font-size: 1.05rem; margin-top: 1.6rem; }
+  code, pre { font: 13px/1.45 ui-monospace, monospace; } pre { background: #f4f4f4; padding: .8rem; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+  .basis { color: #555; font-size: .85rem; } .warn { border-left: 4px solid #b45309; padding-left: .8rem; }
+  .status { font-weight: 600; } button[disabled] { opacity: .6; }
+</style>
+</head>
+<body>
+<h1>Opt a Sputnik DAO out of factory auto-update</h1>
+<p>Docket reads the DAO from NEAR mainnet, drafts one <code>FactoryInfoUpdate</code> proposal, and checks the result by
+re-reading the chain. It never holds a key and signs nothing.</p>
+<form id="pick"><label>DAO account <input id="dao" size="40" value="stnear.sputnik-dao.near" autocomplete="off"></label>
+<button>Read</button></form>
+<div id="out" aria-live="polite"></div>
+
+<script type="module">
+import { createRpc } from './assets/rpc.js';
+import { planOptOut, confirmOptOut, screenModel } from './assets/optout.js';
+
+const rpc = createRpc();
+const out = document.getElementById('out');
+const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
+
+function section(title) { const s = el('section'); s.append(el('h2', title)); out.append(s); return s; }
+
+function render(plan) {
+  out.replaceChildren();
+  const status = { draft: 'Ready to draft', 'opted-out': 'Already opted out', refused: 'Docket will not draft this', unknown: 'Unknown — a read failed' }[plan.status];
+  out.append(el('p', `${plan.dao}: ${status}${plan.reason ? ` — ${plan.reason}` : ''}`, 'status'));
+  for (const { id, title } of screenModel(plan)) {
+    const s = section(title);
+    if (id === 'current') {
+      if (!plan.current) { s.append(el('p', 'unknown')); continue; }
+      const c = plan.current;
+      s.append(el('p', `auto_update: ${c.autoUpdate}  ·  factory_id: ${c.factoryId}  ·  code: ${c.version ?? c.form} (${c.versionStatus})`));
+    } else if (id === 'givenUp') {
+      const ul = el('ul'); s.classList.add('warn');
+      for (const g of plan.givenUp) { const li = el('li', g.text); li.append(el('div', g.basis, 'basis')); ul.append(li); }
+      s.append(ul);
+    } else if (id === 'approve') {
+      if (!plan.approve) { s.append(el('p', 'unknown')); continue; }
+      const a = plan.approve;
+      s.append(el('p', a.passers.length ? a.passers.map((p) => `${p.k} of ${p.n} in "${p.role}" (${p.members.join(', ')})`).join(' — or — ') : 'No role can approve factory_info_update.'));
+      if (a.ignored.length) s.append(el('p', `Also permitted, but never counted toward a threshold (Everyone roles): ${a.ignored.join(', ')}`, 'basis'));
+      if (a.unknown.length) s.append(el('p', `Not decided (token-weighted): ${a.unknown.map((u) => u.role).join(', ')}`, 'basis'));
+    } else if (id === 'cost') {
+      s.append(el('p', plan.bond ? `Proposal bond: ${plan.bond.near} NEAR, attached to add_proposal, ${plan.bond.refund}. Plus gas.` : 'unknown'));
+    } else if (id === 'submit') {
+      const b = el('button', 'Submit from my wallet'); b.disabled = true;
+      s.append(b, el('p', 'Wallet signing is not enabled yet (§16.3 [verify]: the pinned Wallet Selector build must load with no bundler). Use the near-cli command below.', 'basis'));
+      if (plan.status === 'draft') {
+        const c = el('button', 'I have voted — re-read get_factory_info'); s.append(c);
+        const r = el('p', '', 'status'); s.append(r);
+        c.addEventListener('click', async () => { r.textContent = 'reading…'; const x = await confirmOptOut(rpc, plan.dao);
+          r.textContent = { 'opted-out': `Opted out: get_factory_info reads auto_update: false (${x.readAt})`, 'not-opted-out': `Not yet: get_factory_info still reads auto_update: true (${x.readAt})`, unknown: `Unknown: ${x.reason}` }[x.status]; });
+      }
+    } else if (id === 'cli') {
+      if (!plan.commands) { s.append(el('p', 'No command: nothing is drafted.')); continue; }
+      s.append(el('p', '1. Add the proposal (any account a proposer role matches):'), el('pre', plan.commands.add));
+      s.append(el('p', '2. Each approving member votes, using the id the first command returned:'), el('pre', plan.commands.approve));
+      s.append(el('p', 'Proposal JSON:'), el('pre', JSON.stringify(plan.proposal, null, 2)));
+    }
+  }
+}
+
+document.getElementById('pick').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  out.replaceChildren(el('p', 'reading mainnet…'));
+  render(await planOptOut(rpc, document.getElementById('dao').value.trim()));
+});
+const q = new URLSearchParams(location.search).get('dao');
+if (q) { document.getElementById('dao').value = q; document.getElementById('pick').requestSubmit(); }
+</script>
+</body>
+</html>
