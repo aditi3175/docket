@@ -935,7 +935,10 @@ any row slips; it is not moved later to make room.
 ## 16. Fix — the opt-out
 
 The finding says the safe setting is reachable and almost nobody reaches it
-(§3.3). This section makes it one proposal away.
+(§3.3). This section makes it one proposal away for a DAO whose policy already
+lets some role propose and approve `factory_info_update`, and two proposals away
+for a DAO whose policy does not. `stader-nearx.sputnik-dao.near` is the second
+kind (§16.2).
 
 The opt-out is not a stopgap that PR #233 will make redundant. Even once the fix
 ships, a factory update deploys **with no vote** after its two-week delay
@@ -999,6 +1002,23 @@ version it has not been tested against.
 3. **Who must approve**: the roles whose permissions match
    `factory_info_update:AddProposal` and `factory_info_update:VoteApprove`
    (with wildcards), and the vote policy that applies, from `get_policy`.
+
+   **If no role matches**, the screen says so before anything else: *this DAO's
+   policy lets no one propose or approve an opt-out, so a `policy` proposal
+   granting `factory_info_update` has to pass first.* It names the roles whose
+   permissions match `policy:AddProposal` and `policy:VoteApprove`, and shows
+   two steps, not one. It never drafts a `FactoryInfoUpdate` that no role can
+   pass.
+
+   On mainnet: `stader-nearx.sputnik-dao.near` (RHEA LST) is this case.
+   `get_policy`, read 2026-11-06, has two roles, `all` (Everyone) and `council`
+   (a 5-member Group). Neither holds `*:*`, `*:AddProposal`, `*:VoteApprove`
+   or any `factory_info_update:*` permission. `council`'s only wildcard is
+   `*:Finalize`. Both roles hold `policy:AddProposal` and `policy:VoteApprove`.
+Whether an Everyone role's votes count toward a threshold is a §6.1 policy-edge
+question (Nov 7), and the screen does not answer it until then.
+   By contrast, `stnear` and `linear` give their councils `*:AddProposal` and
+   `*:VoteApprove`, so for them it is one proposal.
 4. **The cost**: `proposal_bond` from `get_policy`, attached as the deposit
    to `add_proposal`, refundable per the DAO's policy.
 5. The submit button. Below it, the equivalent `near-cli` command, for members
