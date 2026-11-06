@@ -36,8 +36,8 @@ export function createArgs(member, name = 'docket-demo') {
   const args = {
     config: { name, purpose: 'Docket demo DAO: opts out of factory auto-update and tests UpgradeSelf afterwards (ARCHITECTURE.md §16.5).', metadata: '' },
     policy: {
+      // Council only: no Everyone role, so nobody else can add a proposal mid-test and shift the ids.
       roles: [
-        { name: 'all', kind: 'Everyone', permissions: ['*:AddProposal'], vote_policy: {} },
         { name: 'council', kind: { Group: [member] }, permissions: ['*:AddProposal', '*:VoteApprove', '*:VoteReject', '*:VoteRemove', '*:Finalize'], vote_policy: {} },
       ],
       default_vote_policy: { weight_kind: 'RoleWeight', quorum: '0', threshold: [1, 2] },
@@ -60,7 +60,17 @@ export function plan(member, name) {
   const add = (description, kind) => call(c.dao, 'add_proposal', { proposal: { description, kind } }, '100 Tgas', '0.1 NEAR', member);
   const act = (id, kind, gas) => call(c.dao, 'act_proposal', { id, action: 'VoteApprove', proposal: kind }, gas, '0 NEAR', member);
   const fi = (v) => `get_factory_info reads auto_update: ${v} (I15: re-read, not the tx status)`;
-  return { ...c, txs: [
+  // Read-only pre-conditions, checked by `--pre <n>` immediately before step n is signed:
+  //   add: get_last_proposal_id must equal the id this step is about to create (ids are never assumed)
+  //   act: get_proposal(id) must exist, be InProgress, and carry exactly the kind about to be approved
+  const PRE = {
+    2: { type: 'add', id: 0 }, 3: { type: 'act', id: 0, kind: fiu(false) },
+    4: { type: 'add', id: 1 }, 5: { type: 'act', id: 1, kind: us },
+    6: { type: 'add', id: 2 }, 7: { type: 'act', id: 2, kind: fiu(true) },
+    8: { type: 'add', id: 3 }, 9: { type: 'act', id: 3, kind: us },
+    10: { type: 'add', id: 4 }, 11: { type: 'act', id: 4, kind: fiu(false) },
+  };
+  return { ...c, pre: PRE, txs: [
     { n: 1, what: 'create the demo DAO', cmd: call(FACTORY, 'create', { name: c.name, args: c.argsBase64 }, '150 Tgas', CREATE_DEPOSIT, member),
       expect: `${c.dao} exists; view_account global_contract_hash = ${V32_HASH} (v3.2); ${fi(true)} (written by new())`,
       stop: 'the account does not exist, or runs anything but v3.2, or get_factory_info is not true' },
@@ -127,12 +137,41 @@ export async function preSignChecks(member, name, { rpcUrl = 'https://free.rpc.f
   return out;
 }
 
+const viewJson = async (account, method, args, rpcUrl) => {
+  const r = await query({ request_type: 'call_function', account_id: account, method_name: method,
+    args_base64: Buffer.from(JSON.stringify(args)).toString('base64') }, rpcUrl);
+  if (r.error) return { status: 'unknown', reason: JSON.stringify(r.error).slice(0, 160) };
+  if (r.result?.error) return { status: 'error', reason: String(r.result.error).slice(0, 200) };
+  return { status: 'ok', value: JSON.parse(Buffer.from(r.result.result).toString()), block: r.result.block_height };
+};
+
+// -> { ok: true | false | null, detail }   null = unknown (treat as not passed)
+export async function preStepCheck(pre, dao, { rpcUrl = 'https://free.rpc.fastnear.com', read = viewJson } = {}) {
+  if (!pre) return { ok: null, detail: 'no pre-condition defined for this step' };
+  if (pre.type === 'add') {
+    const r = await read(dao, 'get_last_proposal_id', {}, rpcUrl);
+    if (r.status !== 'ok') return { ok: null, detail: `get_last_proposal_id unread: ${r.reason}` };
+    return { ok: r.value === pre.id, detail: `get_last_proposal_id = ${r.value} (this add_proposal must create #${pre.id})${r.block ? `, block ${r.block}` : ''}` };
+  }
+  const r = await read(dao, 'get_proposal', { id: pre.id }, rpcUrl);
+  if (r.status !== 'ok') return { ok: r.status === 'error' ? false : null, detail: `get_proposal(${pre.id}): ${r.reason}` };
+  const sameKind = JSON.stringify(r.value.kind) === JSON.stringify(pre.kind);
+  const live = r.value.status === 'InProgress';
+  return { ok: sameKind && live, detail: `#${pre.id} status ${r.value.status}, kind ${sameKind ? 'matches' : `DIFFERS: ${JSON.stringify(r.value.kind)}`}, proposer ${r.value.proposer}${r.block ? `, block ${r.block}` : ''}` };
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const argv = process.argv.slice(2);
   const check = argv.includes('--check');
-  const [member, name] = argv.filter((a) => a !== '--check');
-  if (!member) { console.error('usage: node tools/demo-dao.mjs <your-account.near> [dao-name] [--check]'); process.exit(2); }
+  const pi = argv.indexOf('--pre'); const preStep = pi >= 0 ? Number(argv[pi + 1]) : null;
+  const [member, name] = argv.filter((a, i) => a !== '--check' && a !== '--pre' && !(pi >= 0 && i === pi + 1));
+  if (!member) { console.error('usage: node tools/demo-dao.mjs <your-account.near> [dao-name] [--check | --pre <step>]'); process.exit(2); }
   const p = plan(member, name);
+  if (preStep !== null) {
+    const r = await preStepCheck(p.pre[preStep], p.dao);
+    console.log(`${r.ok === true ? 'PASS' : r.ok === false ? 'FAIL' : 'UNKNOWN'}  before step ${preStep}: ${r.detail}`);
+    process.exit(r.ok === true ? 0 : 1);
+  }
   if (check) {
     const r = await preSignChecks(member, name);
     for (const x of r) console.log(`${x.ok === true ? 'PASS' : x.ok === false ? 'FAIL' : 'UNKNOWN'}  ${x.check} — ${x.detail}`);
@@ -142,6 +181,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   console.log(`First: node tools/demo-dao.mjs ${member}${name ? ' ' + name : ''} --check   (must print PASS three times)`);
   console.log('Run every command below in Git Bash (or any POSIX shell). Windows PowerShell 5.1 strips the quotes inside json-args.\n');
   console.log('create args (decoded):\n' + JSON.stringify(p.args, null, 2) + '\n');
-  for (const t of p.txs) console.log(`# ${t.n}. ${t.what}\n${t.cmd}\n#    expect: ${t.expect}\n#    STOP if: ${t.stop}\n`);
-  console.log('All 11 steps are required. Proposal ids assume a fresh DAO; check each id in the add_proposal result.');
+  for (const t of p.txs) {
+    const before = p.pre[t.n] ? `#    before: node tools/demo-dao.mjs ${member}${name ? ' ' + name : ''} --pre ${t.n}   (must print PASS)\n` : '';
+    console.log(`# ${t.n}. ${t.what}\n${before}${t.cmd}\n#    expect: ${t.expect}\n#    STOP if: ${t.stop}\n`);
+  }
+  console.log('All 11 steps are required. Proposal ids are never assumed: --pre re-reads get_last_proposal_id before each add_proposal, and get_proposal before each act_proposal.');
 }

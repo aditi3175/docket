@@ -101,18 +101,43 @@ test('shell safety: no drafted JSON contains a single quote; the builder refuses
   }
 });
 
+test('demo DAO --pre: every add/act step has a pre-condition; ids and kinds are re-read, never assumed (SYNTHETIC reads)', async () => {
+  const { preStepCheck } = await import('../tools/demo-dao.mjs');
+  const p = demoPlan('you.near');
+  for (let n = 2; n <= 11; n++) assert.ok(p.pre[n], `step ${n}`);
+  assert.equal(p.pre[1], undefined); // step 1 is covered by --check
+  const reads = (m) => async (_dao, method, args) => m[`${method} ${JSON.stringify(args)}`] ?? { status: 'unknown', reason: 'no read' };
+  // add: last id must equal the id the step creates
+  assert.equal((await preStepCheck(p.pre[4], p.dao, { read: reads({ 'get_last_proposal_id {}': { status: 'ok', value: 1 } }) })).ok, true);
+  assert.equal((await preStepCheck(p.pre[4], p.dao, { read: reads({ 'get_last_proposal_id {}': { status: 'ok', value: 2 } }) })).ok, false);
+  assert.equal((await preStepCheck(p.pre[4], p.dao, { read: reads({}) })).ok, null);
+  // act: proposal must be InProgress with exactly the kind about to be approved
+  const prop = (kind, status = 'InProgress') => ({ status: 'ok', value: { id: 1, kind, status, proposer: 'you.near' } });
+  const us = { UpgradeSelf: { hash: 'DtHZA1mUmGYeScEaUoUZYQGGFHSMpnjMCvkr5U9hJXuF' } };
+  assert.equal((await preStepCheck(p.pre[5], p.dao, { read: reads({ 'get_proposal {"id":1}': prop(us) }) })).ok, true);
+  assert.equal((await preStepCheck(p.pre[5], p.dao, { read: reads({ 'get_proposal {"id":1}': prop(us, 'Approved') }) })).ok, false);
+  const other = { UpgradeSelf: { hash: '8RMeZ5cXDap6TENxaJKtigRYf3n139iHmTRe8ZUNey6N' } };
+  const d = await preStepCheck(p.pre[5], p.dao, { read: reads({ 'get_proposal {"id":1}': prop(other) }) });
+  assert.deepEqual([d.ok, /DIFFERS/.test(d.detail)], [false, true]);
+});
+
 test('optOutKind: exactly factory_id + auto_update:false (v3.2 deny_unknown_fields)', () => {
   assert.deepEqual(optOutKind('sputnik-dao.near'), { FactoryInfoUpdate: { factory_info: { factory_id: 'sputnik-dao.near', auto_update: false } } });
 });
 
-test('demo DAO (§16.5): create args match the v3.2 field sets exactly; 1-member council; 0.1 NEAR bond', () => {
+test('demo DAO (§16.5): create args match the v3.2 field sets exactly; council-only, 1 member; 0.1 NEAR bond', async () => {
   const c = createArgs('you.near');
   assert.equal(c.dao, 'docket-demo.sputnik-dao.near');
   assert.deepEqual(Object.keys(c.args), ['config', 'policy']);
   assert.deepEqual(Object.keys(c.args.config), ['name', 'purpose', 'metadata']);
   assert.deepEqual(Object.keys(c.args.policy).sort(), ['bounty_bond', 'bounty_forgiveness_period', 'default_vote_policy', 'proposal_bond', 'proposal_period', 'roles']);
   for (const r of c.args.policy.roles) assert.deepEqual(Object.keys(r).sort(), ['kind', 'name', 'permissions', 'vote_policy']);
-  assert.deepEqual(c.args.policy.roles[1].kind, { Group: ['you.near'] });
+  // council only: no Everyone role, so only the council can add proposals (ids stay predictable)
+  assert.deepEqual(c.args.policy.roles.map((r) => [r.name, r.kind]), [['council', { Group: ['you.near'] }]]);
+  assert.ok(!c.args.policy.roles.some((r) => r.kind === 'Everyone'));
+  // with decode.js's permission model: only council can AddProposal any kind
+  const { rolesPermitting } = await import('../web/assets/decode.js');
+  for (const label of ['factory_info_update', 'upgrade_self', 'call']) assert.deepEqual(rolesPermitting(c.args.policy, label, 'AddProposal'), ['council']);
   assert.equal(c.args.policy.proposal_bond, '100000000000000000000000');
   assert.deepEqual(JSON.parse(Buffer.from(c.argsBase64, 'base64').toString()), c.args);
   assert.throws(() => createArgs('Not An Account'));
