@@ -1,24 +1,37 @@
 #!/usr/bin/env node
-// demo-dao.mjs — prints the transactions for the §16.5 demo DAO. Signs nothing, reads no key (I13):
-// you run each printed command yourself, from your own near-cli.
+// demo-dao.mjs — the §16.5 demo DAO and the §16.2 UpgradeSelf test. Signs nothing, reads no key (I13):
+// it prints each transaction for you to run from your own near-cli, and (with --check) makes the
+// read-only checks that must pass before anything is signed.
 //
-// Usage: node tools/demo-dao.mjs <your-account.near> [dao-name]      (default dao-name: docket-demo)
+// Usage: node tools/demo-dao.mjs <your-account.near> [dao-name] [--check]
+//
+// The test is a controlled pair, all steps required:
+//   step 5  UpgradeSelf(v3.2) with auto_update:false  -> must FAIL with ERR_MUST_BE_SELF_OR_FACTORY
+//   step 9  the same UpgradeSelf with auto_update:true -> must SUCCEED (DAO update + migrate)
+// Only that pair confirms §16.2. Any other failure in step 5 (ERR_NO_HASH, "Must be contract created
+// by factory", gas, ...) means STOP: it says nothing about auto_update. Evidence is the receipts
+// (tools/receipts.mjs) and view_account — never the proposal's status, which reads "Approved" either way
+// (UpgradeSelf returns PromiseOrValue::Value; the factory call is detached).
 //
 // Shapes are from near-daos/sputnik-dao-contract at 2b0f34a38604 (v3.2, the factory's default):
-//   factory  create(name: AccountId, args: Base64VecU8); attached deposit >= 10 milliNEAR
-//            (factory_manager.rs MINIMAL_DEPOSIT), transferred to the new DAO account
-//   DAO      new(config: Config, policy: VersionedPolicy) — writes FactoryInfo { auto_update: true }
+//   factory  create(name, args: Base64VecU8); deposit >= 10 milliNEAR (factory_manager.rs MINIMAL_DEPOSIT)
+//            get_code(code_hash) / update_contract both read storage_read(code_hash), else ERR_NO_HASH
+//   DAO      new(config, policy) writes FactoryInfo { auto_update: true }
+//            act_proposal(id, action, proposal: ProposalKind, memo)
 //   Policy, RolePermission, VotePolicy are #[serde(deny_unknown_fields)]: exactly the fields below.
 
 import { pathToFileURL } from 'node:url';
+import { createHash } from 'node:crypto';
 
 export const FACTORY = 'sputnik-dao.near';
-export const CREATE_DEPOSIT = '0.1 NEAR';           // >= 0.01 required; the rest is the DAO's storage/balance
-export const BOND_YOCTO = '100000000000000000000000'; // 0.1 NEAR; returned on approval
+export const CREATE_DEPOSIT = '0.1 NEAR';             // >= 0.01 required; becomes the DAO's balance
+export const BOND_YOCTO = '100000000000000000000000';   // 0.1 NEAR; returned on approval
+export const V32_HASH = 'DtHZA1mUmGYeScEaUoUZYQGGFHSMpnjMCvkr5U9hJXuF'; // get_default_code_hash; what the DAO runs
 const DAY_NS = 86_400_000_000_000n;
+const ACCOUNT = /^(?=.{2,64}$)(([a-z\d]+[-_])*[a-z\d]+\.)*([a-z\d]+[-_])*[a-z\d]+$/;
 
 export function createArgs(member, name = 'docket-demo') {
-  if (!/^(?=.{2,64}$)(([a-z\d]+[-_])*[a-z\d]+\.)*([a-z\d]+[-_])*[a-z\d]+$/.test(member)) throw new Error(`not a NEAR account id: ${member}`);
+  if (!ACCOUNT.test(member)) throw new Error(`not a NEAR account id: ${member}`);
   const args = {
     config: { name, purpose: 'Docket demo DAO: opts out of factory auto-update and tests UpgradeSelf afterwards (ARCHITECTURE.md §16.5).', metadata: '' },
     policy: {
@@ -42,31 +55,91 @@ const call = (contract, method, args, gas, deposit, signer) =>
 export function plan(member, name) {
   const c = createArgs(member, name);
   const fiu = (auto) => ({ FactoryInfoUpdate: { factory_info: { factory_id: FACTORY, auto_update: auto } } });
-  const v32 = 'DtHZA1mUmGYeScEaUoUZYQGGFHSMpnjMCvkr5U9hJXuF'; // get_default_code_hash = v3.2 (the code the DAO already runs)
-  const us = { UpgradeSelf: { hash: v32 } };
+  const us = { UpgradeSelf: { hash: V32_HASH } };
   const add = (description, kind) => call(c.dao, 'add_proposal', { proposal: { description, kind } }, '100 Tgas', '0.1 NEAR', member);
   const act = (id, kind, gas) => call(c.dao, 'act_proposal', { id, action: 'VoteApprove', proposal: kind }, gas, '0 NEAR', member);
+  const fi = (v) => `get_factory_info reads auto_update: ${v} (I15: re-read, not the tx status)`;
   return { ...c, txs: [
-    { n: 1, what: 'create the demo DAO', cmd: call(FACTORY, 'create', { name: c.name, args: c.argsBase64 }, '150 Tgas', CREATE_DEPOSIT, member) },
-    { n: 2, what: 'opt-out proposal (#0) — submit through optout.html or this command', cmd: add("Opt out of factory auto-update (Docket). The factory will no longer be able to replace this DAO's code without a vote.", fiu(false)) },
-    { n: 3, what: 'approve #0 (executes FactoryInfoUpdate)', cmd: act(0, fiu(false), '100 Tgas') },
-    { n: 4, what: 'UpgradeSelf proposal (#1) to the v3.2 hash, while opted out', cmd: add('Docket test: UpgradeSelf while auto_update is false (ARCHITECTURE.md §16.2).', us) },
-    { n: 5, what: 'approve #1 (executes UpgradeSelf -> factory.update -> DAO update())', cmd: act(1, us, '300 Tgas') },
-    { n: 6, what: 'optional workaround, step 1: auto_update back to true (#2)', cmd: add('Docket test: workaround step 1, auto_update true.', fiu(true)) },
-    { n: 7, what: 'approve #2', cmd: act(2, fiu(true), '100 Tgas') },
-    { n: 8, what: 'optional workaround, step 2: UpgradeSelf (#3)', cmd: add('Docket test: workaround step 2, UpgradeSelf with auto_update true.', us) },
-    { n: 9, what: 'approve #3', cmd: act(3, us, '300 Tgas') },
-    { n: 10, what: 'optional workaround, step 3: auto_update back to false (#4)', cmd: add('Docket test: workaround step 3, auto_update false.', fiu(false)) },
-    { n: 11, what: 'approve #4', cmd: act(4, fiu(false), '100 Tgas') },
+    { n: 1, what: 'create the demo DAO', cmd: call(FACTORY, 'create', { name: c.name, args: c.argsBase64 }, '150 Tgas', CREATE_DEPOSIT, member),
+      expect: `${c.dao} exists; view_account global_contract_hash = ${V32_HASH} (v3.2); ${fi(true)} (written by new())`,
+      stop: 'the account does not exist, or runs anything but v3.2, or get_factory_info is not true' },
+    { n: 2, what: 'opt-out proposal (#0), as drafted by optout.html', cmd: add("Opt out of factory auto-update (Docket). The factory will no longer be able to replace this DAO's code without a vote.", fiu(false)),
+      expect: 'add_proposal returns 0', stop: 'any other id, or ERR_MIN_BOND / ERR_PERMISSION_DENIED' },
+    { n: 3, what: 'approve #0 (FactoryInfoUpdate false)', cmd: act(0, fiu(false), '100 Tgas'),
+      expect: `${fi(false)}; opted-out count 12 -> 13`, stop: 'get_factory_info still reads true' },
+    { n: 4, what: 'UpgradeSelf proposal (#1) to the v3.2 hash, while auto_update is false', cmd: add('Docket test: UpgradeSelf while auto_update is false (ARCHITECTURE.md §16.2).', us),
+      expect: 'add_proposal returns 1', stop: 'any other id' },
+    { n: 5, what: 'approve #1 — THE TEST: UpgradeSelf -> factory.update -> DAO update() with the factory as caller', cmd: act(1, us, '300 Tgas'),
+      expect: `receipts (node tools/receipts.mjs <tx> ${member} --step 5): a ${FACTORY} "update" receipt succeeds and the following ${c.dao} "update" receipt FAILS with ERR_MUST_BE_SELF_OR_FACTORY; view_account unchanged`,
+      stop: 'any other error (ERR_NO_HASH, "Must be contract created by factory", out of gas, ...) or no failure at all — tell the user before step 6' },
+    { n: 6, what: 'control, step 1: auto_update back to true (#2)', cmd: add('Docket test control: auto_update true.', fiu(true)),
+      expect: 'add_proposal returns 2', stop: 'any other id' },
+    { n: 7, what: 'approve #2', cmd: act(2, fiu(true), '100 Tgas'), expect: fi(true), stop: 'still false' },
+    { n: 8, what: 'control, step 2: the same UpgradeSelf (#3), now with auto_update true', cmd: add('Docket test control: UpgradeSelf with auto_update true.', us),
+      expect: 'add_proposal returns 3', stop: 'any other id' },
+    { n: 9, what: 'approve #3 — THE CONTROL: the same path must now succeed', cmd: act(3, us, '300 Tgas'),
+      expect: `receipts (--step 9): the ${c.dao} "update" receipt and its "migrate" both succeed; view_account still ${V32_HASH} (same code re-applied)`,
+      stop: 'any failure — then step 5 alone does not isolate auto_update' },
+    { n: 10, what: 'control, step 3: auto_update back to false (#4)', cmd: add('Docket test control: auto_update false again.', fiu(false)),
+      expect: 'add_proposal returns 4', stop: 'any other id' },
+    { n: 11, what: 'approve #4 — leaves the demo DAO opted out', cmd: act(4, fiu(false), '100 Tgas'), expect: fi(false), stop: 'still true' },
   ] };
 }
 
+// ---- read-only pre-sign checks ---------------------------------------------------------------------
+const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+export function base58(bytes) {
+  let n = BigInt('0x' + (Buffer.from(bytes).toString('hex') || '0')); let s = '';
+  while (n > 0n) { s = B58[Number(n % 58n)] + s; n /= 58n; }
+  for (const b of bytes) { if (b === 0) s = '1' + s; else break; }
+  return s;
+}
+
+async function query(params, rpcUrl) {
+  const r = await (await fetch(rpcUrl, { method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 'docket', method: 'query', params: { finality: 'final', ...params } }), signal: AbortSignal.timeout(30000) })).json();
+  return r;
+}
+
+// -> [{ check, ok, detail }]   ok: true | false | null (unknown — treat as not passed)
+export async function preSignChecks(member, name, { rpcUrl = 'https://free.rpc.fastnear.com' } = {}) {
+  const c = createArgs(member, name);
+  const out = [];
+  try {
+    const r = await query({ request_type: 'call_function', account_id: FACTORY, method_name: 'get_code',
+      args_base64: Buffer.from(JSON.stringify({ code_hash: V32_HASH })).toString('base64') }, rpcUrl);
+    if (r.error || r.result?.error) out.push({ check: `factory holds ${V32_HASH} in storage (get_code = update_contract's read)`, ok: false, detail: String(r.result?.error ?? JSON.stringify(r.error)).slice(0, 160) });
+    else {
+      const code = Buffer.from(r.result.result);
+      const h = base58(createHash('sha256').update(code).digest());
+      out.push({ check: `factory holds ${V32_HASH} in storage (get_code = update_contract's read)`, ok: h === V32_HASH, detail: `${code.length} bytes, sha256 ${h}, block ${r.result.block_height}` });
+    }
+  } catch (e) { out.push({ check: 'factory get_code', ok: null, detail: String(e.message ?? e) }); }
+  for (const [check, acct, wantMissing] of [[`${c.dao} is free`, c.dao, true], [`${member} exists`, member, false]]) {
+    try {
+      const r = await query({ request_type: 'view_account', account_id: acct }, rpcUrl);
+      const missing = r.error?.cause?.name === 'UNKNOWN_ACCOUNT';
+      if (!missing && r.error) out.push({ check, ok: null, detail: JSON.stringify(r.error).slice(0, 120) });
+      else out.push({ check, ok: wantMissing ? missing : !missing, detail: missing ? 'no such account' : `balance ${r.result.amount} yocto` });
+    } catch (e) { out.push({ check, ok: null, detail: String(e.message ?? e) }); }
+  }
+  return out;
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const [member, name] = process.argv.slice(2);
-  if (!member) { console.error('usage: node tools/demo-dao.mjs <your-account.near> [dao-name]'); process.exit(2); }
+  const argv = process.argv.slice(2);
+  const check = argv.includes('--check');
+  const [member, name] = argv.filter((a) => a !== '--check');
+  if (!member) { console.error('usage: node tools/demo-dao.mjs <your-account.near> [dao-name] [--check]'); process.exit(2); }
   const p = plan(member, name);
-  console.log(`Demo DAO: ${p.dao}   council: [${member}]   bond: 0.1 NEAR   create deposit: ${CREATE_DEPOSIT}\n`);
+  if (check) {
+    const r = await preSignChecks(member, name);
+    for (const x of r) console.log(`${x.ok === true ? 'PASS' : x.ok === false ? 'FAIL' : 'UNKNOWN'}  ${x.check} — ${x.detail}`);
+    process.exit(r.every((x) => x.ok === true) ? 0 : 1);
+  }
+  console.log(`Demo DAO: ${p.dao}   council: [${member}]   bond: 0.1 NEAR   create deposit: ${CREATE_DEPOSIT}`);
+  console.log(`First: node tools/demo-dao.mjs ${member}${name ? ' ' + name : ''} --check   (must print PASS three times)\n`);
   console.log('create args (decoded):\n' + JSON.stringify(p.args, null, 2) + '\n');
-  for (const t of p.txs) console.log(`# ${t.n}. ${t.what}\n${t.cmd}\n`);
-  console.log('Proposal ids assume a fresh DAO (ids start at 0). Check each id in the add_proposal result before approving.');
+  for (const t of p.txs) console.log(`# ${t.n}. ${t.what}\n${t.cmd}\n#    expect: ${t.expect}\n#    STOP if: ${t.stop}\n`);
+  console.log('All 11 steps are required. Proposal ids assume a fresh DAO; check each id in the add_proposal result.');
 }

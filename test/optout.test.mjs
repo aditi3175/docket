@@ -107,6 +107,11 @@ test('demo DAO (§16.5): create args match the v3.2 field sets exactly; 1-member
   assert.throws(() => createArgs('Not An Account'));
   const p = demoPlan('you.near');
   assert.equal(p.txs.length, 11);
+  assert.ok(p.txs.every((t) => t.expect && t.stop), 'every step states what to expect and when to stop');
+  assert.match(p.txs[4].expect, /FAILS with ERR_MUST_BE_SELF_OR_FACTORY/);
+  assert.match(p.txs[4].stop, /ERR_NO_HASH/);
+  assert.match(p.txs[8].expect, /both succeed/);
+  assert.deepEqual([p.txs[4].cmd.includes('"id":1'), p.txs[8].cmd.includes('"id":3')], [true, true]);
   assert.match(p.txs[0].cmd, /^near contract call-function as-transaction sputnik-dao\.near create .* attached-deposit '0\.1 NEAR' sign-as you\.near network-config mainnet sign-with-keychain send$/);
   assert.match(p.txs[4].cmd, /act_proposal json-args '\{"id":1,"action":"VoteApprove","proposal":\{"UpgradeSelf":\{"hash":"DtHZA1mU/);
 });
