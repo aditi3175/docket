@@ -53,6 +53,12 @@ for (const id of [...DAOS, 'sputnik-dao.near', ...KEY_OWNERS]) for (const g of O
 for (const id of [...CONTRACTS, 'sputnik-dao.near', ...KEY_OWNERS]) jobs.push([`call.${id}.get_factory_info`, FASTNEAR, call(id, 'get_factory_info')]);
 // §2: NearX staked NEAR, read on chain (not on DefiLlama)
 jobs.push(['call.nearx.stader-labs.near.get_total_staked_balance', FASTNEAR, call('nearx.stader-labs.near', 'get_total_staked_balance')]);
+// §6.3/§6.5 (Nov 7): the proposals lint must fire on, and token metadata for amount decoding (I10)
+jobs.push(['call.burrow.sputnik-dao.near.get_proposals.1741-1744', FASTNEAR, call('burrow.sputnik-dao.near', 'get_proposals', { from_index: 1741, limit: 4 })]);
+jobs.push(['call.marmaj.sputnik-dao.near.get_proposal.1016', FASTNEAR, call('marmaj.sputnik-dao.near', 'get_proposal', { id: 1016 })]);
+for (const t of ['meta-pool.near', 'lst.rhealab.near', 'usdt.tether-token.near', 'wrap.near']) jobs.push([`call.${t}.ft_metadata`, FASTNEAR, call(t, 'ft_metadata')]);
+// §16.2 / decode.js permission model on a real policy: stader-nearx (Everyone holds policy:VoteApprove)
+jobs.push(['call.stader-nearx.sputnik-dao.near.get_policy', FASTNEAR, call('stader-nearx.sputnik-dao.near', 'get_policy')]);
 // Error shapes from the failover endpoints, so rpc.js classifies them from data, not guesses.
 for (const e of OTHERS) {
   const host = new URL(e).host;
