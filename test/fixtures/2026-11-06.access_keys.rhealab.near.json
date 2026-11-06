@@ -1,0 +1,32 @@
+{
+  "endpoint": "https://free.rpc.fastnear.com",
+  "captured_at": "2026-11-06T08:14:14.262Z",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "docket",
+    "method": "query",
+    "params": {
+      "request_type": "view_access_key_list",
+      "finality": "final",
+      "account_id": "rhealab.near"
+    }
+  },
+  "http_status": 200,
+  "body": {
+    "jsonrpc": "2.0",
+    "result": {
+      "block_hash": "3tdnEZuTy6gVTv65cmfrm6rwfFpTrAS63DFDkZRKK8eG",
+      "block_height": 223289527,
+      "keys": [
+        {
+          "access_key": {
+            "nonce": 197860533000003,
+            "permission": "FullAccess"
+          },
+          "public_key": "ed25519:ApKjUy2tB5i6AuQmk53QptqDAQaYJmbHFVxxjEx86rNe"
+        }
+      ]
+    },
+    "id": "docket"
+  }
+}

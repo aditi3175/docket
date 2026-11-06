@@ -1,0 +1,61 @@
+{
+  "endpoint": "https://free.rpc.fastnear.com",
+  "captured_at": "2026-11-06T08:14:17.039Z",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "docket",
+    "method": "query",
+    "params": {
+      "request_type": "call_function",
+      "finality": "final",
+      "account_id": "nearx.stader-labs.near",
+      "method_name": "get_total_staked_balance",
+      "args_base64": "e30="
+    }
+  },
+  "http_status": 200,
+  "body": {
+    "jsonrpc": "2.0",
+    "result": {
+      "block_hash": "vRj4YSfMFHyDM7wgnQinCyjM8Mo1vz2Xhzgg4Bkibxz",
+      "block_height": 223289531,
+      "logs": [],
+      "result": [
+        34,
+        50,
+        53,
+        53,
+        51,
+        56,
+        56,
+        53,
+        49,
+        54,
+        52,
+        54,
+        51,
+        56,
+        56,
+        53,
+        50,
+        57,
+        50,
+        56,
+        50,
+        53,
+        50,
+        49,
+        49,
+        55,
+        52,
+        51,
+        50,
+        50,
+        52,
+        51,
+        34
+      ]
+    },
+    "id": "docket"
+  }
+}

@@ -3,6 +3,7 @@
 // Usage: node tools/capture-fixtures.mjs            record everything (incl. DefiLlama)
 //        node tools/capture-fixtures.mjs <substr>…  record only RPC jobs whose name contains a
 //                                                    substring; DefiLlama snapshot left as is
+//                                                    unless one substring is `defillama`
 import { writeFile, mkdir } from 'node:fs/promises';
 
 const DATE = new Date().toISOString().slice(0, 10);
@@ -29,11 +30,14 @@ const account = (id) => ({ request_type: 'view_account', finality: 'final', acco
 const call = (id, m, args = {}) => ({ request_type: 'call_function', finality: 'final', account_id: id, method_name: m, args_base64: b64(args) });
 
 const OWNER_GETTERS = ['get_owner', 'get_owner_id', 'get_config', 'get_metadata', 'get_contract_state'];
-const CONTRACTS = ['contract.main.burrow.near', 'meta-pool.near', 'nearx.stader-labs.near', 'linear-protocol.near', 'v2.ref-finance.near'];
+// lst.rhealab.near is RHEA LST (DefiLlama projects/rhealst.js); nearx.stader-labs.near is NearX, read on chain only (§2, §12.10)
+const CONTRACTS = ['contract.main.burrow.near', 'meta-pool.near', 'lst.rhealab.near', 'nearx.stader-labs.near', 'linear-protocol.near', 'v2.ref-finance.near'];
+// §2: owners that are keys, not DAOs — the walk visits them
+const KEY_OWNERS = ['rhealab.near'];
 const DAOS = ['stnear', 'stader-nearx', 'linear', 'burrow', 'ref-finance'].map((d) => `${d}.sputnik-dao.near`);
 
 const jobs = [];
-for (const id of [...DAOS, 'sputnik-dao.near', 'docket-fixture-missing-account.near', ...CONTRACTS]) jobs.push([`view_account.${id}`, FASTNEAR, account(id)]);
+for (const id of [...DAOS, 'sputnik-dao.near', 'docket-fixture-missing-account.near', ...CONTRACTS, ...KEY_OWNERS]) jobs.push([`view_account.${id}`, FASTNEAR, account(id)]);
 jobs.push(['call.sputnik-dao.near.get_contracts_metadata', FASTNEAR, call('sputnik-dao.near', 'get_contracts_metadata')]);
 jobs.push(['call.sputnik-dao.near.get_default_code_hash', FASTNEAR, call('sputnik-dao.near', 'get_default_code_hash')]);
 for (const c of CONTRACTS) for (const g of OWNER_GETTERS) jobs.push([`call.${c}.${g}`, FASTNEAR, call(c, g)]);
@@ -44,9 +48,11 @@ for (const c of ['intents.near', 'wrap.near']) for (const g of OWNER_GETTERS) jo
 // §6.1 authority walk (Nov 6): keys on every account the walk visits; owner getters and
 // get_factory_info on the accounts not covered above.
 const keys = (id) => ({ request_type: 'view_access_key_list', finality: 'final', account_id: id });
-for (const id of [...CONTRACTS, ...DAOS, 'sputnik-dao.near']) jobs.push([`access_keys.${id}`, FASTNEAR, keys(id)]);
-for (const id of [...DAOS, 'sputnik-dao.near']) for (const g of OWNER_GETTERS) jobs.push([`call.${id}.${g}`, FASTNEAR, call(id, g)]);
-for (const id of [...CONTRACTS, 'sputnik-dao.near']) jobs.push([`call.${id}.get_factory_info`, FASTNEAR, call(id, 'get_factory_info')]);
+for (const id of [...CONTRACTS, ...DAOS, 'sputnik-dao.near', ...KEY_OWNERS]) jobs.push([`access_keys.${id}`, FASTNEAR, keys(id)]);
+for (const id of [...DAOS, 'sputnik-dao.near', ...KEY_OWNERS]) for (const g of OWNER_GETTERS) jobs.push([`call.${id}.${g}`, FASTNEAR, call(id, g)]);
+for (const id of [...CONTRACTS, 'sputnik-dao.near', ...KEY_OWNERS]) jobs.push([`call.${id}.get_factory_info`, FASTNEAR, call(id, 'get_factory_info')]);
+// §2: NearX staked NEAR, read on chain (not on DefiLlama)
+jobs.push(['call.nearx.stader-labs.near.get_total_staked_balance', FASTNEAR, call('nearx.stader-labs.near', 'get_total_staked_balance')]);
 // Error shapes from the failover endpoints, so rpc.js classifies them from data, not guesses.
 for (const e of OTHERS) {
   const host = new URL(e).host;
@@ -82,7 +88,7 @@ if (!only.length || only.includes('github')) for (const [name, url] of GITHUB) t
 } catch (e) { console.log('FAIL', name, e.message); }
 
 // DefiLlama /protocols is several MB; keep only entries that report NEAR TVL. Entries are unmodified.
-if (!only.length) try {
+if (!only.length || only.includes('defillama')) try {
   const all = await (await fetch('https://api.llama.fi/protocols', { signal: AbortSignal.timeout(30000) })).json();
   const near = all.filter((p) => p.chainTvls && typeof p.chainTvls.Near === 'number');
   const rec = { endpoint: 'https://api.llama.fi/protocols', captured_at: new Date().toISOString(),

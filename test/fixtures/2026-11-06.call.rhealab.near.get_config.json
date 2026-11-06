@@ -1,0 +1,27 @@
+{
+  "endpoint": "https://free.rpc.fastnear.com",
+  "captured_at": "2026-11-06T08:14:15.307Z",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "docket",
+    "method": "query",
+    "params": {
+      "request_type": "call_function",
+      "finality": "final",
+      "account_id": "rhealab.near",
+      "method_name": "get_config",
+      "args_base64": "e30="
+    }
+  },
+  "http_status": 200,
+  "body": {
+    "jsonrpc": "2.0",
+    "result": {
+      "block_hash": "Fsd86oK9VArHMHuDCukNFAjx3ZkFaheYQm72yAhUg7gC",
+      "block_height": 223289528,
+      "error": "wasm execution failed with error: CompilationError(CodeDoesNotExist { account_id: \"rhealab.near\" })",
+      "logs": []
+    },
+    "id": "docket"
+  }
+}

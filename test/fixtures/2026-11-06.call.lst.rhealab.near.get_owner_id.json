@@ -1,0 +1,42 @@
+{
+  "endpoint": "https://free.rpc.fastnear.com",
+  "captured_at": "2026-11-06T08:14:12.491Z",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "docket",
+    "method": "query",
+    "params": {
+      "request_type": "call_function",
+      "finality": "final",
+      "account_id": "lst.rhealab.near",
+      "method_name": "get_owner_id",
+      "args_base64": "e30="
+    }
+  },
+  "http_status": 200,
+  "body": {
+    "jsonrpc": "2.0",
+    "result": {
+      "block_hash": "B8ujEtijB8iRRkeYhCFE7z3PL7nkaSEZAhrfmRj6qVve",
+      "block_height": 223289524,
+      "logs": [],
+      "result": [
+        34,
+        114,
+        104,
+        101,
+        97,
+        108,
+        97,
+        98,
+        46,
+        110,
+        101,
+        97,
+        114,
+        34
+      ]
+    },
+    "id": "docket"
+  }
+}

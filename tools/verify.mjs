@@ -9,6 +9,8 @@
 // GitHub claims (§3.4) are a separate bucket with the same exit rules as structural claims:
 // diverged -> 1, unknown (network failure, rate limit) -> 2. GitHub is read unauthenticated.
 // TVL (DefiLlama) is live, dated, and warn-only: drift or DefiLlama being down never changes the exit code.
+// Chain amounts (NearX staked NEAR, §2) are warn-only for the same reason: they move every block. That
+// the amount is readable as a U128 is a structural claim.
 //
 // The claim set is fixed: every claim is reported on every run. A claim whose input could not be
 // read is reported as unknown, never skipped, so the total never changes (I2).
@@ -16,7 +18,7 @@
 // Enforces: I1 (every number printed traces to a call made in this run, with its date),
 //           I2 (unknown is its own bucket), I3/I4/I12 via resolve.js.
 //
-// Coverage today: chain — §1/§2 (owners), §3.3 (auto_update), §3.4 (factory owner + keys, §6.1 walk), §4, §5; GitHub — §3.4 (PR #233 and
+// Coverage today: chain — §1/§2 (owners, the rhealab.near key owner, NearX), §3.3 (auto_update), §3.4 (factory owner + keys, §6.1 walk), §4, §5; GitHub — §3.4 (PR #233 and
 // where the fix sits relative to the deployed commit); DefiLlama — §1/§2 coverage, §3.3 headline sum
 // and liquid-staking share. Other sections: not yet.
 // Never edit an expectation here to make a check pass — report the divergence (CLAUDE.md).
@@ -30,22 +32,37 @@ import { fetchDefiLlama, nearTvlFrom, sumTvl, categoryNearTvl, applyCoverageRule
 const FACTORY = 'sputnik-dao.near';
 
 // ---- expectations, as stated in ARCHITECTURE.md ----------------------------------------------
-// §2 + §3.3. specTvl is the dated spec figure, used only for the drift warning.
+// §2 + §3.3. contract = the account DefiLlama's adapter reads (DefiLlama-Adapters projects/<module>):
+// burrow.cash -> contract.main.burrow.near, metapool -> meta-pool.near, rhealst -> lst.rhealab.near,
+// linear-near -> linear-protocol.near, reffinance -> v2.ref-finance.near. The RHEA LST row used to name
+// nearx.stader-labs.near, which no adapter reads: a wrong expectation, corrected (§12.10).
+// owner = the account that administers it; ownerIsDao = a Sputnik DAO (then autoUpdate is checked).
+// walk = the §6.1 expectation for a non-DAO owner. specTvl is the dated spec figure, for the drift warning.
 const PROTOCOLS = [
-  { name: 'Rhea Lend',  slug: 'rhea-lend',       contract: 'contract.main.burrow.near', dao: 'burrow.sputnik-dao.near',       via: 'get_config.owner_id', autoUpdate: false, specTvl: 158_689_681 },
-  { name: 'Meta Pool',  slug: 'meta-pool-near',  contract: 'meta-pool.near',            dao: 'stnear.sputnik-dao.near',       via: 'get_owner_id',        autoUpdate: true,  specTvl: 80_306_704 },
-  { name: 'RHEA LST',   slug: 'rhea-lst',        contract: 'nearx.stader-labs.near',    dao: 'stader-nearx.sputnik-dao.near', via: 'get_owner_id',        autoUpdate: true,  specTvl: 70_553_120 },
-  { name: 'LiNEAR',     slug: 'linear-protocol', contract: 'linear-protocol.near',      dao: 'linear.sputnik-dao.near',       via: 'get_owner_id',        autoUpdate: true,  specTvl: 48_553_100 },
-  { name: 'Rhea Dex',   slug: 'rhea-dex',        contract: 'v2.ref-finance.near',       dao: 'ref-finance.sputnik-dao.near',  via: 'get_owner',           autoUpdate: false, specTvl: 23_964_823 },
+  { name: 'Rhea Lend',  slug: 'rhea-lend',       contract: 'contract.main.burrow.near', owner: 'burrow.sputnik-dao.near',      ownerIsDao: true,  via: 'get_config.owner_id', autoUpdate: false, specTvl: 148_139_658 },
+  { name: 'Meta Pool',  slug: 'meta-pool-near',  contract: 'meta-pool.near',            owner: 'stnear.sputnik-dao.near',      ownerIsDao: true,  via: 'get_owner_id',        autoUpdate: true,  specTvl: 79_933_156 },
+  { name: 'RHEA LST',   slug: 'rhea-lst',        contract: 'lst.rhealab.near',          owner: 'rhealab.near',                 ownerIsDao: false, via: 'get_owner_id',        specTvl: 68_799_804,
+    walk: [['rhealab.near FullAccess'], ['lst.rhealab.near>rhealab.near'], []] },
+  { name: 'LiNEAR',     slug: 'linear-protocol', contract: 'linear-protocol.near',      owner: 'linear.sputnik-dao.near',      ownerIsDao: true,  via: 'get_owner_id',        autoUpdate: true,  specTvl: 46_732_391 },
+  { name: 'Rhea Dex',   slug: 'rhea-dex',        contract: 'v2.ref-finance.near',       owner: 'ref-finance.sputnik-dao.near', ownerIsDao: true,  via: 'get_owner',           autoUpdate: false, specTvl: 23_000_991 },
 ];
-const SPEC_TVL_DATE = '2026-11-05';
-const SPEC_HEADLINE = 199_412_924; // §3.3 — sum of the auto_update:true protocols
+// §2 — Sputnik-administered with auto_update:true, but not valued by DefiLlama: read on chain, in NEAR.
+// specStakedNear is whole NEAR (BigInt, I10). The amount is warn-only (it moves every block); every
+// other claim about it is structural.
+const ONCHAIN_ONLY = [
+  { name: 'NearX', contract: 'nearx.stader-labs.near', owner: 'stader-nearx.sputnik-dao.near', via: 'get_owner_id', autoUpdate: true,
+    stakedMethod: 'get_total_staked_balance', specStakedNear: 2_553_885n },
+];
+// §2 — owners that are keys, not DAOs: no contract, and exactly these access keys
+const KEY_OWNERS = [{ account: 'rhealab.near', keys: ['FullAccess'] }];
+const SPEC_TVL_DATE = '2026-11-06';
+const SPEC_HEADLINE = 126_665_546; // §3.3 — sum of the auto_update:true protocols DefiLlama values
 // TVL moves daily. Beyond this relative move from the spec figure verify.mjs warns; it never fails.
 const TVL_DRIFT_WARN = 0.15;
 // §3.3 — NEAR liquid staking: DefiLlama category "Liquid Staking", chainTvls.Near (2026-11-05)
 const LIQUID_STAKING = 'Liquid Staking';
-const SPEC_LS_TOTAL = 200_526_770;
-const SPEC_LS_SHARE = 0.994; // share held by the auto_update:true protocols, as written in §3.3 (99.4%)
+const SPEC_LS_TOTAL = 196_547_976;
+const SPEC_LS_SHARE = 0.644; // share held by the auto_update:true protocols, as written in §3.3 (64.4%)
 
 // §5 — code identity per DAO (and the factory itself)
 const CODE = [
@@ -66,8 +83,9 @@ const FACTORY_VERSIONS = [
 ];
 const DEFAULT_CODE_HASH = 'DtHZA1mUmGYeScEaUoUZYQGGFHSMpnjMCvkr5U9hJXuF';
 
-// §1/§2 — coverage: "All 5 of 5 NEAR DeFi protocols >= $10M (COVERAGE_RULE) are administered by
-// a Sputnik DAO". N is computed live from DefiLlama; no share is computed (§12.7).
+// §1/§2 — coverage: "4 of 5 NEAR DeFi protocols >= $10M (COVERAGE_RULE) are administered by a
+// Sputnik DAO; RHEA LST is administered by one key". M and N are computed live; no share (§12.7).
+const SPEC_COVERAGE_M = 4;
 const SPEC_COVERAGE_N = 5;
 // §2 — contracts that expose no owner through any §6.2 getter, and are excluded rather than guessed at
 const NO_OWNER = ['intents.near', 'wrap.near'];
@@ -76,9 +94,9 @@ const NO_OWNER = ['intents.near', 'wrap.near'];
 const FACTORY_KEYS = ['FullAccess', 'FullAccess', 'FullAccess'];
 // §3.4/§6.1 — no-vote roots per protocol: [roots "account kind", paths "a>b>c", vote gates].
 // auto_update:true -> the factory's three keys through the DAO; false -> no root, the DAO is a vote gate.
-const walkExpect = (p) => (p.autoUpdate
-  ? [FACTORY_KEYS.map((k) => `${FACTORY} ${k}`), [`${p.contract}>${p.dao}>${FACTORY}`], []]
-  : [[], [], [p.dao]]);
+const walkExpect = (p) => (p.walk ? p.walk : p.autoUpdate
+  ? [FACTORY_KEYS.map((k) => `${FACTORY} ${k}`), [`${p.contract}>${p.owner}>${FACTORY}`], []]
+  : [[], [], [p.owner]]);
 
 // §3.4 — GitHub: PR #233, and where its merge commit sits relative to the deployed v3.2 commit
 const REPO = '/repos/near-daos/sputnik-dao-contract';
@@ -112,15 +130,22 @@ export async function collect({ rpc = createRpc(), llamaFetch, githubFetch } = {
     githubGet(`${REPO}/pulls/${FIX_PR}`, gh),
     githubGet(`${REPO}/compare/${DEPLOYED_SHA}...${FIX_SHA}`, gh),
   ]);
-  const [owners, infos, codes, stnearRaw, noOwner, factoryOwner, factoryKeys, walks] = await Promise.all([
+  const [owners, infos, codes, stnearRaw, noOwner, factoryOwner, factoryKeys, walks,
+    ocOwners, ocInfos, ocWalks, ocStaked, keyOwnerCodes, keyOwnerKeys] = await Promise.all([
     Promise.all(PROTOCOLS.map((p) => resolveOwner(rpc, p.contract))),
-    Promise.all(PROTOCOLS.map((p) => factoryInfo(rpc, p.dao))),
+    Promise.all(PROTOCOLS.map((p) => (p.ownerIsDao ? factoryInfo(rpc, p.owner) : null))),
     Promise.all(CODE.map((c) => codeIdentity(rpc, c.account, factory))),
     rpc.viewAccount('stnear.sputnik-dao.near'),
     Promise.all(NO_OWNER.map((id) => resolveOwner(rpc, id))),
     resolveOwner(rpc, FACTORY),
     accessKeys(rpc, FACTORY),
     Promise.all(PROTOCOLS.map((p) => authorityWalk(rpc, p.contract))),
+    Promise.all(ONCHAIN_ONLY.map((x) => resolveOwner(rpc, x.contract))),
+    Promise.all(ONCHAIN_ONLY.map((x) => factoryInfo(rpc, x.owner))),
+    Promise.all(ONCHAIN_ONLY.map((x) => authorityWalk(rpc, x.contract))),
+    Promise.all(ONCHAIN_ONLY.map((x) => rpc.viewFunction(x.contract, x.stakedMethod))),
+    Promise.all(KEY_OWNERS.map((k) => codeIdentity(rpc, k.account, factory))),
+    Promise.all(KEY_OWNERS.map((k) => accessKeys(rpc, k.account))),
   ]);
 
   // §5 factory list
@@ -135,15 +160,42 @@ export async function collect({ rpc = createRpc(), llamaFetch, githubFetch } = {
   }
 
   // §2 owners, §3.3 auto_update
-  PROTOCOLS.forEach((p, i) => {
-    const o = owners[i];
+  const ownerClaim = (p, o) => {
     const whatO = `${p.contract} owner + getter`;
-    if (o.status === 'unknown') claim('§2', whatO, [p.dao, p.via], null, `${o.at}: ${o.reason}`);
-    else claim('§2', whatO, [p.dao, p.via], o.status === 'ok' ? [o.owner, o.via] : [o.status]);
-    const f = infos[i];
-    const whatF = `${p.dao} get_factory_info`;
+    if (o.status === 'unknown') claim('§2', whatO, [p.owner, p.via], null, `${o.at}: ${o.reason}`);
+    else claim('§2', whatO, [p.owner, p.via], o.status === 'ok' ? [o.owner, o.via] : [o.status]);
+  };
+  const factoryInfoClaim = (p, f) => {
+    const whatF = `${p.owner} get_factory_info`;
     if (f.status === 'unknown') claim('§3.3', whatF, [FACTORY, p.autoUpdate], null, f.reason);
     else claim('§3.3', whatF, [FACTORY, p.autoUpdate], f.status === 'ok' ? [f.factoryId, f.autoUpdate] : ['absent']);
+  };
+  PROTOCOLS.forEach((p, i) => {
+    ownerClaim(p, owners[i]);
+    if (p.ownerIsDao) factoryInfoClaim(p, infos[i]);
+  });
+  ONCHAIN_ONLY.forEach((x, i) => { ownerClaim(x, ocOwners[i]); factoryInfoClaim(x, ocInfos[i]); });
+
+  // §2 — owners that are keys: no contract, and exactly these access keys
+  KEY_OWNERS.forEach((k, i) => {
+    const id = keyOwnerCodes[i];
+    const whatC = `${k.account} has no contract (a key, not a DAO)`;
+    if (id.form === 'unknown') claim('§2', whatC, 'none', null, id.reason);
+    else claim('§2', whatC, 'none', id.form);
+    const ks = keyOwnerKeys[i];
+    const whatK = `${k.account} access keys (view_access_key_list)`;
+    if (ks.status === 'unknown') claim('§2', whatK, k.keys, null, ks.reason);
+    else claim('§2', whatK, k.keys, ks.status === 'ok' ? ks.keys.map((x) => x.kind).sort() : [ks.status]);
+  });
+
+  // §2 — NearX staked NEAR: that the read returns a U128 is structural; the amount is warn-only
+  const staked = ONCHAIN_ONLY.map((x, i) => {
+    const r = ocStaked[i];
+    const what = `${x.contract} ${x.stakedMethod} returns a U128 (yoctoNEAR)`;
+    if (r.status === 'unknown') { claim('§2', what, 'u128', null, r.reason); return { status: 'unknown', reason: r.reason }; }
+    const ok = r.status === 'ok' && typeof r.value === 'string' && /^\d+$/.test(r.value);
+    claim('§2', what, 'u128', ok ? 'u128' : (r.status === 'ok' ? typeof r.value : r.status));
+    return ok ? { status: 'ok', yocto: BigInt(r.value) } : { status: 'unknown', reason: 'not a U128' };
   });
 
   // §4/§5 code identity — the version claim depends on the account read AND the factory read
@@ -180,8 +232,7 @@ export async function collect({ rpc = createRpc(), llamaFetch, githubFetch } = {
     if (factoryKeys.status === 'unknown') claim('§3.4', whatK, FACTORY_KEYS, null, factoryKeys.reason);
     else claim('§3.4', whatK, FACTORY_KEYS, factoryKeys.status === 'ok' ? factoryKeys.keys.map((k) => k.kind).sort() : [factoryKeys.status]);
   }
-  PROTOCOLS.forEach((p, i) => {
-    const w = walks[i];
+  const walkClaim = (p, w) => {
     const what = `${p.contract} no-vote roots, paths, vote gates (§6.1 walk)`;
     if (w.status === 'unknown') { const u = w.unknowns[0]; claim('§3.4', what, walkExpect(p), null, `${u.at} ${u.read}: ${u.reason}`); return; }
     claim('§3.4', what, walkExpect(p), [
@@ -189,7 +240,9 @@ export async function collect({ rpc = createRpc(), llamaFetch, githubFetch } = {
       [...new Set(w.roots.map((r) => r.path.join('>')))].sort(),
       [...w.voteGates].sort(),
     ]);
-  });
+  };
+  PROTOCOLS.forEach((p, i) => walkClaim(p, walks[i]));
+  ONCHAIN_ONLY.forEach((x, i) => walkClaim(x, ocWalks[i]));
 
   // ---- GitHub (§3.4): same exit rules as structural; any failed read is unknown (I2) ----
   const ghClaim = (what, expected, read, pick) => {
@@ -217,7 +270,7 @@ export async function collect({ rpc = createRpc(), llamaFetch, githubFetch } = {
   });
 
   // numerator: protocols whose live owner runs factory-published Sputnik code
-  const codeOf = new Map(CODE.map((c, i) => [c.account, codes[i]]));
+  const codeOf = new Map([...CODE.map((c, i) => [c.account, codes[i]]), ...KEY_OWNERS.map((k, i) => [k.account, keyOwnerCodes[i]])]);
   const sputnikAdministered = PROTOCOLS.map((p, i) => {
     const o = owners[i];
     if (o.status !== 'ok') return 'unknown';
@@ -231,8 +284,8 @@ export async function collect({ rpc = createRpc(), llamaFetch, githubFetch } = {
 
   // headline: protocols whose administering DAO reads auto_update: true, live
   const autoTrue = PROTOCOLS.map((p, i) => ({ p, f: infos[i], t: tvl[i], o: owners[i] }))
-    .filter(({ f, o, p }) => f.status === 'ok' && f.autoUpdate === true && o.status === 'ok' && o.owner === p.dao);
-  const headlineUnknown = infos.some((f) => f.status !== 'ok') || owners.some((o) => o.status !== 'ok');
+    .filter(({ f, o, p }) => p.ownerIsDao && f.status === 'ok' && f.autoUpdate === true && o.status === 'ok' && o.owner === p.owner);
+  const headlineUnknown = infos.some((f) => f && f.status !== 'ok') || owners.some((o) => o.status !== 'ok');
   const headline = headlineUnknown ? { status: 'unknown' } : sumTvl(autoTrue.map((x) => x.t));
 
   // ---- TVL claims: live, dated, warn-only. 'read' within TVL_DRIFT_WARN of the spec, 'moved' beyond.
@@ -277,20 +330,37 @@ export async function collect({ rpc = createRpc(), llamaFetch, githubFetch } = {
     const fmt = ([m, n]) => `${m} of ${n}`;
     let status = 'unverifiable';
     if (coverage) {
-      status = covM === covN && covN === SPEC_COVERAGE_N ? 'read' : 'moved';
+      status = covM === SPEC_COVERAGE_M && covN === SPEC_COVERAGE_N ? 'read' : 'moved';
       if (status === 'moved') {
         const gaps = covRows.filter((r) => !r.sputnik).map((r) => `${r.slug}: ${r.why}`);
-        warnings.push(`coverage is ${covM} of ${covN} (spec: ${SPEC_COVERAGE_N} of ${SPEC_COVERAGE_N})${gaps.length ? ' — ' + gaps.join('; ') : ''}`);
+        warnings.push(`coverage is ${covM} of ${covN} (spec: ${SPEC_COVERAGE_M} of ${SPEC_COVERAGE_N})${gaps.length ? ' — ' + gaps.join('; ') : ''}`);
       }
     }
-    claims.push({ kind: 'tvl', section: '§1/§2', what, expected: [SPEC_COVERAGE_N, SPEC_COVERAGE_N],
+    claims.push({ kind: 'tvl', section: '§1/§2', what, expected: [SPEC_COVERAGE_M, SPEC_COVERAGE_N],
       actual: coverage ? [covM, covN] : undefined, status, unknownReason: coverage ? undefined : llama.reason, fmt });
   }
 
-  return { started, claims, warnings, factory, llama, owners, infos, codes, tvl, numTerms, numerator, autoTrue, headline, ls, lsTrue, coverage, covRows, covM, covN, noOwner, factoryOwner, factoryKeys, walks };
+  // §2 — NearX staked NEAR: warn-only amount, BigInt throughout (I10)
+  const nearFmt = (n) => `${n.toLocaleString('en-US')} NEAR`;
+  const stakedRows = ONCHAIN_ONLY.map((x, i) => {
+    const st = staked[i];
+    const what = `${x.name} staked NEAR (${x.contract} ${x.stakedMethod}; chain, not DefiLlama)`;
+    if (st.status !== 'ok') {
+      claims.push({ kind: 'amount', section: '§2', what, expected: x.specStakedNear, status: 'unverifiable', unknownReason: st.reason, fmt: nearFmt });
+      return { x };
+    }
+    const near = st.yocto / 10n ** 24n;
+    const diff = near > x.specStakedNear ? near - x.specStakedNear : x.specStakedNear - near;
+    const moved = diff * 100n > x.specStakedNear * BigInt(Math.round(TVL_DRIFT_WARN * 100));
+    if (moved) warnings.push(`${what}: ${nearFmt(near)} vs spec ${nearFmt(x.specStakedNear)}`);
+    claims.push({ kind: 'amount', section: '§2', what, expected: x.specStakedNear, actual: near, status: moved ? 'moved' : 'read', fmt: nearFmt });
+    return { x, near };
+  });
+
+  return { started, claims, warnings, factory, llama, owners, infos, codes, tvl, numTerms, numerator, autoTrue, headline, ls, lsTrue, coverage, covRows, covM, covN, noOwner, factoryOwner, factoryKeys, walks, ocWalks, stakedRows };
 }
 
-// Exit code from structural and GitHub claims; TVL never decides it.
+// Exit code from structural and GitHub claims; TVL and chain amounts never decide it.
 export function exitCodeFor(claims) {
   const s = claims.filter((c) => c.kind === 'structural' || c.kind === 'github');
   return s.some((c) => c.status === 'diverged') ? 1 : s.some((c) => c.status === 'unverifiable') ? 2 : 0;
@@ -304,7 +374,7 @@ const pad = (s, n) => String(s).padEnd(n);
 // §3.4 — the chain, assembled from this run's reads only. A protocol is on it when its §6.1 walk
 // reaches a full-access key on the factory; its TVL is summed only then. Any unknown walk makes the
 // total unknown (I2) rather than a smaller number.
-function printChain({ walks, tvl, factoryOwner, factoryKeys, llama }) {
+function printChain({ walks, tvl, factoryOwner, factoryKeys, llama, ocWalks, stakedRows }) {
   const date = llama.readAt.slice(0, 10);
   console.log('§3.4  the chain — every edge a public view call, read in this run\n');
   const nKeys = factoryKeys.status === 'ok' ? factoryKeys.keys.filter((k) => k.kind === 'FullAccess') : null;
@@ -314,13 +384,25 @@ function printChain({ walks, tvl, factoryOwner, factoryKeys, llama }) {
   const onChain = PROTOCOLS.map((p, i) => ({ p, w: walks[i], t: tvl[i] }))
     .filter(({ w }) => w.roots.some((x) => x.account === FACTORY && x.kind === 'FullAccess'));
   console.log(`   └── update(code) → DAO update(), no vote: auto_update: true on`);
-  onChain.forEach(({ p, t }, i) => {
-    const branch = i === onChain.length - 1 ? '└──' : '├──';
-    console.log(`        ${branch} ${pad(p.dao, 30)} owner of ${pad(p.contract, 24)} ${t.status === 'ok' ? usd(t.usd) : 'unknown'}`);
+  const ocOnChain = ONCHAIN_ONLY.map((x, i) => ({ x, w: ocWalks[i], s: stakedRows[i] }))
+    .filter(({ w }) => w.roots.some((r) => r.account === FACTORY && r.kind === 'FullAccess'));
+  const rows = [
+    ...onChain.map(({ p, t }) => [p.owner, p.contract, t.status === 'ok' ? usd(t.usd) : 'unknown']),
+    ...ocOnChain.map(({ x, s }) => [x.owner, x.contract, s.near !== undefined ? `${s.near.toLocaleString('en-US')} NEAR staked (chain; not on DefiLlama)` : 'unknown']),
+  ];
+  rows.forEach(([owner, contract, value], i) => {
+    const branch = i === rows.length - 1 ? '└──' : '├──';
+    console.log(`        ${branch} ${pad(owner, 30)} owner of ${pad(contract, 24)} ${value}`);
   });
   const anyUnknown = walks.some((w) => w.status !== 'ok');
   const total = anyUnknown ? { status: 'unknown' } : sumTvl(onChain.map((x) => x.t));
   console.log(`  = ${total.status === 'ok' ? usd(total.usd) : 'unknown'} of user deposits (DefiLlama ${date}) reachable from ${nKeys ? nKeys.length : 'unknown'} keys with no vote`);
+  // other no-vote roots the walk found: protocols administered by a key rather than a DAO
+  PROTOCOLS.forEach((p, i) => {
+    if (p.ownerIsDao || walks[i].status !== 'ok') return;
+    const ks = walks[i].roots.filter((r) => r.kind === 'FullAccess' && r.account !== FACTORY);
+    if (ks.length) console.log(`  other no-vote root (not Sputnik): ${ks.length} full-access key${ks.length > 1 ? 's' : ''} on ${ks[0].account} → ${p.contract} (${p.name}) ${tvl[i].status === 'ok' ? usd(tvl[i].usd) : 'unknown'}`);
+  });
   const gated = PROTOCOLS.map((p, i) => ({ p, w: walks[i] })).filter(({ w }) => w.status === 'ok' && w.voteGates.length && !w.roots.length);
   if (gated.length) console.log(`  needs a vote (auto_update: false): ${gated.map(({ p, w }) => `${w.voteGates.join(', ')} (${p.name})`).join('; ')}`);
   for (const w of walks.filter((x) => x.status !== 'ok')) console.log(`  ? ${w.account}: walk unknown — ${w.unknowns.map((u) => `${u.at} ${u.read}: ${u.reason}`).join('; ')}`);
@@ -358,7 +440,8 @@ function print(r, rpc) {
   }
 
   console.log(`\n§3.3  auto_update: true — factory can replace the code with no vote`);
-  for (const { p, t } of autoTrue) console.log(`    ${pad(p.dao, 32)} ${pad(p.name, 10)} ${t.status === 'ok' ? usd(t.usd) : 'unknown'}`);
+  for (const { p, t } of autoTrue) console.log(`    ${pad(p.owner, 32)} ${pad(p.name, 10)} ${t.status === 'ok' ? usd(t.usd) : 'unknown'}`);
+  for (const { x, near } of r.stakedRows) console.log(`    ${pad(x.owner, 32)} ${pad(x.name, 10)} ${near !== undefined ? `${near.toLocaleString('en-US')} NEAR (chain, not DefiLlama; not in the headline)` : 'unknown'}`);
   console.log(`    headline: ${headline.status === 'ok' ? usd(headline.usd) : 'unknown'}  (DefiLlama, ${llamaDate}; spec says ${usd(SPEC_HEADLINE)} at ${SPEC_TVL_DATE})`);
   if (ls.status === 'ok') {
     console.log(`\n    NEAR liquid staking (DefiLlama "${LIQUID_STAKING}", NEAR-only, ${llamaDate}): ${usd(ls.usd)}`);
@@ -381,9 +464,10 @@ function print(r, rpc) {
   const st = claims.filter((c) => c.kind === 'structural');
   const gh = claims.filter((c) => c.kind === 'github');
   const tv = claims.filter((c) => c.kind === 'tvl');
+  const am = claims.filter((c) => c.kind === 'amount');
   const by = (s) => st.filter((c) => c.status === s);
   const [ok, bad, unk] = [by('confirmed'), by('diverged'), by('unverifiable')];
-  console.log(`\nClaims: ${claims.length} total = ${st.length} structural (chain) + ${gh.length} GitHub + ${tv.length} TVL`);
+  console.log(`\nClaims: ${claims.length} total = ${st.length} structural (chain) + ${gh.length} GitHub + ${tv.length} TVL + ${am.length} chain amount`);
   console.log(`Structural, chain (decide the exit code): ${ok.length} confirmed, ${bad.length} diverged, ${unk.length} could not be verified`);
   for (const c of ok) console.log(`  ✓ ${c.section} ${c.what}`);
   for (const c of bad) console.log(`  ✗ DIVERGED ${c.section} ${c.what}\n      spec:    ${JSON.stringify(c.expected)}\n      mainnet: ${JSON.stringify(c.actual)}`);
@@ -398,6 +482,10 @@ function print(r, rpc) {
   for (const c of tv) {
     if (c.status === 'unverifiable') console.log(`  ? ${c.section} ${c.what} — unknown: ${c.unknownReason}`);
     else console.log(`  ${c.status === 'moved' ? '!' : '·'} ${c.section} ${c.what}: ${c.fmt(c.actual)} (spec ${c.fmt(c.expected)})`);
+  }
+  for (const c of am) {
+    if (c.status === 'unverifiable') console.log(`Chain amount (warn-only): ? ${c.section} ${c.what} — unknown: ${c.unknownReason}`);
+    else console.log(`Chain amount (warn-only, read ${r.started.toISOString().slice(0, 10)}): ${c.status === 'moved' ? '!' : '·'} ${c.section} ${c.what}: ${c.fmt(c.actual)} (spec ${c.fmt(c.expected)})`);
   }
   if (warnings.length) {
     console.log(`\nWarnings — TVL movement or DefiLlama availability, not failed claims (exit code unaffected; drift threshold ${TVL_DRIFT_WARN * 100}%):`);
