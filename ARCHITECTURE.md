@@ -1223,6 +1223,22 @@ each step checked by re-reading the chain before the next):
 | — #4, accidental | transaction not identified | **An accidental duplicate of step 8.** `get_proposal(4)`: proposer `docket-aditi.near`, the same kind and description as #3, added at block 223351097, about 18 blocks before step 9 executed; the 0.1 NEAR bond is held. Most likely `step8.sh` was re-run. Only the council (one member) can add, so nobody else could have. Caught by `--pre 10`: `get_last_proposal_id = 5 (this add_proposal must create #4)`. Rejected in step 9r; the closing pair moves to id 5 |
 | 9 approve #3 (the control) | `EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b` | `receipts.mjs --step 9` (strict): CONFIRMED. `DAO → sputnik-dao.near update` ok; `sputnik-dao.near → DAO update` (444,088 bytes) **ok** (receipt `AfwLX3iKV4YnKp4T1jtV8tAu3LfqemScwiB9sVGKYQU9`); `DAO → DAO UseGlobalContract + migrate` ok (receipt `CAS4qx737KYBmhWhAQZX9cEESTdXkdkN2DX9a49qonGg`). Transaction status `SuccessValue`. #3 Approved; bond returned. `view_account` at block 223351307: `code_hash` and `global_contract_hash` unchanged (the same code re-applied); `storage_usage` 2166 → 2523; `amount` 0.2 NEAR (#4's bond replaces #3's). 0.0052024 NEAR burnt |
 
+| 9r reject #4 | `2aK2y7wQC6TVQScDP8RttYw9kqA9FMn3PLPS7oyZPtNY` | `VoteReject` on #4: `get_proposal(4)` Rejected, `vote_counts` `{"council":["0","1","0"]}`; the DAO sent 0.1 NEAR back to `docket-aditi.near`; no receipt to `sputnik-dao.near` (nothing executed); 0.0002989 NEAR burnt |
+| 10 add #5 | `ARpLsUmRgwfifoYUmQgYPqVuSpBoNnnXpGndyHoFh4jp` | returned `5` (`--pre 10`: last id 5); `get_proposal(5)` InProgress, kind `{"FactoryInfoUpdate":{"factory_info":{"factory_id":"sputnik-dao.near","auto_update":false}}}`; 0.0002326 NEAR burnt |
+| 11 approve #5 | `7AaKHUxnCx1XdHUrrfMzHk6xUCMSYz9xm5j5Bi2gy36X` | all receipts succeeded; #5 Approved, `vote_counts` `{"council":["1","0","0"]}`; bond returned; re-read (I15) at block 223357651: `get_factory_info` → `{"factory_id":"sputnik-dao.near","auto_update":false}`. The demo DAO is left opted out; it holds 0.1 NEAR, `storage_usage` 2986, code `1111…1111` / `DtHZA1mU…XuF`; 0.0003100 NEAR burnt |
+
+Final state: proposals #0–#5 read Approved, Approved, Approved, Approved,
+Rejected, Approved. `docket-aditi.near` went from 2.242418588 to 2.123279754
+NEAR: 0.1 NEAR is the demo DAO's balance, and about 0.0191 NEAR was gas.
+
+**Counter not confirmed.** The Nov 8 done-when "counter reads 13" (§14) is
+still open. I20 needs the counter recomputed from the chain with its
+denominator (2,080 DAOs, `get_number_daos` at block 223357655) and its
+unknown bucket, and that is the crawl (`tools/crawl.mjs`, Nov 10). The twelve
+names from §3.3 are not in this repository either. What is measured: the demo
+DAO reads `auto_update: false`, and it was created after the census, so it is
+not one of the twelve.
+
 **§16.2 result.** Steps 5 and 9 are the same `UpgradeSelf` to the same hash,
 with only `auto_update` different. With `false`, the factory's `update` call
 on the DAO was rejected with `ERR_MUST_BE_SELF_OR_FACTORY`; with `true`, it
