@@ -388,10 +388,16 @@ code or rules **without a vote**.
 | `A` is a Sputnik DAO with `auto_update: true` | `get_factory_info` | **no** — factory `update()` |
 | the factory's own keys | recurse on `factory_id` | **no** |
 | `A` is a Sputnik DAO, `auto_update: false` | `get_policy` | yes — `upgrade_self` under its vote policy |
-| a role with `*:*` and a threshold its group can meet alone | `get_policy` | nominally yes, effectively no |
+| a role with `*:*` and a threshold its group can meet alone | `get_policy` | nominally yes, effectively no — **not yet evaluated** (Nov 7) |
 | `A.owner_id` | §6.2 resolvers | recurse |
 
-Output: the **no-vote root set**. For `meta-pool.near` it is three keys on
+Output: a **floor** on the no-vote root set. Every root it names is reached by
+an edge above, but the set may not be complete: the `*:*` / self-sufficient-role
+edge is not evaluated yet. Every walk output says "a floor, not a total" and
+names the unevaluated edge (`WALK_NOT_EVALUATED` in `web/assets/resolve.js`).
+That edge is built on Nov 7 inside `decode.js`, because permission matching
+(`kind:action` with wildcards, §6.4) lives there and §16.2's "who must approve"
+needs the same matching. For `meta-pool.near` the floor is three keys on
 `sputnik-dao.near`. Terminates on a locked account, a self-owned cycle, or
 depth 6.
 
@@ -828,7 +834,7 @@ that day, not the last hour.
 | Nov 5 | Novelty check: sputnik-dao-contract issues/PRs and NEAR gov forum for `auto_update` / `FactoryInfoUpdate`. RPC layer (§9); owner resolvers; code identity (§4) | §2 regenerates; `stnear` resolves as v3.2 global; prior discussion, if any, cited in §3 |
 | Nov 6 | Authority walk (§6.1); `auto_update`; access keys | **gate:** the $199.4M chain prints from `node tools/verify.mjs`, cold |
 | Nov 6 | Report sent (§11), with opt-out links | sent, timestamped |
-| Nov 7 | `decode.js`, `lint.js` | I7, I8, I10 hold; fires on #1741/#1743, #1742/#1744 and marmaj #1016 |
+| Nov 7 | `decode.js`, `lint.js`; the §6.1 `*:*` / self-sufficient-role edge, using `decode.js` permission matching | I7, I8, I10 hold; fires on #1741/#1743, #1742/#1744 and marmaj #1016; the walk evaluates the policy edge |
 | Nov 8 | §16 opt-out; create the demo DAO; opt it out through Docket | every §16 **[verify]** removed; I15 passes; counter reads 13 |
 | Nov 9 | `account.html`, `docket.html`, `optout.html` | a stranger understands §3 without reading this file |
 | Nov 10 | `crawl.mjs` census complete; `register.html`; §18 badge | I19, I20 hold |
