@@ -15,7 +15,8 @@ and we'd like to share it with you before we publish. Everything below is a
 public configuration fact with the command that reproduces it (section 6).
 None of it is an exploit, and it needs no embargo. We're writing because the
 depositors at the end of the path can't currently see it, and because a fix
-already exists.
+already exists. Docket is a NEAR Hackathon project, which is why we plan to
+publish on or after 2026-11-14.
 
 All chain reads and figures are from **2026-11-06** unless another date is
 given.
@@ -151,7 +152,7 @@ viewa(){ curl -s -X POST $RPC -H 'Content-Type: application/json' \
  -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"query\",\"params\":{\"request_type\":\"call_function\",\"finality\":\"final\",\"account_id\":\"$1\",\"method_name\":\"$2\",\"args_base64\":\"$(printf '%s' "$3" | base64 -w0)\"}}" \
  | python3 -c 'import sys,json;r=json.load(sys.stdin)["result"];print(bytes(r["result"]).decode())'; }
 rpcq(){ curl -s -X POST $RPC -H 'Content-Type: application/json' \
- -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"query\",\"params\":{\"request_type\":\"$1\",\"finality\":\"final\",\"account_id\":\"$2\"}}"; }
+ -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"query\",\"params\":{\"request_type\":\"$1\",\"finality\":\"final\",\"account_id\":\"$2\"}}"; echo; }
 GH=https://api.github.com/repos/near-daos/sputnik-dao-contract
 SRC=https://raw.githubusercontent.com/near-daos/sputnik-dao-contract
 
@@ -209,7 +210,8 @@ curl -s $SRC/2b0f34a38604/sputnikdao2/src/upgrade.rs | sed -n 162,178p
 
 Thank you for PR #233, and for reading this.
 
-— the Docket team
+Aditi (Docket, built for the NEAR Hackathon)
+Reply to: aditigupta3175@gmail.com
 
 ✂ ----------------------------------------------------------------------------
 
