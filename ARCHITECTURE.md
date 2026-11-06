@@ -1207,6 +1207,20 @@ it (confirming §3.2 on a fresh account), passes the opt-out through `optout.htm
 and re-reads `false`. `verify.mjs` checks the demo DAO on every run. That DAO
 also hosts the delegate, if §17 is built.
 
+**Run log** (mainnet, signed by `docket-aditi.near`, the only council member;
+each step checked by re-reading the chain before the next):
+
+| Step | Transaction | On-chain result |
+|---|---|---|
+| 1 create | `2dB1gehLJV4pghTBhPYRFdi3LqWnx3XdTbVCbTJWLctk` | `docket-demo.sputnik-dao.near` created; `global_contract_hash` `DtHZA1mUmGYeScEaUoUZYQGGFHSMpnjMCvkr5U9hJXuF` (v3.2); `on_create` returned `true`, no refund, the 0.1 NEAR deposit is the DAO's balance; `get_factory_info` → `{"factory_id":"sputnik-dao.near","auto_update":true}`; `get_policy` = council `[docket-aditi.near]` only; 0.0077514 NEAR burnt |
+| 2 add #0 | `D3k5f1MrHcVWdCrb4MnHUw2mNvafdC63sxaa1SRbfDNa` | returned `0`; `get_proposal(0)` InProgress, proposer `docket-aditi.near`, kind `{"FactoryInfoUpdate":{"factory_info":{"factory_id":"sputnik-dao.near","auto_update":false}}}`; 0.1 NEAR bond attached; 0.0002255 NEAR burnt |
+
+The on-chain description of #0 is `Opt out of factory auto-update(Docket). The
+factory will no longer be able to replace the code of this DAO without a vote.`
+It is missing the space before `(Docket)`, because the space was lost when the
+command was pasted. That is not a mismatch: only the kind is checked (`--pre`
+and `act_proposal` both compare the kind, not the description).
+
 ---
 
 ## 17. Guard — an AI delegate that cannot vote past a flag
