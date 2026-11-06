@@ -6,7 +6,7 @@ import { createRpc } from '../web/assets/rpc.js';
 import { collect, exitCodeFor } from '../tools/verify.mjs';
 import { replayFetch, githubReplay, loadFixture, jsonResponse, noSleep } from './helpers.mjs';
 
-const STRUCTURAL = 38;
+const STRUCTURAL = 43; // 38 + the §6.1 policy edge for 5 DAOs
 const GITHUB = 3;
 const TVL = 3;
 const AMOUNT = 1; // NearX staked NEAR, read on chain (§2)

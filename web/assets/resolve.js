@@ -8,6 +8,8 @@
 //   I4   global_contract_account_id is always flagged as a third-party upgrade path
 //   I12  every code hash is joined to a factory version + commit where one exists
 
+import { KINDS, whoCanPass } from './decode.js';
+
 export const ZERO_HASH = '11111111111111111111111111111111'; // 32 zero bytes, base58
 
 // NEAR account id rules: 2..64 chars, lowercase alnum separated by single - _ or .
@@ -143,23 +145,52 @@ export async function accessKeys(rpc, accountId) {
 }
 
 export const WALK_MAX_DEPTH = 6;
-// §6.1 edges this walk does not evaluate yet. Their existence makes every root set a floor.
-export const WALK_NOT_EVALUATED = Object.freeze([
-  'policy threshold: a role with *:* whose group can pass a proposal alone (get_policy)',
-]);
+// §6.1 edges this walk does not evaluate. Empty since the policy edge (Nov 7). A token-weighted
+// role is not "not evaluated": it is reported as unknown on the walk that meets it (I2).
+export const WALK_NOT_EVALUATED = Object.freeze([]);
+
+// The kinds whose passing changes the DAO's code, its rules, or anything it controls: every §6.4 kind
+// rated critical or high (12 of 17). FunctionCall is among them: it can call any method on any
+// contract, including the contracts the DAO owns.
+export const POLICY_EDGE_LABELS = Object.freeze(Object.values(KINDS)
+  .filter((k) => k.risk === 'critical' || k.risk === 'high').map((k) => k.label).sort());
+
+// §6.1 policy edge — for a Sputnik policy, who can pass a code- or rule-changing proposal alone.
+// A role passes a proposal when its own approvals reach its own threshold (policy.rs proposal_status
+// checks roles one at a time), so each role is evaluated on its own.
+// -> { passers:   [{ role, k, n, members, labels }]   k of n members suffice; k === 1n -> each member alone
+//      unpassable: [label]                            no role may even add it
+//      ignored:   [{ role, labels }]                  Everyone roles: their votes never count
+//      unknown:   [{ role, labels, reason }] }        token-weighted / unrecognised: not decided here (I2)
+export function policyEdge(policy) {
+  const passers = new Map(); const ignored = new Map(); const unknown = new Map(); const unpassable = [];
+  const add = (m, key, init, label) => { if (!m.has(key)) m.set(key, { ...init, labels: [] }); m.get(key).labels.push(label); };
+  for (const label of POLICY_EDGE_LABELS) {
+    const w = whoCanPass(policy, label);
+    if (!w.proposers.length) { unpassable.push(label); continue; }
+    for (const p of w.passers) add(passers, `${p.role} ${p.k}`, { role: p.role, k: p.k, n: p.n, members: p.members }, label);
+    for (const g of w.ignored) add(ignored, g.role, { role: g.role }, label);
+    for (const u of w.unknown) add(unknown, u.role, { role: u.role, reason: u.reason }, label);
+  }
+  return { passers: [...passers.values()], unpassable, ignored: [...ignored.values()], unknown: [...unknown.values()] };
+}
 
 // §6.1 — who can change `accountId` without a vote.
-// -> { status:'ok'|'unknown', account, tree, roots, voteGates, unknowns, notEvaluated }
+// -> { status:'ok'|'unknown', account, tree, roots, voteGates, policies, unknowns, notEvaluated }
 //   roots      — keys that act with no vote, deduplicated, each with the account path that reaches it
 //   voteGates  — Sputnik DAOs on the way that read auto_update:false (a vote is required past them)
+//   policies   — every Sputnik DAO visited, with its policyEdge(): who can pass code/rule changes alone
 //   unknowns   — every read that failed; non-empty means status 'unknown' (I2): the roots shown are
 //                what was reached, never presented as the whole set
 // Edges followed: keys on the account; global_contract_account_id (the publisher can swap the
-// code, I4); get_factory_info auto_update:true -> the factory; the §6.2 owner. Terminates on a cycle,
-// at depth WALK_MAX_DEPTH, or on an account with nothing further to follow (I6).
+// code, I4); get_factory_info auto_update:true -> the factory; the §6.2 owner; and the policy edge:
+// a role in which ONE member's approval passes a code- or rule-changing proposal makes each of its
+// members a no-vote root, and the walk follows them. A role that needs k > 1 approvals is a vote
+// (k of n). Terminates on a cycle, at depth WALK_MAX_DEPTH, or with nothing further to follow (I6).
 export async function authorityWalk(rpc, accountId, { maxDepth = WALK_MAX_DEPTH } = {}) {
   const roots = new Map(); // `${account} ${publicKey}` -> root
   const voteGates = new Set();
+  const policies = new Map(); // dao -> policyEdge
   const unknowns = [];
 
   async function visit(account, depth, path) {
@@ -169,8 +200,9 @@ export async function authorityWalk(rpc, accountId, { maxDepth = WALK_MAX_DEPTH 
       return { account, depth, terminal: 'depth', edges: [] };
     }
     const here = [...path, account];
-    const [keys, code, fi, owner] = await Promise.all([
+    const [keys, code, fi, owner, pol] = await Promise.all([
       accessKeys(rpc, account), codeIdentity(rpc, account, null), factoryInfo(rpc, account), resolveOwner(rpc, account),
+      rpc.viewFunction(account, 'get_policy'),
     ]);
     const node = { account, depth, edges: [], keys: keys.status === 'ok' ? keys.keys : null };
     const children = [];
@@ -192,6 +224,22 @@ export async function authorityWalk(rpc, accountId, { maxDepth = WALK_MAX_DEPTH 
     if (owner.status === 'unknown') unknowns.push({ at: account, read: `owner (${owner.at})`, reason: owner.reason });
     else if (owner.status === 'ok') children.push([`owner via ${owner.via}`, owner.owner]);
 
+    // §6.1 policy edge. get_policy absent (no method / no code) = not a Sputnik DAO: no edge.
+    if (pol.status === 'unknown') unknowns.push({ at: account, read: 'get_policy', reason: pol.reason });
+    else if (pol.status === 'ok') {
+      if (!Array.isArray(pol.value?.roles) || !pol.value?.default_vote_policy) {
+        unknowns.push({ at: account, read: 'get_policy', reason: 'unexpected get_policy shape' });
+      } else {
+        const pe = policyEdge(pol.value);
+        policies.set(account, pe);
+        for (const u of pe.unknown) unknowns.push({ at: account, read: 'get_policy', reason: `role "${u.role}": ${u.reason}` });
+        for (const p of pe.passers) {
+          if (p.k === 1n) for (const m of p.members) children.push([`policy: 1 of ${p.n} in "${p.role}" passes ${p.labels.length} code/rule kinds alone`, m]);
+          else node.edges.push({ type: 'policy-vote', role: p.role, k: p.k, n: p.n, labels: p.labels, needsVote: true });
+        }
+      }
+    }
+
     const kids = await Promise.all(children.map(([, to]) => visit(to, depth + 1, here)));
     children.forEach(([type, to], i) => node.edges.push({ type, to, needsVote: false, node: kids[i] }));
     node.locked = keys.status === 'ok' && node.edges.length === 0;
@@ -201,6 +249,7 @@ export async function authorityWalk(rpc, accountId, { maxDepth = WALK_MAX_DEPTH 
   const tree = await visit(accountId, 0, []);
   return {
     status: unknowns.length ? 'unknown' : 'ok', account: accountId, tree,
-    roots: [...roots.values()], voteGates: [...voteGates], unknowns, notEvaluated: WALK_NOT_EVALUATED,
+    roots: [...roots.values()], voteGates: [...voteGates],
+    policies: [...policies].map(([dao, pe]) => ({ dao, ...pe })), unknowns, notEvaluated: WALK_NOT_EVALUATED,
   };
 }

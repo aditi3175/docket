@@ -57,8 +57,10 @@ jobs.push(['call.nearx.stader-labs.near.get_total_staked_balance', FASTNEAR, cal
 jobs.push(['call.burrow.sputnik-dao.near.get_proposals.1741-1744', FASTNEAR, call('burrow.sputnik-dao.near', 'get_proposals', { from_index: 1741, limit: 4 })]);
 jobs.push(['call.marmaj.sputnik-dao.near.get_proposal.1016', FASTNEAR, call('marmaj.sputnik-dao.near', 'get_proposal', { id: 1016 })]);
 for (const t of ['meta-pool.near', 'lst.rhealab.near', 'usdt.tether-token.near', 'wrap.near']) jobs.push([`call.${t}.ft_metadata`, FASTNEAR, call(t, 'ft_metadata')]);
-// §16.2 / decode.js permission model on a real policy: stader-nearx (Everyone holds policy:VoteApprove)
-jobs.push(['call.stader-nearx.sputnik-dao.near.get_policy', FASTNEAR, call('stader-nearx.sputnik-dao.near', 'get_policy')]);
+// §6.1 policy edge (Nov 7): get_policy on every account the walk visits — a DAO answers with its
+// policy, anything else with MethodNotFound / CodeDoesNotExist. stader-nearx is also decode.js's
+// real-policy test (its Everyone role holds policy:VoteApprove).
+for (const id of [...CONTRACTS, ...DAOS, 'sputnik-dao.near', ...KEY_OWNERS]) jobs.push([`call.${id}.get_policy`, FASTNEAR, call(id, 'get_policy')]);
 // Error shapes from the failover endpoints, so rpc.js classifies them from data, not guesses.
 for (const e of OTHERS) {
   const host = new URL(e).host;

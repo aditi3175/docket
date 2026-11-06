@@ -53,6 +53,23 @@ const ONCHAIN_ONLY = [
   { name: 'NearX', contract: 'nearx.stader-labs.near', owner: 'stader-nearx.sputnik-dao.near', via: 'get_owner_id', autoUpdate: true,
     stakedMethod: 'get_total_staked_balance', specStakedNear: 2_553_885n },
 ];
+// §6.1 policy edge — per Sputnik DAO, who can pass a code- or rule-changing proposal (the 12 critical/
+// high kinds of §6.4) alone: "<role> k of n (<kinds>)"; "ignored: <role>" for an Everyone role whose
+// votes never count; "nobody can propose: <labels>". Read from get_policy on 2026-11-06.
+const POLICY_EXPECT = {
+  'stnear.sputnik-dao.near':       ['council 3 of 4 (12 kinds)'],
+  'linear.sputnik-dao.near':       ['Council 3 of 5 (12 kinds)'],
+  'burrow.sputnik-dao.near':       ['council 3 of 5 (12 kinds)'],
+  'ref-finance.sputnik-dao.near':  ['council 3 of 5 (12 kinds)'],
+  'stader-nearx.sputnik-dao.near': ['council 3 of 5 (7 kinds)', 'ignored: all',
+    'nobody can propose: factory_info_update, policy_add_or_update_role, policy_remove_role, policy_update_default_vote_policy, policy_update_parameters'],
+};
+const policySummary = (pe) => [
+  ...pe.passers.map((p) => `${p.role} ${p.k} of ${p.n} (${p.labels.length} kinds)`),
+  ...pe.ignored.map((g) => `ignored: ${g.role}`),
+  ...pe.unknown.map((u) => `unknown: ${u.role}`),
+  ...(pe.unpassable.length ? [`nobody can propose: ${pe.unpassable.join(', ')}`] : []),
+].sort();
 // §2 — owners that are keys, not DAOs: no contract, and exactly these access keys
 const KEY_OWNERS = [{ account: 'rhealab.near', keys: ['FullAccess'] }];
 const SPEC_TVL_DATE = '2026-11-06';
@@ -244,6 +261,20 @@ export async function collect({ rpc = createRpc(), llamaFetch, githubFetch } = {
   PROTOCOLS.forEach((p, i) => walkClaim(p, walks[i]));
   ONCHAIN_ONLY.forEach((x, i) => walkClaim(x, ocWalks[i]));
 
+  // §6.1 policy edge, per DAO, from the walk that visits it. Depends only on that DAO's get_policy:
+  // a walk that is unknown elsewhere (e.g. the factory unread) still reports a policy it read.
+  const daoWalks = [...PROTOCOLS.map((p, i) => [p, walks[i]]), ...ONCHAIN_ONLY.map((x, i) => [x, ocWalks[i]])]
+    .filter(([p]) => p.ownerIsDao !== false);
+  for (const [p, w] of daoWalks) {
+    const what = `${p.owner} policy edge: who can pass code/rule changes alone (§6.1 walk)`;
+    const expected = [...POLICY_EXPECT[p.owner]].sort();
+    const pe = w.policies.find((x) => x.dao === p.owner);
+    const u = w.unknowns.find((x) => x.at === p.owner && x.read === 'get_policy');
+    if (u) claim('§6.1', what, expected, null, `get_policy: ${u.reason}`);
+    else if (!pe) claim('§6.1', what, expected, null, w.status === 'unknown' ? `walk did not read ${p.owner}'s policy: ${w.unknowns[0]?.reason}` : `${p.owner} has no Sputnik policy`);
+    else claim('§6.1', what, expected, policySummary(pe));
+  }
+
   // ---- GitHub (§3.4): same exit rules as structural; any failed read is unknown (I2) ----
   const ghClaim = (what, expected, read, pick) => {
     const actual = read.status === 'ok' ? pick(read.body) : null;
@@ -404,9 +435,20 @@ function printChain({ walks, tvl, factoryOwner, factoryKeys, llama, ocWalks, sta
     if (ks.length) console.log(`  other no-vote root (not Sputnik): ${ks.length} full-access key${ks.length > 1 ? 's' : ''} on ${ks[0].account} → ${p.contract} (${p.name}) ${tvl[i].status === 'ok' ? usd(tvl[i].usd) : 'unknown'}`);
   });
   const gated = PROTOCOLS.map((p, i) => ({ p, w: walks[i] })).filter(({ w }) => w.status === 'ok' && w.voteGates.length && !w.roots.length);
-  if (gated.length) console.log(`  needs a vote (auto_update: false): ${gated.map(({ p, w }) => `${w.voteGates.join(', ')} (${p.name})`).join('; ')}`);
+  const voteOf = (w, dao) => {
+    const pe = w.policies.find((x) => x.dao === dao);
+    return pe?.passers.length ? `: ${pe.passers.map((x) => `${x.k} of ${x.n} ${x.role}`).join(' or ')}` : '';
+  };
+  if (gated.length) console.log(`  needs a vote (auto_update: false): ${gated.map(({ p, w }) => `${w.voteGates.map((g) => g + voteOf(w, g)).join(', ')} (${p.name})`).join('; ')}`);
   for (const w of walks.filter((x) => x.status !== 'ok')) console.log(`  ? ${w.account}: walk unknown — ${w.unknowns.map((u) => `${u.at} ${u.read}: ${u.reason}`).join('; ')}`);
-  console.log(`  a floor, not a total: not yet evaluated — ${WALK_NOT_EVALUATED.join('; ')}\n`);
+  const pes = [...new Map(walks.concat(ocWalks).flatMap((w) => w.policies).map((pe) => [pe.dao, pe])).values()];
+  const oneMember = pes.flatMap((pe) => pe.passers.filter((x) => x.k === 1n).map((x) => `${pe.dao} "${x.role}"`));
+  console.log(oneMember.length
+    ? `  policy edge (§6.1): ONE member alone can change code or rules in ${oneMember.join(', ')} — its members are roots above`
+    : `  policy edge (§6.1): in none of these ${pes.length} DAOs can one member alone change code or rules (${pes.map((pe) => `${pe.dao.split('.')[0]} ${pe.passers.map((x) => `${x.k} of ${x.n}`).join('/')}`).join(', ')})`);
+  console.log(WALK_NOT_EVALUATED.length
+    ? `  a floor, not a total: not yet evaluated — ${WALK_NOT_EVALUATED.join('; ')}\n`
+    : `  every §6.1 edge is evaluated; still blind to off-chain authority (key custody, multisig by convention, §13)\n`);
 }
 
 function print(r, rpc) {

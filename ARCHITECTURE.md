@@ -30,7 +30,7 @@ explanation, dated, and not re-run.
 
 | source | claims | decides the exit code |
 |---|---|---|
-| **chain** (NEAR mainnet RPC, §9) | owners (§2), including that `rhealab.near` has no contract and one full-access key; NearX's owner, walk, and that `get_total_staked_balance` reads as a U128 (§2); `auto_update` (§3.3), the factory's owner and keys and the §6.1 walk from each protocol (§3.4), code identity (§4, §5), the factory's version list and default (§5) | yes: diverged → 1, unknown → 2. NearX's staked NEAR *amount* is warn-only, like TVL |
+| **chain** (NEAR mainnet RPC, §9) | owners (§2), including that `rhealab.near` has no contract and one full-access key; NearX's owner, walk, and that `get_total_staked_balance` reads as a U128 (§2); `auto_update` (§3.3), the factory's owner and keys and the §6.1 walk from each protocol (§3.4), the §6.1 policy edge of each of the five DAOs (who can pass code or rule changes alone), code identity (§4, §5), the factory's version list and default (§5) | yes: diverged → 1, unknown → 2. NearX's staked NEAR *amount* is warn-only, like TVL |
 | **GitHub** (`api.github.com`, unauthenticated) | PR #233 merged and its merge commit; the fix two commits ahead of and none behind the deployed `2b0f34a38604`; both commit dates (§3.4) | yes, same rules; a failed read or rate limit is unknown → 2 |
 | **DefiLlama** (`api.llama.fi`) | TVL, the coverage count, the liquid-staking share (§2, §3.3) | no — warn-only |
 
@@ -492,18 +492,44 @@ code or rules **without a vote**.
 | `A` is a Sputnik DAO with `auto_update: true` | `get_factory_info` | **no** — factory `update()` |
 | the factory's own keys | recurse on `factory_id` | **no** |
 | `A` is a Sputnik DAO, `auto_update: false` | `get_policy` | yes — a `factory_info_update` vote back to `true` under its vote policy, then `UpgradeSelf` (source-only until Nov 8, §16.2) |
-| a role with `*:*` and a threshold its group can meet alone | `get_policy` | nominally yes, effectively no — **not yet evaluated** (Nov 7) |
+| a role that can pass a code- or rule-changing kind, where **one member's** approval meets the threshold | `get_policy` | **no** — each member of that role is a root, and the walk follows them |
+| a role that can pass it with `k > 1` of `n` approvals | `get_policy` | yes — a vote of `k` of `n`, shown as such |
 | `A.owner_id` | §6.2 resolvers | recurse |
 
-Output: a **floor** on the no-vote root set. Every root it names is reached by
-an edge above, but the set may not be complete: the `*:*` / self-sufficient-role
-edge is not evaluated yet. Every walk output says "a floor, not a total" and
-names the unevaluated edge (`WALK_NOT_EVALUATED` in `web/assets/resolve.js`).
-That edge is built on Nov 7 inside `decode.js`, because permission matching
-(`kind:action` with wildcards, §6.4) lives there and §16.2's "who must approve"
-needs the same matching. For `meta-pool.near` the floor is three keys on
-`sputnik-dao.near`. Terminates on a locked account, a self-owned cycle, or
-depth 6.
+**The policy edge** (`policyEdge` in `web/assets/resolve.js`, built on the
+`decode.js` permission model). The code- or rule-changing kinds are the 12
+rated critical or high in §6.4: `call`, `upgrade_remote`, `upgrade_self`,
+`policy` and the four `policy_*` kinds, `add_member_to_role`,
+`remove_member_from_role`, `set_vote_token` and `factory_info_update`. For each
+one, a role can pass it alone if some role may `AddProposal` it and this role
+may `VoteApprove` it (exact, `kind:*`, `*:action` or `*:*`, as in
+`can_execute_action`). Sputnik checks each role against its own threshold
+(`proposal_status`), so roles are evaluated one at a time:
+`k = max(quorum, to_weight(group size))`, where `Ratio(a, b)` gives
+`min(a·n/b + 1, n)` and `Weight(w)` gives `min(w, n)`, using the per-kind
+`vote_policy` if one is set. Two cases from the source decide what counts:
+
+- **An `Everyone` role never counts.** `proposal_status` skips it
+  (`RoleKind::Everyone => continue`: policy.rs:409 at v3.0 and v3.1, which are
+  byte-identical, and :405 at v3.2). Its members can vote, but those votes
+  never pass anything.
+- **A token-weighted role (`TokenWeight`, or a `Member` role) is not decided
+  here.** Its threshold depends on token supply. The walk reports it as
+  unknown (I2), so it is never counted as no root.
+
+On 2026-11-06, none of the five DAOs on the §2 paths lets one member change
+code or rules alone. `verify.mjs` checks each as a chain claim: `stnear`
+council 3 of 4, and `linear`, `burrow`, `ref-finance` and `stader-nearx`
+councils 3 of 5. In `stader-nearx`, five of the 12 kinds, including
+`factory_info_update`, cannot even be proposed (§16.2).
+
+Output: the no-vote root set, with every edge above evaluated
+(`WALK_NOT_EVALUATED` is empty). It is complete only for on-chain authority:
+it is blind to key custody and multisig-by-convention (§13), and it becomes
+unknown, not smaller, when a read fails or a role is token-weighted. For
+`meta-pool.near` it is three keys on `sputnik-dao.near`, plus a 3-of-4 council
+vote that is a vote, not a root. Terminates on a locked account, a self-owned
+cycle, or depth 6.
 
 ### 6.2 The ownership graph — *what does this control, and what is it worth*
 
@@ -1130,9 +1156,12 @@ Until this marker is removed, that includes v3.0.
    `get_policy`, read 2026-11-06, has two roles, `all` (Everyone) and `council`
    (a 5-member Group). Neither holds `*:*`, `*:AddProposal`, `*:VoteApprove`
    or any `factory_info_update:*` permission. `council`'s only wildcard is
-   `*:Finalize`. Both roles hold `policy:AddProposal` and `policy:VoteApprove`.
-Whether an Everyone role's votes count toward a threshold is a §6.1 policy-edge
-question (Nov 7), and the screen does not answer it until then.
+   `*:Finalize`. Both roles hold `policy:AddProposal` and `policy:VoteApprove`,
+   but only `council`'s approvals can pass the policy change, and it needs 3 of
+   5. `all` is an Everyone role, and `proposal_status` never counts Everyone
+   votes toward a threshold, at v3.0 (which `stader-nearx` runs) or at any later
+   version (§6.1). The screen says so, so that a member does not read `all`'s
+   permission as "anyone can pass it".
    By contrast, `stnear` and `linear` give their councils `*:AddProposal` and
    `*:VoteApprove`, so for them it is one proposal.
 4. **The cost**: `proposal_bond` from `get_policy`, attached as the deposit
