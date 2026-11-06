@@ -1215,6 +1215,13 @@ each step checked by re-reading the chain before the next):
 | 1 create | `2dB1gehLJV4pghTBhPYRFdi3LqWnx3XdTbVCbTJWLctk` | `docket-demo.sputnik-dao.near` created; `global_contract_hash` `DtHZA1mUmGYeScEaUoUZYQGGFHSMpnjMCvkr5U9hJXuF` (v3.2); `on_create` returned `true`, no refund, the 0.1 NEAR deposit is the DAO's balance; `get_factory_info` → `{"factory_id":"sputnik-dao.near","auto_update":true}`; `get_policy` = council `[docket-aditi.near]` only; 0.0077514 NEAR burnt |
 | 2 add #0 | `D3k5f1MrHcVWdCrb4MnHUw2mNvafdC63sxaa1SRbfDNa` | returned `0`; `get_proposal(0)` InProgress, proposer `docket-aditi.near`, kind `{"FactoryInfoUpdate":{"factory_info":{"factory_id":"sputnik-dao.near","auto_update":false}}}`; 0.1 NEAR bond attached; 0.0002255 NEAR burnt |
 | 3 approve #0 | `Fx39dSVT61HJ8hfNymAgRqjF8gG9xczPcgF59wu16Vkh` | all receipts succeeded; #0 Approved, `vote_counts` `{"council":["1","0","0"]}`; 0.1 NEAR bond transferred back to `docket-aditi.near`; re-read (I15) at block 223342856: `get_factory_info` → `{"factory_id":"sputnik-dao.near","auto_update":false}`; 0.0003030 NEAR burnt |
+| 4 add #1 | `DQDntucBH9jVBWzWQUnbqdr2DL8WmDLFUEAnvT5EDaTN` | returned `1`; `get_proposal(1)` InProgress, kind `{"UpgradeSelf":{"hash":"DtHZA1mUmGYeScEaUoUZYQGGFHSMpnjMCvkr5U9hJXuF"}}`; before-snapshot of `view_account` at block 223343543: `code_hash` `1111…1111`, `global_contract_hash` `DtHZA1mU…XuF`, `storage_usage` 1480, `amount` 0.2 NEAR; 0.0002283 NEAR burnt |
+| 5 approve #1 (the test) | `772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS` | receipts: `docket-aditi.near → DAO act_proposal` ok; `DAO → sputnik-dao.near update {"account_id":"docket-demo.sputnik-dao.near","code_hash":"DtHZA1mU…XuF"}` ok; `sputnik-dao.near → DAO update` (444,088-byte code) **failed**: `Smart contract panicked: panicked at sputnikdao2/src/upgrade.rs:122:5: ERR_MUST_BE_SELF_OR_FACTORY`. `receipts.mjs --step 5`: CONFIRMED. #1 Approved, `vote_counts` `{"council":["1","0","0"]}`; 0.1 NEAR bond transferred back. `view_account` at block 223344863: `code_hash` and `global_contract_hash` unchanged; `amount` 0.2 → 0.1 NEAR (the bond); `storage_usage` 1480 → 1607 (the vote record). Transaction status is `Failure`, because `upgrade_using_factory` ends in `env::promise_return` (`upgrade.rs:177`). 0.0035899 NEAR burnt |
+
+Step 5 alone does not settle §16.2. The `UpgradeSelf` targets the code the
+DAO already runs, so an unchanged hash is what a successful upgrade would show
+as well; the failed receipt is the evidence. Step 9 is the control: the same
+`UpgradeSelf` with `auto_update: true`, where that receipt must succeed.
 
 The on-chain description of #0 is `Opt out of factory auto-update(Docket). The
 factory will no longer be able to replace the code of this DAO without a vote.`

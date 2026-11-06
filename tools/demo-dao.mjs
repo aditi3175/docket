@@ -11,7 +11,9 @@
 // Only that pair confirms §16.2. Any other failure in step 5 (ERR_NO_HASH, "Must be contract created
 // by factory", gas, ...) means STOP: it says nothing about auto_update. Evidence is the receipts
 // (tools/receipts.mjs) and view_account — never the proposal's status, which reads "Approved" either way
-// (UpgradeSelf returns PromiseOrValue::Value; the factory call is detached).
+// (the vote and bond refund are committed before the factory call runs). upgrade_using_factory ends in
+// env::promise_return (upgrade.rs:177), so the transaction's final status follows the DAO's update():
+// near-cli reports "Transaction failed" in step 5 (seen on mainnet, tx 772n4ZWM…FXnS) — still not the evidence.
 //
 // Shapes are from near-daos/sputnik-dao-contract at 2b0f34a38604 (v3.2, the factory's default):
 //   factory  create(name, args: Base64VecU8); deposit >= 10 milliNEAR (factory_manager.rs MINIMAL_DEPOSIT)
