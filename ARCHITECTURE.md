@@ -16,10 +16,12 @@ done, and cut the moment anything slips.
 
 ## 0. How to read this document
 
-Every factual claim below was produced by running a command against NEAR
-mainnet, and the command is printed beside it. `tools/verify.mjs` re-runs all of
-them and exits non-zero on any divergence. Nothing here is modelled, estimated,
-or remembered. TVL figures are not quoted as static dashboard numbers: each one
+Every factual claim below came from a command run against NEAR mainnet, GitHub
+or DefiLlama, and the command is printed beside it or in the second table below.
+Nothing here is modelled, estimated, or remembered. **`tools/verify.mjs` re-runs
+some of these claims, not all of them.** The first table lists what it re-runs.
+The second lists what is documented but not re-run, each with the command that
+reproduces it by hand. TVL figures are not quoted as static dashboard numbers: each one
 is dated, and `verify.mjs` re-reads it live from DefiLlama's API
 (`api.llama.fi/protocols`, `chainTvls.Near`). Figures marked illustrative are
 explanation, dated, and not re-run.
@@ -34,6 +36,33 @@ explanation, dated, and not re-run.
 
 The chain says which build the factory publishes. GitHub says that build
 predates the fix. Neither source alone establishes "the fix is undeployed".
+
+**Documented, not re-run by `verify.mjs`.** These claims were produced by the
+commands below, and are as current as the date beside them in the text. A
+failure here does not change `verify.mjs`'s exit code, because `verify.mjs`
+does not make these reads.
+
+```bash
+RPC=https://free.rpc.fastnear.com
+viewa(){ curl -s -X POST $RPC -H 'Content-Type: application/json' \
+ -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"query\",\"params\":{\"request_type\":\"call_function\",\"finality\":\"final\",\"account_id\":\"$1\",\"method_name\":\"$2\",\"args_base64\":\"$(printf '%s' "$3" | base64 -w0)\"}}" \
+ | python3 -c 'import sys,json;r=json.load(sys.stdin)["result"];print(bytes(r["result"]).decode())'; }
+SRC=https://raw.githubusercontent.com/near-daos/sputnik-dao-contract
+```
+
+| claim class | section | reproduce with |
+|---|---|---|
+| census: DAO count, resolved count, the `true` / `false` / unknown buckets, the twelve `false` names, the implicit-account `factory_id` outlier | §3.3 | `tools/crawl.mjs` is **not in this repository yet** (Nov 10, §14), so these counts cannot be reproduced from the repo today. By hand: `viewa sputnik-dao.near get_number_daos '{}'`, `viewa sputnik-dao.near get_daos '{"from_index":0,"limit":100}'` (page on), then `viewa <dao> get_factory_info '{}'` on each |
+| burrow #1741–#1744 | §7.1 | the `get_proposals` command in §7.1 |
+| marmaj #1016 | §7.2 | `viewa marmaj.sputnik-dao.near get_proposal '{"id":1016}'` |
+| linear council changes | §7.3 | `viewa linear.sputnik-dao.near get_proposals '{"from_index":0,"limit":100}'` (page on), filter `AddMemberToRole` / `RemoveMemberFromRole` |
+| `intents.near` holdings | §2 | `viewa intents.near mt_tokens '{"from_index":"0","limit":10}'`; `viewa wrap.near ft_balance_of '{"account_id":"intents.near"}'`; `viewa usdt.tether-token.near ft_balance_of '{"account_id":"intents.near"}'` |
+| deployed `update()` and the `auto_update: true` default | §3.1, §3.2 | `curl -s $SRC/2b0f34a38604/sputnikdao2/src/upgrade.rs` (`internal_get_factory_info` at line 95, `update` at 117) |
+| what PR #233 changes (`UpgradeSelf` proposal, `TWO_WEEKS_NS`) | §3.4 | `curl -s $SRC/9e96c75410a9/sputnikdao2/src/upgrade.rs \| grep -n TWO_WEEKS_NS`. `verify.mjs` re-runs where the fix commit sits, not what it contains |
+| 17 `ProposalKind` variants and their labels | §6.4 | `curl -s $SRC/2b0f34a38604/sputnikdao2/src/proposals.rs \| sed -n 125,147p` |
+| `FactoryInfoUpdate` / `FactoryInfo` shape at v3.0, v3.1, v3.2 | §16.1 | `curl -s $SRC/<commit>/sputnikdao2/src/proposals.rs` and `.../upgrade.rs` at the lines §16.1 names |
+| the UIs decode `args` | §12.1 | read the files §12.1 names in `near-daos/sputnik-dao-ui` and `near-daos/astro-ui` |
+| figures marked illustrative | §12.7 | not re-run by design |
 
 Several claims in the first draft of this document were **wrong**, and they were
 found wrong by running them. They are kept in §12 with what the error was,
@@ -607,7 +636,7 @@ docket/
     delegate.mjs          poll -> guard -> vote or escalate
     policy.json           what it may approve; everything else escalates
   tools/
-    verify.mjs            re-runs every claim in this file against mainnet
+    verify.mjs            re-runs the claims §0's first table lists
     crawl.mjs             resumable census -> graph.json
   graph.json              committed crawl output, regenerable
 ```
@@ -617,8 +646,9 @@ themselves; a server between reader and chain weakens exactly that. The §18
 badge is computed in the reader's browser and by `verify.mjs` from the same
 reads; the delegate (§17, stretch) runs wherever its operator runs it. Neither
 sits between a reader and the chain. The crawl is
-committed so a judge sees results instantly, and `verify.mjs` re-derives
-everything live so they can prove the committed artifact honest.
+to be committed so a judge sees results instantly, and re-running `crawl.mjs`
+regenerates it so they can prove the committed artifact honest. `verify.mjs`
+re-runs the claims §0's first table lists, and no others.
 
 **RPC, measured rather than assumed:**
 
@@ -892,7 +922,7 @@ Sputnik v3.x has a `FactoryInfoUpdate` proposal kind (§6.4) gated by the
 The shape matches the source at every v3.x build in §5:
 `FactoryInfoUpdate { factory_info: FactoryInfo }` with
 `FactoryInfo { factory_id: AccountId, auto_update: bool }`. This was checked at
-`2b0f34a38604` (v3.2, `proposals.rs:112`, `lib.rs:54`), `3d568f9517a8` (v3.1,
+`2b0f34a38604` (v3.2, `proposals.rs:112`, `upgrade.rs:54`), `3d568f9517a8` (v3.1,
 `proposals.rs:107`, `upgrade.rs:24`) and `86cc77a0808a` (v3.0,
 `proposals.rs:107`, `upgrade.rs:21`). v3.2 adds `#[serde(deny_unknown_fields)]`
 to `FactoryInfo`, so the drafter must send exactly these two fields.
