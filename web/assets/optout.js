@@ -16,7 +16,9 @@ import { whoCanPass, formatUnits } from './decode.js';
 // v3.0 is the same shape in source but has not been run; it is refused until its [verify] is removed.
 export const TESTED_VERSIONS = Object.freeze(['v3.1', 'v3.2']);
 
-export const DESCRIPTION = "Opt out of factory auto-update (Docket). The factory will no longer be able to replace this DAO's code without a vote.";
+// No apostrophe: the near-cli command wraps the JSON in single quotes (§16.2 step 5 "the equivalent
+// near-cli command"), and a ' would end the shell string. nearCli() refuses any JSON containing one.
+export const DESCRIPTION = 'Opt out of factory auto-update (Docket). The factory will no longer be able to replace the code of this DAO without a vote.';
 
 // I14 — shown above the submit control, in this order.
 export const GIVEN_UP = Object.freeze([
@@ -33,8 +35,13 @@ export function optOutKind(factoryId) {
   return { FactoryInfoUpdate: { factory_info: { factory_id: factoryId, auto_update: false } } };
 }
 
-const nearCli = (contract, method, args, gas, deposit, signer) =>
-  `near contract call-function as-transaction ${contract} ${method} json-args '${JSON.stringify(args)}' prepaid-gas '${gas}' attached-deposit '${deposit}' sign-as ${signer} network-config mainnet sign-with-keychain send`;
+// A POSIX-shell command (bash, zsh, Git Bash). Windows PowerShell 5.1 strips the double quotes inside
+// the JSON before near-cli sees it (tested 2026-11-06: "Data not in JSON format"), so the page says so.
+export function nearCli(contract, method, args, gas, deposit, signer) {
+  const json = JSON.stringify(args);
+  if (json.includes("'")) throw new Error('JSON args contain a single quote, which would break the shell command');
+  return `near contract call-function as-transaction ${contract} ${method} json-args '${json}' prepaid-gas '${gas}' attached-deposit '${deposit}' sign-as ${signer} network-config mainnet sign-with-keychain send`;
+}
 
 // -> { status: 'draft' | 'opted-out' | 'refused' | 'unknown', dao, reason?, current, steps, approve, bond, givenUp, commands }
 export async function planOptOut(rpc, dao, { factory } = {}) {

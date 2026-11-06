@@ -63,6 +63,7 @@ function render(plan) {
       }
     } else if (id === 'cli') {
       if (!plan.commands) { s.append(el('p', 'No command: nothing is drafted.')); continue; }
+      s.append(el('p', 'Run these in a POSIX shell (bash, zsh, Git Bash on Windows). Windows PowerShell 5.1 strips the quotes inside json-args.', 'basis'));
       s.append(el('p', '1. Add the proposal (any account a proposer role matches):'), el('pre', plan.commands.add));
       s.append(el('p', '2. Each approving member votes, using the id the first command returned:'), el('pre', plan.commands.approve));
       s.append(el('p', 'Proposal JSON:'), el('pre', JSON.stringify(plan.proposal, null, 2)));

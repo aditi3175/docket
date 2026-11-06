@@ -22,6 +22,7 @@
 
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
+import { nearCli, DESCRIPTION } from '../web/assets/optout.js';
 
 export const FACTORY = 'sputnik-dao.near';
 export const CREATE_DEPOSIT = '0.1 NEAR';             // >= 0.01 required; becomes the DAO's balance
@@ -49,8 +50,8 @@ export function createArgs(member, name = 'docket-demo') {
   return { name, dao: `${name}.${FACTORY}`, args, argsBase64: Buffer.from(JSON.stringify(args)).toString('base64') };
 }
 
-const call = (contract, method, args, gas, deposit, signer) =>
-  `near contract call-function as-transaction ${contract} ${method} json-args '${JSON.stringify(args)}' prepaid-gas '${gas}' attached-deposit '${deposit}' sign-as ${signer} network-config mainnet sign-with-keychain send`;
+// The same builder optout.html uses: POSIX-shell quoting, refuses JSON containing a single quote.
+const call = nearCli;
 
 export function plan(member, name) {
   const c = createArgs(member, name);
@@ -63,7 +64,7 @@ export function plan(member, name) {
     { n: 1, what: 'create the demo DAO', cmd: call(FACTORY, 'create', { name: c.name, args: c.argsBase64 }, '150 Tgas', CREATE_DEPOSIT, member),
       expect: `${c.dao} exists; view_account global_contract_hash = ${V32_HASH} (v3.2); ${fi(true)} (written by new())`,
       stop: 'the account does not exist, or runs anything but v3.2, or get_factory_info is not true' },
-    { n: 2, what: 'opt-out proposal (#0), as drafted by optout.html', cmd: add("Opt out of factory auto-update (Docket). The factory will no longer be able to replace this DAO's code without a vote.", fiu(false)),
+    { n: 2, what: 'opt-out proposal (#0), as drafted by optout.html', cmd: add(DESCRIPTION, fiu(false)),
       expect: 'add_proposal returns 0', stop: 'any other id, or ERR_MIN_BOND / ERR_PERMISSION_DENIED' },
     { n: 3, what: 'approve #0 (FactoryInfoUpdate false)', cmd: act(0, fiu(false), '100 Tgas'),
       expect: `${fi(false)}; opted-out count 12 -> 13`, stop: 'get_factory_info still reads true' },
@@ -138,7 +139,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     process.exit(r.every((x) => x.ok === true) ? 0 : 1);
   }
   console.log(`Demo DAO: ${p.dao}   council: [${member}]   bond: 0.1 NEAR   create deposit: ${CREATE_DEPOSIT}`);
-  console.log(`First: node tools/demo-dao.mjs ${member}${name ? ' ' + name : ''} --check   (must print PASS three times)\n`);
+  console.log(`First: node tools/demo-dao.mjs ${member}${name ? ' ' + name : ''} --check   (must print PASS three times)`);
+  console.log('Run every command below in Git Bash (or any POSIX shell). Windows PowerShell 5.1 strips the quotes inside json-args.\n');
   console.log('create args (decoded):\n' + JSON.stringify(p.args, null, 2) + '\n');
   for (const t of p.txs) console.log(`# ${t.n}. ${t.what}\n${t.cmd}\n#    expect: ${t.expect}\n#    STOP if: ${t.stop}\n`);
   console.log('All 11 steps are required. Proposal ids assume a fresh DAO; check each id in the add_proposal result.');

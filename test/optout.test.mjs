@@ -90,6 +90,17 @@ test('I14 (copy): both things given up are stated, the second labelled source-on
   assert.doesNotMatch(html, /innerHTML/);     // chain data never becomes markup
 });
 
+test('shell safety: no drafted JSON contains a single quote; the builder refuses one', async () => {
+  const { nearCli, DESCRIPTION } = await import('../web/assets/optout.js');
+  assert.ok(!DESCRIPTION.includes("'"));
+  assert.throws(() => nearCli('d.near', 'add_proposal', { proposal: { description: "it's" } }, '1 Tgas', '0 NEAR', 'a.near'), /single quote/);
+  for (const t of demoPlan('you.near').txs) {
+    const json = t.cmd.match(/json-args '(.*?)' prepaid-gas/)[1];
+    assert.doesNotThrow(() => JSON.parse(json), `step ${t.n}`);
+    assert.ok(!json.includes("'"), `step ${t.n}`);
+  }
+});
+
 test('optOutKind: exactly factory_id + auto_update:false (v3.2 deny_unknown_fields)', () => {
   assert.deepEqual(optOutKind('sputnik-dao.near'), { FactoryInfoUpdate: { factory_info: { factory_id: 'sputnik-dao.near', auto_update: false } } });
 });

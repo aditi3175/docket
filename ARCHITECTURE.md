@@ -1094,10 +1094,16 @@ Sputnik v3.x has a `FactoryInfoUpdate` proposal kind (§6.4) gated by the
 
 ```json
 { "proposal": {
-    "description": "Opt out of factory auto-update (Docket). The factory will no longer be able to replace this DAO's code without a vote.",
+    "description": "Opt out of factory auto-update (Docket). The factory will no longer be able to replace the code of this DAO without a vote.",
     "kind": { "FactoryInfoUpdate": { "factory_info": {
         "factory_id": "sputnik-dao.near", "auto_update": false } } } } }
 ```
+
+The description has no apostrophe, because the near-cli command (§16.2 item 5)
+wraps the JSON in single quotes. That command is for a POSIX shell: Windows
+PowerShell 5.1 strips the double quotes inside the JSON before near-cli sees
+it. Tested 2026-11-06 with a read-only call, which near-cli rejected with "Data
+not in JSON format"; the same call worked in Git Bash.
 
 The shape matches the source at every v3.x build in §5:
 `FactoryInfoUpdate { factory_info: FactoryInfo }` with
