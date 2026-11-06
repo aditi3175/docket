@@ -865,7 +865,7 @@ that day, not the last hour.
 | Nov 6 | Authority walk (§6.1); `auto_update`; access keys | **gate:** the $199.4M chain prints from `node tools/verify.mjs`, cold |
 | Nov 6 | Report sent (§11), with opt-out links | sent, timestamped |
 | Nov 7 | `decode.js`, `lint.js`; the §6.1 `*:*` / self-sufficient-role edge, using `decode.js` permission matching | I7, I8, I10 hold; fires on #1741/#1743, #1742/#1744 and marmaj #1016; the walk evaluates the policy edge |
-| Nov 8 | §16 opt-out; create the demo DAO; opt it out through Docket | every §16 **[verify]** removed; I15 passes; counter reads 13 |
+| Nov 8 | §16 opt-out; create the demo DAO; opt it out through Docket; then attempt `UpgradeSelf` on it (§16.2) | every §16 **[verify]** removed; I15 passes; counter reads 13; the `UpgradeSelf` outcome recorded |
 | Nov 9 | `account.html`, `docket.html`, `optout.html` | a stranger understands §3 without reading this file |
 | Nov 10 | `crawl.mjs` census complete; `register.html`; §18 badge | I19, I20 hold |
 | Nov 11 | Each of I1–I15, I19, I20 has a test; README; clone into a clean machine and run the README cold | pre-screen would pass |
@@ -937,8 +937,27 @@ version it has not been tested against.
 
 1. The DAO's current `auto_update`, `factory_id` and code version (§5).
 2. **What is given up** (I14): the factory can no longer rescue this DAO if a
-   migration bricks it. After opting out, every upgrade needs `upgrade_self`
-   under the DAO's own vote policy.
+   migration bricks it.
+
+   **[verify]** The source says the DAO also gives up `UpgradeSelf`. At v3.0
+   (`86cc77a0808a`), v3.1 (`3d568f9517a8`), v3.2 (`2b0f34a38604`) and the
+   PR #233 fix (`9e96c75410a9`), an approved `UpgradeSelf` runs only
+   `upgrade_using_factory`: the DAO calls `factory.update(dao, hash)`, and the
+   factory calls the DAO's `update(code)` with **the factory as predecessor**.
+   The DAO's `update()` accepts that caller only when `auto_update` is `true`, so
+   an opted-out DAO panics with `ERR_MUST_BE_SELF_OR_FACTORY`. No other proposal
+   path reaches `update()`: its self-caller branch reads `promise_result(0)`,
+   which nothing in the DAO chains, and the direct-deploy `upgrade_self` is dead
+   code at v3.0/v3.1 and absent at v3.2. If this holds on mainnet, upgrading an
+   opted-out DAO takes three proposals: `FactoryInfoUpdate` to `true`, then
+   `UpgradeSelf`, then `FactoryInfoUpdate` to `false`. While `true` is in force, the
+   factory's keys can again replace the code with no vote.
+
+   Chain only, read 2026-11-06: none of the twelve `false` DAOs (§3.3) has an
+   `UpgradeSelf` proposal after its opt-out, so mainnet does not answer this
+   yet. Removed by the Nov 8 demo-DAO test: opt out, then propose and approve
+   `UpgradeSelf` to a factory-published hash, and record the proposal's status
+   and whether `view_account` shows the new code.
 3. **Who must approve**: the roles whose permissions match
    `factory_info_update:AddProposal` and `factory_info_update:VoteApprove`
    (with wildcards), and the vote policy that applies, from `get_policy`.
