@@ -26,9 +26,34 @@ test('step 5 STOP on ERR_NO_HASH, on "Must be contract created by factory", on n
   assert.equal(judge(tx(panic('other.near', 'ERR_MUST_BE_SELF_OR_FACTORY')), 5, DAO).verdict, 'STOP'); // wrong executor
 });
 
-test('step 9 (control) CONFIRMED only when no receipt fails', () => {
-  assert.equal(judge(tx(ok(DAO), ok('sputnik-dao.near'), ok(DAO), ok(DAO)), 9, DAO).verdict, 'CONFIRMED');
+// EXPERIMENTAL_tx_status shape: receipts[] (receipt_id, predecessor_id, receiver_id, receipt.Action.actions)
+// joined to receipts_outcome[] by id. Action shapes as seen on mainnet in steps 1 and 5.
+const rc = (id, from, to, actions) => ({ receipt_id: id, predecessor_id: from, receiver_id: to, receipt: { Action: { actions } } });
+const fc = (method_name) => ({ FunctionCall: { method_name, args: '', gas: 0, deposit: '0' } });
+const out = (id, executor, failed) => ({ id, outcome: { executor_id: executor, status: failed ? { Failure: { ActionError: {} } } : { SuccessValue: '' } } });
+const control = ({ dropMigrate = false, migrateFails = false, noReceipts = false } = {}) => {
+  const receipts = [
+    rc('a', 'docket-aditi.near', DAO, [fc('act_proposal')]),
+    rc('b', DAO, 'sputnik-dao.near', [fc('update')]),
+    rc('c', 'sputnik-dao.near', DAO, [fc('update')]),
+    ...(dropMigrate ? [] : [rc('d', DAO, DAO, [{ UseGlobalContract: { contract_identifier: {} } }, fc('migrate')])]),
+  ];
+  const receipts_outcome = [out('a', DAO), out('b', 'sputnik-dao.near'), out('c', DAO), ...(dropMigrate ? [] : [out('d', DAO, migrateFails)])];
+  return noReceipts ? { receipts_outcome } : { receipts, receipts_outcome };
+};
+
+test('step 9 (control) CONFIRMED only when the factory update reached the DAO and UseGlobalContract + migrate succeeded', () => {
+  const c = judge(control(), 9, DAO);
+  assert.equal(c.verdict, 'CONFIRMED');
+  assert.match(c.reason, /receipt c.*receipt d/);
   assert.equal(judge(tx(ok(DAO), panic(DAO, 'ERR_CONTRACT_IS_NOT_INITIALIZED')), 9, DAO).verdict, 'STOP');
+});
+
+test('step 9 STOP when nothing failed but the upgrade is not shown to have run', () => {
+  assert.equal(judge(tx(ok(DAO), ok('sputnik-dao.near'), ok(DAO), ok(DAO)), 9, DAO).verdict, 'STOP'); // no receipts list
+  assert.match(judge(control({ noReceipts: true }), 9, DAO).reason, /no receipts list/);
+  assert.match(judge(control({ dropMigrate: true }), 9, DAO).reason, /migrate/);
+  assert.equal(judge(control({ migrateFails: true }), 9, DAO).verdict, 'STOP');
 });
 
 test('an unexpected RPC shape is STOP, never a pass', () => {
