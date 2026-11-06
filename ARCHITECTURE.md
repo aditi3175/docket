@@ -466,7 +466,7 @@ code or rules **without a vote**.
 | `A` uses `global_contract_account_id` | `view_account` | **no** — the publisher can swap it |
 | `A` is a Sputnik DAO with `auto_update: true` | `get_factory_info` | **no** — factory `update()` |
 | the factory's own keys | recurse on `factory_id` | **no** |
-| `A` is a Sputnik DAO, `auto_update: false` | `get_policy` | yes — `upgrade_self` under its vote policy |
+| `A` is a Sputnik DAO, `auto_update: false` | `get_policy` | yes — a `factory_info_update` vote back to `true` under its vote policy, then `UpgradeSelf` (source-only until Nov 8, §16.2) |
 | a role with `*:*` and a threshold its group can meet alone | `get_policy` | nominally yes, effectively no — **not yet evaluated** (Nov 7) |
 | `A.owner_id` | §6.2 resolvers | recurse |
 
@@ -734,7 +734,7 @@ never counted as a value** — §3.3 depends on that distinction.
 | I11 | Census buckets are `true` / `false` / `unknown`, with the denominator shown | crawl test |
 | I12 | Every code hash shown is joined to a factory version and commit where one exists | test |
 | I13 | Docket never signs. No private key exists anywhere under `web/` or `guard/` | grep test + review |
-| I14 | The opt-out screen states what is given up (factory rescue of a bricked DAO) above the submit button | copy test |
+| I14 | The opt-out screen states both things given up, above the submit button: (a) factory rescue of a bricked DAO; (b) `UpgradeSelf` — upgrading then takes a vote back to `auto_update: true`, the `UpgradeSelf`, and a vote back to `false`, with the no-vote path open in between. (b) is labelled **from the source, not yet run on mainnet** until the Nov 8 demo-DAO test (§16.2) | copy test |
 | I15 | An opt-out is confirmed by re-reading `get_factory_info`, never by the transaction succeeding | `verify.mjs` on the demo DAO |
 | I16 | The delegate never votes on a proposal carrying any critical or high flag, any **unknown** (I2/I7/I8), or a kind outside `policy.json` | synthetic proposals, one per flag |
 | I17 | The delegate's key is `FunctionCall`, receiver = its one DAO, methods = `["act_proposal"]` | `verify.mjs` reads `view_access_key_list` |
@@ -956,8 +956,17 @@ The opt-out is not a stopgap that PR #233 will make redundant. Even once the fix
 ships, a factory update deploys **with no vote** after its two-week delay
 (§3.4). The delay gives members time to notice, not a vote. Setting
 `auto_update: false` is the only path that restores a vote: with it,
-the DAO's `update()` rejects the factory as caller, so new code arrives only
-through a proposal the DAO passes itself.
+the DAO's `update()` rejects the factory as caller, so the factory alone can no
+longer change the DAO's code.
+
+It also changes how the DAO upgrades itself. **From the source, not yet run on
+mainnet** (§16.2, removed by the Nov 8 demo-DAO test): `UpgradeSelf` also
+reaches `update()` through the factory, and an opted-out DAO rejects it the same
+way. Upgrading an opted-out DAO therefore takes three proposals: a vote back to
+`auto_update: true`, then `UpgradeSelf`, then a vote back to `false`. While
+`true` is in force, the factory's keys can replace the code with no vote. New
+code still needs a proposal the DAO passes, which is the first of the three,
+but it does not arrive only through that proposal.
 
 ### 16.1 What gets drafted
 
@@ -1000,8 +1009,12 @@ Until this marker is removed, that includes v3.0.
 ### 16.2 What the screen shows, in order
 
 1. The DAO's current `auto_update`, `factory_id` and code version (§5).
-2. **What is given up** (I14): the factory can no longer rescue this DAO if a
-   migration bricks it.
+2. **What is given up** (I14), both stated above the submit button:
+   (a) the factory can no longer rescue this DAO if a migration bricks it;
+   (b) `UpgradeSelf` no longer works on its own. Upgrading takes a vote back to
+   `auto_update: true`, then `UpgradeSelf`, then a vote back to `false`, and the
+   no-vote path is open in between. (b) is labelled *from the source, not yet
+   run on mainnet* until the [verify] below is removed.
 
    **[verify]** The source says the DAO also gives up `UpgradeSelf`. At v3.0
    (`86cc77a0808a`), v3.1 (`3d568f9517a8`), v3.2 (`2b0f34a38604`) and the
