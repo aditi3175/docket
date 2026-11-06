@@ -119,6 +119,11 @@ test('demo DAO --pre: every add/act step has a pre-condition; ids and kinds are 
   const other = { UpgradeSelf: { hash: '8RMeZ5cXDap6TENxaJKtigRYf3n139iHmTRe8ZUNey6N' } };
   const d = await preStepCheck(p.pre[5], p.dao, { read: reads({ 'get_proposal {"id":1}': prop(other) }) });
   assert.deepEqual([d.ok, /DIFFERS/.test(d.detail)], [false, true]);
+  // the recorded mainnet deviation: duplicate #4 is rejected (9r) and the closing pair uses id 5
+  assert.deepEqual(p.pre['9r'], { type: 'act', id: 4, kind: us });
+  assert.equal((await preStepCheck(p.pre[10], p.dao, { read: reads({ 'get_last_proposal_id {}': { status: 'ok', value: 5 } }) })).ok, true);
+  assert.equal((await preStepCheck(p.pre[10], p.dao, { read: reads({ 'get_last_proposal_id {}': { status: 'ok', value: 4 } }) })).ok, false);
+  assert.equal(p.pre[11].id, 5);
 });
 
 test('optOutKind: exactly factory_id + auto_update:false (v3.2 deny_unknown_fields)', () => {
@@ -142,7 +147,12 @@ test('demo DAO (§16.5): create args match the v3.2 field sets exactly; council-
   assert.deepEqual(JSON.parse(Buffer.from(c.argsBase64, 'base64').toString()), c.args);
   assert.throws(() => createArgs('Not An Account'));
   const p = demoPlan('you.near');
-  assert.equal(p.txs.length, 11);
+  assert.equal(p.txs.length, 12);
+  assert.deepEqual(p.txs.map((t) => t.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, '9r', 10, 11]);
+  const r = p.txs[9];
+  assert.match(r.cmd, /act_proposal json-args '{"id":4,"action":"VoteReject","proposal":{"UpgradeSelf":{"hash":"DtHZA1mU/);
+  assert.ok(!p.txs.some((t) => t.n !== '9r' && /VoteReject/.test(t.cmd)), 'only 9r rejects');
+  assert.ok(p.txs[11].cmd.includes('"id":5'));
   assert.ok(p.txs.every((t) => t.expect && t.stop), 'every step states what to expect and when to stop');
   assert.match(p.txs[4].expect, /FAILS with ERR_MUST_BE_SELF_OR_FACTORY/);
   assert.match(p.txs[4].stop, /ERR_NO_HASH/);

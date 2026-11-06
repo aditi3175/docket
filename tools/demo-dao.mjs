@@ -60,7 +60,7 @@ export function plan(member, name) {
   const fiu = (auto) => ({ FactoryInfoUpdate: { factory_info: { factory_id: FACTORY, auto_update: auto } } });
   const us = { UpgradeSelf: { hash: V32_HASH } };
   const add = (description, kind) => call(c.dao, 'add_proposal', { proposal: { description, kind } }, '100 Tgas', '0.1 NEAR', member);
-  const act = (id, kind, gas) => call(c.dao, 'act_proposal', { id, action: 'VoteApprove', proposal: kind }, gas, '0 NEAR', member);
+  const act = (id, kind, gas, action = 'VoteApprove') => call(c.dao, 'act_proposal', { id, action, proposal: kind }, gas, '0 NEAR', member);
   const fi = (v) => `get_factory_info reads auto_update: ${v} (I15: re-read, not the tx status)`;
   // Read-only pre-conditions, checked by `--pre <n>` immediately before step n is signed:
   //   add: get_last_proposal_id must equal the id this step is about to create (ids are never assumed)
@@ -70,7 +70,11 @@ export function plan(member, name) {
     4: { type: 'add', id: 1 }, 5: { type: 'act', id: 1, kind: us },
     6: { type: 'add', id: 2 }, 7: { type: 'act', id: 2, kind: fiu(true) },
     8: { type: 'add', id: 3 }, 9: { type: 'act', id: 3, kind: us },
-    10: { type: 'add', id: 4 }, 11: { type: 'act', id: 4, kind: fiu(false) },
+    // Mainnet deviation (2026-11-06): step 8's add_proposal ran twice, so #4 is a duplicate UpgradeSelf.
+    // Step 9r rejects it (bond returned, nothing executes: proposals.rs:649, 503-509 at 2b0f34a38604),
+    // and the closing pair moves to id 5.
+    '9r': { type: 'act', id: 4, kind: us },
+    10: { type: 'add', id: 5 }, 11: { type: 'act', id: 5, kind: fiu(false) },
   };
   return { ...c, pre: PRE, txs: [
     { n: 1, what: 'create the demo DAO', cmd: call(FACTORY, 'create', { name: c.name, args: c.argsBase64 }, '150 Tgas', CREATE_DEPOSIT, member),
@@ -93,9 +97,12 @@ export function plan(member, name) {
     { n: 9, what: 'approve #3 — THE CONTROL: the same path must now succeed', cmd: act(3, us, '300 Tgas'),
       expect: `receipts (--step 9): the ${c.dao} "update" receipt and its "migrate" both succeed; view_account still ${V32_HASH} (same code re-applied)`,
       stop: 'any failure — then step 5 alone does not isolate auto_update' },
-    { n: 10, what: 'control, step 3: auto_update back to false (#4)', cmd: add('Docket test control: auto_update false again.', fiu(false)),
-      expect: 'add_proposal returns 4', stop: 'any other id' },
-    { n: 11, what: 'approve #4 — leaves the demo DAO opted out', cmd: act(4, fiu(false), '100 Tgas'), expect: fi(false), stop: 'still true' },
+    { n: '9r', what: 'reject #4 — an accidental duplicate of step 8 (step8.sh likely re-run); VoteReject, nothing executes', cmd: act(4, us, '100 Tgas', 'VoteReject'),
+      expect: 'get_proposal(4) reads Rejected; a 0.1 NEAR transfer from the DAO back to the proposer; no update receipt (receipts.mjs: nothing fails)',
+      stop: 'any status but Rejected, or any receipt to sputnik-dao.near (the UpgradeSelf ran)' },
+    { n: 10, what: 'control, step 3: auto_update back to false (#5; #4 was the duplicate)', cmd: add('Docket test control: auto_update false again.', fiu(false)),
+      expect: 'add_proposal returns 5', stop: 'any other id' },
+    { n: 11, what: 'approve #5 — leaves the demo DAO opted out', cmd: act(5, fiu(false), '100 Tgas'), expect: fi(false), stop: 'still true' },
   ] };
 }
 
@@ -165,7 +172,7 @@ export async function preStepCheck(pre, dao, { rpcUrl = 'https://free.rpc.fastne
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const argv = process.argv.slice(2);
   const check = argv.includes('--check');
-  const pi = argv.indexOf('--pre'); const preStep = pi >= 0 ? Number(argv[pi + 1]) : null;
+  const pi = argv.indexOf('--pre'); const preStep = pi >= 0 ? (/^d+$/.test(argv[pi + 1]) ? Number(argv[pi + 1]) : argv[pi + 1]) : null;
   const [member, name] = argv.filter((a, i) => a !== '--check' && a !== '--pre' && !(pi >= 0 && i === pi + 1));
   if (!member) { console.error('usage: node tools/demo-dao.mjs <your-account.near> [dao-name] [--check | --pre <step>]'); process.exit(2); }
   const p = plan(member, name);
@@ -187,5 +194,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     const before = p.pre[t.n] ? `#    before: node tools/demo-dao.mjs ${member}${name ? ' ' + name : ''} --pre ${t.n}   (must print PASS)\n` : '';
     console.log(`# ${t.n}. ${t.what}\n${before}${t.cmd}\n#    expect: ${t.expect}\n#    STOP if: ${t.stop}\n`);
   }
-  console.log('All 11 steps are required. Proposal ids are never assumed: --pre re-reads get_last_proposal_id before each add_proposal, and get_proposal before each act_proposal.');
+  console.log('All 11 steps are required (plus 9r, which rejects the duplicate #4). Proposal ids are never assumed: --pre re-reads get_last_proposal_id before each add_proposal, and get_proposal before each act_proposal.');
 }
