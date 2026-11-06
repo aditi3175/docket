@@ -371,7 +371,7 @@ function print(r, rpc) {
     const id = codes[i];
     const where = id.form === 'global_hash' ? 'global_contract_hash' : id.form === 'global_account' ? 'global_contract_account_id' : id.form === 'local' ? 'code_hash' : id.form;
     const ver = id.versionStatus === 'published' ? `(${id.version}, commit ${id.commit.slice(0, 12)})` : `(${id.versionStatus})`;
-    console.log(`    ${pad(c.account, 30)} ${pad(where, 21)} ${pad(short(id.hash ?? id.account), 14)} ${c.account === FACTORY ? '(factory)' : ver}${id.flags.length ? '  ⚠ ' + id.flags.join(', ') : ''}`);
+    console.log(`    ${pad(c.account, 30)} ${pad(where, 21)} ${pad(short(id.hash ?? id.account), 14)} ${c.account === FACTORY && id.versionStatus === 'unpublished' ? 'factory code: not in its own metadata, commit unknown' : c.account === FACTORY ? `${ver} factory code` : ver}${id.flags.length ? '  ⚠ ' + id.flags.join(', ') : ''}`);
   });
   if (factory.status === 'ok') {
     console.log(`\n    cross-referenced against ${FACTORY} :: get_contracts_metadata:`);

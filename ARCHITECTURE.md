@@ -379,8 +379,12 @@ stader-nearx.sputnik-dao.near  code_hash 2Zof1Tyy…HnK           (v3.0)
 linear.sputnik-dao.near        code_hash 4zSoHkLj…ECp           (v3.1)
 burrow.sputnik-dao.near        code_hash 4zSoHkLj…ECp           (v3.1)
 ref-finance.sputnik-dao.near   code_hash 4zSoHkLj…ECp           (v3.1)
-sputnik-dao.near  (factory)    code_hash BXd5idTX…nnY
+sputnik-dao.near  (factory)    code_hash BXd5idTX…nnY           factory code: not in its own metadata, commit unknown
 ```
+
+The factory's own hash is not in `get_contracts_metadata`, which lists DAO
+builds only, so nothing on chain joins it to a commit. Docket shows it as
+**commit unknown** (I2, I12: "where one exists") and does not guess one.
 
 cross-referenced against `sputnik-dao.near :: get_contracts_metadata`:
 
