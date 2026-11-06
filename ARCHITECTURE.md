@@ -916,6 +916,53 @@ re-run before it was written here (§3.4 has the commands). The review also caug
 `ChangePolicyUpdateDefaultVotePolicy` as *(default label)*. It has an explicit
 label, `policy_update_default_vote_policy`, at `2b0f34a38604`.
 
+### 12.10 "RHEA LST is `nearx.stader-labs.near`, $69.2M, `auto_update: true`." **Wrong.**
+
+§2 paired DefiLlama's `rhea-lst` entry with `nearx.stader-labs.near`, and so
+with `stader-nearx.sputnik-dao.near`. Every figure built on that pairing was
+wrong: the $199.4M headline (§3.3, §19), "99.4% of NEAR liquid staking", "All 5
+of 5" (§1, §2), and the $69.2M against `stader-nearx` in the draft report.
+
+DefiLlama's RHEA LST adapter
+([`projects/rhealst.js`](https://github.com/DefiLlama/DefiLlama-Adapters/blob/main/projects/rhealst.js))
+reads one contract, `lst.rhealab.near` (rNEAR), via `get_summary` →
+`total_staked_near_amount`. On 2026-11-06 that is 18,797,463 NEAR, about $69.4M
+at the day's price, which matches DefiLlama's $68.8M–$69.2M. NearX is a
+different contract, and no DefiLlama entry values it.
+
+**What it changes.**
+
+| | was | is (2026-11-06) |
+|---|---|---|
+| RHEA LST administered by | `stader-nearx.sputnik-dao.near` | `rhealab.near`: no contract, one full-access key |
+| finding 1 | All 5 of 5 | **4 of 5** |
+| `auto_update: true` headline (DefiLlama) | $199.4M (Nov 5) | **$126,665,546**: Meta Pool + LiNEAR |
+| share of NEAR liquid staking | 99.4% | **64.4%** |
+| NearX | counted as $69.2M | **2,553,885 NEAR** staked, read on chain; ~$9.4M is on-chain amount × price, not DefiLlama |
+
+**What survives.** Every structural claim. The same three DAOs read
+`auto_update: true`, the same three keys reach them, and the fix is still
+undeployed. Only the value attached to one of the three DAOs was wrong, and
+it was wrong by a factor of seven.
+
+**Why `verify.mjs` did not catch it.** It checked that `nearx.stader-labs.near`
+is owned by `stader-nearx`, which is true, and that DefiLlama's `rhea-lst`
+has a TVL, which is also true. It never checked that the two belong together.
+The pairing was an expectation written into `verify.mjs` with no read behind
+it. It has been corrected, not loosened (commit `9a51160`): the RHEA LST row
+now names `lst.rhealab.near`, and five structural claims were added, including
+NearX as its own on-chain entry.
+
+**How it was caught.** While sourcing a contact for each recipient of the
+§11 report, Rhea Finance's audit page described its LST as "rNEAR", and §7.1
+already names rNEAR as `lst.rhealab.near`, which is a different contract from
+the one §2 named. Reading the DefiLlama adapter settled it. The user then
+checked `rhealst.js` independently.
+
+**The lesson, applied.** A TVL is attributed to a contract only by reading
+the adapter that produces it. §2's contract column now says so, for all five
+rows.
+
 ---
 
 ## 13. What Docket is not
