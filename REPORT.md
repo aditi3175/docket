@@ -104,7 +104,7 @@ Per DAO, read from `get_policy` on 2026-11-06:
 
 | DAO | bond (`proposal_bond`, attached to `add_proposal`) | who can propose and approve `factory_info_update` |
 |---|---|---|
-| `stnear` | 1 NEAR | `council` holds `*:AddProposal` and `*:VoteApprove`, default threshold 55/100 |
+| `stnear` | 1 NEAR | `council` holds `*:AddProposal` and `*:VoteApprove`, default threshold 55/100. `stnear` has never had a proposal (`get_last_proposal_id` reads 0, `get_proposals` is empty, 2026-11-06), so an opt-out would be its first |
 | `linear` | 0.1 NEAR | `Council` holds `*:AddProposal` and `*:VoteApprove`, default threshold 1/2 |
 | `stader-nearx` | 0.1 NEAR | **no role holds a permission matching `factory_info_update`.** A `policy` proposal granting it (the council holds `policy:AddProposal` / `policy:VoteApprove`) has to pass first |
 
