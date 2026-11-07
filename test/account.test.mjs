@@ -7,13 +7,17 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRpc } from '../web/assets/rpc.js';
 import { accountReport, explainCode, hopsOf, CHECKED_BUILD } from '../web/assets/account-view.js';
-import { replayFetch, noSleep } from './helpers.mjs';
+import { replayFetch, noSleep, loadFixture, jsonResponse } from './helpers.mjs';
+import { valueAtStake } from '../web/assets/account-view.js';
+
+const llamaFetch = async () => jsonResponse(loadFixture('2026-11-06.defillama.protocols.near.json').body);
+const llamaDown = async () => { throw new TypeError('blocked'); };
 
 const recorded = () => createRpc({ fetch: replayFetch(), sleep: noSleep });
 const FACTORY_KEYS = ['ed25519:2gtDEwdLuUBawzFLAnCS9gUso3Ph76bRzMpVrtb66f3J', 'ed25519:3z2MnvQqD3dsUPynZpV8CFtyXhFiTksjZhjDr26isEXv', 'ed25519:7ReZXfft58fzSLyCB6A5qQ719DCaDo8etYrat75KFXp3'];
 
 test('recorded: meta-pool.near — the §3.4 path in words: owner, then auto_update, then the factory\'s 3 keys', async () => {
-  const r = await accountReport(recorded(), 'meta-pool.near');
+  const r = await accountReport(recorded(), 'meta-pool.near', { llamaFetch });
   assert.equal(r.status, 'ok');
   assert.match(r.headline, /^3 keys, on 1 account, can change meta-pool\.near with no vote/);
   assert.equal(r.groups.length, 1);
@@ -31,7 +35,7 @@ test('recorded: meta-pool.near — the §3.4 path in words: owner, then auto_upd
 });
 
 test('recorded: contract.main.burrow.near — no key reached, a vote gate; the headline is not a clearance (I9)', async () => {
-  const r = await accountReport(recorded(), 'contract.main.burrow.near');
+  const r = await accountReport(recorded(), 'contract.main.burrow.near', { llamaFetch });
   assert.equal(r.status, 'ok');
   assert.deepEqual(r.groups, []);
   assert.deepEqual(r.gates, ['burrow.sputnik-dao.near']);
@@ -41,7 +45,7 @@ test('recorded: contract.main.burrow.near — no key reached, a vote gate; the h
 });
 
 test('recorded: lst.rhealab.near — one key on rhealab.near, through the owner edge; no Sputnik explainer', async () => {
-  const r = await accountReport(recorded(), 'lst.rhealab.near');
+  const r = await accountReport(recorded(), 'lst.rhealab.near', { llamaFetch });
   assert.match(r.headline, /^1 key, on 1 account/);
   assert.deepEqual(r.groups[0].path, ['lst.rhealab.near', 'rhealab.near']);
   assert.equal(r.explainer, null);
@@ -49,14 +53,16 @@ test('recorded: lst.rhealab.near — one key on rhealab.near, through the owner 
 
 test('I2: every read blocked -> unknown, never "no key"; invalid and missing accounts say so', async () => {
   const blocked = createRpc({ fetch: async () => { throw new TypeError('blocked'); }, sleep: noSleep });
-  const r = await accountReport(blocked, 'meta-pool.near');
+  const r = await accountReport(blocked, 'meta-pool.near', { llamaFetch: llamaDown });
+  assert.equal(r.value.status, 'unknown');
+  assert.doesNotMatch(r.value.label, /$0/);
   assert.equal(r.status, 'unknown');
   assert.match(r.headline, /^Unknown: \d+ reads failed/);
   assert.doesNotMatch(r.headline, /No key/);
   assert.ok(r.unknowns.length > 0);
   assert.match(explainCode(r.code), /^unknown/);
-  assert.equal((await accountReport(recorded(), 'Not An Account')).status, 'invalid');
-  assert.equal((await accountReport(recorded(), 'docket-fixture-missing-account.near')).status, 'no-account');
+  assert.equal((await accountReport(recorded(), 'Not An Account', { llamaFetch })).status, 'invalid');
+  assert.equal((await accountReport(recorded(), 'docket-fixture-missing-account.near', { llamaFetch })).status, 'no-account');
 });
 
 test('I3/I4/I12 in words (SYNTHETIC identities): a global contract by account is a third-party upgrade path; versions are joined', () => {
@@ -75,3 +81,15 @@ test('account.html: static, renders with textContent only, imports the model, sa
   assert.match(html, /never a statement that an account is safe/);
   assert.doesNotMatch(html, /<script[^>]+src=["']https?:/); // no remote script
 });
+
+test('value at stake (I1, I2): a mapped contract or DAO gets its DefiLlama value with source and time; anything else "not valued"', () => {
+  const llama = { status: 'ok', readAt: '2026-11-06T09:00:00.000Z', protocols: loadFixture('2026-11-06.defillama.protocols.near.json').body };
+  assert.equal(valueAtStake('meta-pool.near', llama).label, 'Meta Pool: $79.9M');
+  assert.match(valueAtStake('meta-pool.near', llama).source, /^DefiLlama, NEAR-only TVL, read 2026-11-06 09:00 UTC$/);
+  assert.equal(valueAtStake('stnear.sputnik-dao.near', llama).label, 'administers Meta Pool (meta-pool.near): $79.9M');
+  assert.equal(valueAtStake('lst.rhealab.near', llama).label, 'RHEA LST: $68.8M');
+  assert.equal(valueAtStake('nearx.stader-labs.near', llama).label, 'NearX: not valued (DefiLlama does not list it)');
+  assert.match(valueAtStake('someone.near', llama).label, /^not valued/);
+  assert.equal(valueAtStake('meta-pool.near', { status: 'unknown', reason: 'down' }).status, 'unknown');
+});
+

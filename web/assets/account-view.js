@@ -14,12 +14,33 @@
 // sourced in ARCHITECTURE.md §3.1 and §3.4 and re-checked by tools/verify.mjs.
 
 import { authorityWalk, codeIdentity, loadFactoryVersions, isAccountId } from './resolve.js';
+import { fetchDefiLlama, nearTvlFrom } from './value.js';
+import { MAPPED } from './register-view.js';
+
+// §2: every contract Docket has mapped to a protocol — the five DAO-administered ones, plus RHEA LST,
+// whose administrator is a key (rhealab.near), not a DAO.
+export const VALUED = Object.freeze([...MAPPED, { dao: null, protocol: 'RHEA LST', contract: 'lst.rhealab.near', slug: 'rhea-lst' }]);
 
 export const FACTORY = 'sputnik-dao.near';
 export const FIX = Object.freeze({ pr: 233, mergeCommit: '9e96c75410a9', merged: '2026-03-24' });
 // The factory build whose relation to the fix was checked on GitHub (2 behind, ARCHITECTURE.md §3.4). The
 // page says "does not contain the fix" only while the factory's live default is this commit.
 export const CHECKED_BUILD = '2b0f34a38604';
+
+// The value at stake (I1: source and time; I2: unread -> unknown, never 0). An account Docket has mapped
+// (§2) is valued by its DefiLlama protocol; a mapped DAO by what it administers; anything else is
+// "not valued". -> { status:'ok'|'not-valued'|'unknown', label, usd?, source?, readAt? }
+export function valueAtStake(account, llama) {
+  const m = VALUED.find((x) => x.contract === account) ?? MAPPED.find((x) => x.dao === account);
+  if (!m) return { status: 'not-valued', label: 'not valued: Docket has not mapped this account to a protocol DefiLlama values' };
+  const via = m.dao === account ? `administers ${m.protocol} (${m.contract})` : m.protocol;
+  if (!m.slug) return { status: 'not-valued', label: `${via}: not valued (DefiLlama does not list it)` };
+  if (llama?.status !== 'ok') return { status: 'unknown', label: `${via}: unknown (DefiLlama: ${llama?.reason ?? 'unread'})` };
+  const t = nearTvlFrom(llama.protocols, m.slug);
+  if (t.status !== 'ok') return { status: 'unknown', label: `${via}: unknown (${t.reason})` };
+  const short = t.usd >= 1e6 ? '$' + (t.usd / 1e6).toFixed(1) + 'M' : '$' + Math.round(t.usd).toLocaleString('en-US');
+  return { status: 'ok', usd: t.usd, label: `${via}: ${short}`, source: `DefiLlama, NEAR-only TVL, read ${llama.readAt.slice(0, 16).replace('T', ' ')} UTC`, readAt: llama.readAt };
+}
 
 // One hop of a path, in words. `type` is the edge type from authorityWalk's tree.
 export function explainHop(from, to, type) {
@@ -61,11 +82,11 @@ const autoUpdateDaos = (groups) => [...new Set(groups.flatMap((g) => g.hops.filt
 
 // -> { account, status, headline, code, groups:[{ path, hops, keys }], gates, votes, unknowns, factory, optOut, explainer }
 //    status ∈ 'invalid' | 'no-account' | 'ok' | 'unknown'
-export async function accountReport(rpc, accountId) {
+export async function accountReport(rpc, accountId, { llamaFetch } = {}) {
   const account = String(accountId ?? '').trim();
   if (!isAccountId(account)) return { account, status: 'invalid', headline: `"${account}" is not a NEAR account id.` };
 
-  const factory = await loadFactoryVersions(rpc, FACTORY);
+  const [factory, llama] = await Promise.all([loadFactoryVersions(rpc, FACTORY), fetchDefiLlama(llamaFetch ? { fetch: llamaFetch } : {})]);
   const [walk, code] = await Promise.all([authorityWalk(rpc, account), codeIdentity(rpc, account, factory)]);
   if (code.form === 'no-account') return { account, status: 'no-account', headline: `${account} does not exist on NEAR mainnet.` };
 
@@ -110,7 +131,7 @@ export async function accountReport(rpc, accountId) {
   } : null;
 
   return {
-    account, status: incomplete ? 'unknown' : 'ok', headline,
+    account, status: incomplete ? 'unknown' : 'ok', headline, value: valueAtStake(account, llama),
     code, groups, gates: walk.voteGates, votes, unknowns: walk.unknowns, policies: walk.policies,
     factory: factory.status, optOut, explainer,
   };
@@ -132,3 +153,4 @@ export function explainCode(c) {
     default: return `unknown form ${c.form}`;
   }
 }
+

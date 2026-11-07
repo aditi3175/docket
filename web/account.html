@@ -14,10 +14,11 @@
   .key { font: 13px ui-monospace, monospace; word-break: break-all; }
   .basis { color: #555; font-size: .86rem; } .muted { color: #666; }
   .examples button { margin: 0 .3rem .3rem 0; } nav a { margin-right: .8rem; }
+  .stake { font-size: 1.05rem; margin: -.4rem 0 1rem; } .stake .src { color: #555; font-size: .85rem; }
 </style>
 </head>
 <body>
-<nav class="basis"><a href="account.html">account</a><a href="docket.html">docket</a><a href="optout.html">opt-out</a></nav>
+<nav class="basis"><a href="index.html">finding</a><a href="account.html">account</a><a href="docket.html">docket</a><a href="register.html">register</a><a href="optout.html">opt-out</a></nav>
 <h1>Who can change this account without a vote?</h1>
 <p class="muted">Docket reads NEAR mainnet from your browser and follows every path by which an account's code or
 rules can be changed: its keys, its owner, the global contract it runs, and, for a Sputnik DAO, its factory and its
@@ -46,6 +47,7 @@ function render(r) {
   out.replaceChildren();
   const cls = r.status === 'unknown' ? 'headline unknown' : r.groups?.length ? 'headline' : 'headline none';
   out.append(el('p', r.headline, cls));
+  if (r.value) { const v = el('p', undefined, 'stake'); v.append(el('strong', `${r.account}: ${r.value.label}`)); if (r.value.source) v.append(document.createTextNode(' '), el('span', `(${r.value.source})`, 'src')); out.append(v); }
   if (r.status === 'invalid' || r.status === 'no-account') return;
 
   for (const [i, g] of r.groups.entries()) {
