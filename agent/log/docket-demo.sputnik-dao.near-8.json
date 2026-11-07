@@ -1,0 +1,90 @@
+{
+  "decidedAt": "2026-11-07T23:07:08.907Z",
+  "account": "docket-guard.docket-aditi.near",
+  "decision": {
+    "action": "escalate",
+    "reasons": [
+      "high flag named-receiver: the description does not name the receiver docket-guard.docket-aditi.near; the description names docket-aditi.near, which the action does not touch",
+      "high flag silent-reach: the action touches docket-guard.docket-aditi.near, which the description never mentions",
+      "high flag sibling-collision: same description as #7 (docket-aditi.near, Approved), different target"
+    ]
+  },
+  "vote": null,
+  "check": {
+    "dao": "docket-demo.sputnik-dao.near",
+    "id": 8,
+    "readAt": "2026-11-07T23:07:06.850Z",
+    "status": "InProgress",
+    "proposer": "docket-aditi.near",
+    "description": "Send 0.01 NEAR to docket-aditi.near (Docket test)",
+    "kind": {
+      "name": "Transfer",
+      "label": "transfer",
+      "risk": "medium",
+      "reaches": "treasury"
+    },
+    "proposalKind": {
+      "Transfer": {
+        "token_id": "",
+        "receiver_id": "docket-guard.docket-aditi.near",
+        "amount": "10000000000000000000000",
+        "msg": null
+      }
+    },
+    "target": {
+      "account": "docket-guard.docket-aditi.near",
+      "owner": null,
+      "insideControlSet": false
+    },
+    "value": {
+      "raw": "10000000000000000000000",
+      "decimals": 24,
+      "display": "0.01",
+      "symbol": "NEAR",
+      "token": null
+    },
+    "actions": [],
+    "flags": [
+      {
+        "check": "named-receiver",
+        "severity": "high",
+        "detail": "the description does not name the receiver docket-guard.docket-aditi.near; the description names docket-aditi.near, which the action does not touch",
+        "evidence": {
+          "receiver": "docket-guard.docket-aditi.near",
+          "named": [
+            "docket-aditi.near"
+          ],
+          "notInAction": [
+            "docket-aditi.near"
+          ],
+          "ownReceiver": false
+        }
+      },
+      {
+        "check": "silent-reach",
+        "severity": "high",
+        "detail": "the action touches docket-guard.docket-aditi.near, which the description never mentions",
+        "evidence": {
+          "silent": [
+            "docket-guard.docket-aditi.near"
+          ]
+        }
+      },
+      {
+        "check": "sibling-collision",
+        "severity": "high",
+        "detail": "same description as #7 (docket-aditi.near, Approved), different target",
+        "evidence": {
+          "siblings": [
+            {
+              "id": 7,
+              "receiver": "docket-aditi.near",
+              "status": "Approved"
+            }
+          ]
+        }
+      }
+    ],
+    "unknowns": []
+  }
+}
