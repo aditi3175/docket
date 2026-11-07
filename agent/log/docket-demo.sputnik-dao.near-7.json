@@ -1,0 +1,74 @@
+{
+  "decidedAt": "2026-11-07T23:02:05.515Z",
+  "account": "docket-guard.docket-aditi.near",
+  "decision": {
+    "action": "VoteApprove",
+    "id": 7,
+    "proposalKind": {
+      "Transfer": {
+        "token_id": "",
+        "receiver_id": "docket-aditi.near",
+        "amount": "10000000000000000000000",
+        "msg": null
+      }
+    },
+    "reasons": []
+  },
+  "vote": {
+    "command": "near contract call-function as-transaction docket-demo.sputnik-dao.near act_proposal json-args '{\"id\":7,\"action\":\"VoteApprove\",\"proposal\":{\"Transfer\":{\"token_id\":\"\",\"receiver_id\":\"docket-aditi.near\",\"amount\":\"10000000000000000000000\",\"msg\":null}}}' prepaid-gas '30 Tgas' attached-deposit '0 NEAR' sign-as docket-guard.docket-aditi.near network-config mainnet sign-with-keychain send",
+    "commands": [
+      "'C:/Program Files/near-cli-rs/bin/near.exe' --offline contract call-function as-transaction docket-demo.sputnik-dao.near act_proposal json-args '{\"id\":7,\"action\":\"VoteApprove\",\"proposal\":{\"Transfer\":{\"token_id\":\"\",\"receiver_id\":\"docket-aditi.near\",\"amount\":\"10000000000000000000000\",\"msg\":null}}}' prepaid-gas '30 Tgas' attached-deposit '0 NEAR' sign-as docket-guard.docket-aditi.near network-config mainnet sign-with-keychain --signer-public-key ed25519:6Qzjy94hpju5qHvLkth44zbFzCTKjNp5WcUT71DyQALQ --nonce 223527283000001 --block-hash HWoN632CbYYybd6mSmF1iPtKkFFNB9KGNd5TCaGP4mqu --block-height 223531247 save-to-file agent/signed/docket-demo.sputnik-dao.near-7.signed.json",
+      "'C:/Program Files/near-cli-rs/bin/near.exe' transaction send-signed-transaction file-with-base64-signed-transaction agent/signed/docket-demo.sputnik-dao.near-7.signed.json network-config mainnet send"
+    ],
+    "signing": {
+      "ok": true,
+      "publicKey": "ed25519:6Qzjy94hpju5qHvLkth44zbFzCTKjNp5WcUT71DyQALQ",
+      "nonce": "223527283000001",
+      "blockHash": "HWoN632CbYYybd6mSmF1iPtKkFFNB9KGNd5TCaGP4mqu",
+      "blockHeight": 223531247
+    },
+    "signed": "signed",
+    "stage": "sent",
+    "why": null,
+    "signedFile": "agent/signed/docket-demo.sputnik-dao.near-7.sent.json",
+    "txId": "HnMopqHKJaJ7jJNY4sWkHoYJH6TLwZnVFmNzPh9ur6wZ",
+    "output": "├  Transaction Execution Info:\n│    Gas used: 2.8 Tgas\n│    Transaction fee: 0.0002575998330048 NEAR (USD equivalent is unavailable due to an error: Failed to parse the response from Coingecko API as JSON: error decoding response body)\n│    Transaction ID: HnMopqHKJaJ7jJNY4sWkHoYJH6TLwZnVFmNzPh9ur6wZ\n│    To see the transaction in the transaction explorer, please open this url in your browser:\n│    https://explorer.near.org/transactions/HnMopqHKJaJ7jJNY4sWkHoYJH6TLwZnVFmNzPh9ur6wZ\n│     \u001b[0m\n├  Function execution logs:\n│    \u001b[36mLogs [docket-demo.sputnik-dao.near]:\u001b[39m   \u001b[2mNo logs\u001b[0m\n│    \u001b[36mLogs [docket-guard.docket-aditi.near]:\u001b[39m   \u001b[2mNo logs\u001b[0m\n│     \u001b[0m\n├  Function execution return value:\n│    Empty return value\n│     \u001b[0m\n\n\nThe \"act_proposal\" call to <docket-demo.sputnik-dao.near> on behalf of <docket-guard.docket-aditi.near> succeeded.\n\n\n\nHere is your console command if you need to script it or re-run:\n    \u001b[33m'C:/Program Files/near-cli-rs/bin/near.exe' transaction send-signed-transaction file-with-base64-signed-transaction agent/signed/docket-demo.sputnik-dao.near-7.signed.json network-config mainnet send\u001b[39m\n\n"
+  },
+  "check": {
+    "dao": "docket-demo.sputnik-dao.near",
+    "id": 7,
+    "readAt": "2026-11-07T23:02:02.351Z",
+    "status": "InProgress",
+    "proposer": "docket-aditi.near",
+    "description": "Send 0.01 NEAR to docket-aditi.near (Docket test)",
+    "kind": {
+      "name": "Transfer",
+      "label": "transfer",
+      "risk": "medium",
+      "reaches": "treasury"
+    },
+    "proposalKind": {
+      "Transfer": {
+        "token_id": "",
+        "receiver_id": "docket-aditi.near",
+        "amount": "10000000000000000000000",
+        "msg": null
+      }
+    },
+    "target": {
+      "account": "docket-aditi.near",
+      "owner": null,
+      "insideControlSet": false
+    },
+    "value": {
+      "raw": "10000000000000000000000",
+      "decimals": 24,
+      "display": "0.01",
+      "symbol": "NEAR",
+      "token": null
+    },
+    "actions": [],
+    "flags": [],
+    "unknowns": []
+  }
+}

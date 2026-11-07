@@ -1378,7 +1378,10 @@ tools over stdio, so any MCP-capable agent can call Docket before it acts.
 - **Key.** One `FunctionCall` access key: receiver = the demo DAO, methods =
   `["act_proposal"]`, a small gas allowance (I17). It cannot transfer, deploy,
   or call any other contract. `act_proposal` takes no deposit, so a function-call
-  key can call it. **[verify]** on mainnet: the delegate's first vote settles it.
+  key can call it. On mainnet, the delegate's first vote did:
+  `HnMopqHKJaJ7jJNY4sWkHoYJH6TLwZnVFmNzPh9ur6wZ` (§17.5, T7) was signed by
+  `ed25519:6Qzjy94h…`, ran with every receipt `SuccessValue`, and recorded
+  `{"docket-guard.docket-aditi.near":"Approve"}` on #7.
 
   The key is generated into the operator's OS keychain by near-cli; Docket's
   code never handles it (I13). The account is created with a temporary
@@ -1386,21 +1389,22 @@ tools over stdio, so any MCP-capable agent can call Docket before it acts.
   that, the account's 0.05 NEAR is locked:** with no full-access key, nothing
   can transfer it out, and it only pays the gas for the delegate's votes.
 
-  **That 0.05 NEAR also limits how many votes the delegate can ever sign.**
-  Each vote prepays `VOTE_GAS` = 30 Tgas (`agent/delegate.mjs`). At 100 Tgas,
-  near-cli refused to send the vote: it priced the transaction at 0.1009 NEAR
-  against a balance of 0.0499 (§17.5, T7). The two gas prices on record
-  disagree. On 2026-11-08 `gas_price` returned `100000000` yocto per gas, and
-  `EXPERIMENTAL_protocol_config` returned `min_gas_price` `1000000000`.
-  - At 1e8, a 30 Tgas vote reserves 0.003 NEAR.
-  - At 1e9, which matches near-cli's figure, it reserves about 0.031 NEAR, so
-    only one vote fits in the key's 0.05 NEAR allowance.
+  **What a vote costs.** Each vote prepays `VOTE_GAS` = 30 Tgas
+  (`agent/delegate.mjs`). On 2026-11-08 `gas_price` returned `100000000`
+  yocto per gas, but the receipt of T7 was bought at `gas_price` `1000000000`.
+  That is `min_gas_price` from `EXPERIMENTAL_protocol_config`, and the price
+  near-cli used. So sending a vote needs about 0.031 NEAR, in both the balance and
+  the key's allowance. That is why 100 Tgas (0.1009 NEAR) could not be sent
+  (§17.5, T7).
 
-  Unused prepaid gas is believed to be refunded to the account balance but
-  not to a key's allowance; that is unverified here. Which price is charged
-  against the allowance is **[verify]**: T7's allowance before and after
-  settles it. The demo needs only that one vote, because the delegate does not
-  vote on #8.
+  What a vote actually spends is only the gas it burns. On T7 the unused part,
+  `30662407318791700000000`, came back to the balance. The balance and the
+  allowance each fell by exactly the tokens burnt, `257599833004800000000`
+  (about 0.00026 NEAR). After T7:
+  - allowance `49742400166995200000000`
+  - balance `49659738511134600000000`
+
+  The delegate can keep voting while both stay above about 0.031 NEAR.
 - **Loop** (`agent/delegate.mjs`). Poll `get_last_proposal_id`. For each new
   proposal, call `checkProposal`. Vote `VoteApprove` only if the kind is in
   `policy.json` and there are no critical or high flags and no unknowns (I16).
@@ -1496,6 +1500,7 @@ its `--pre` check printed PASS):
 | T7, first attempt | none: nothing was signed | the delegate decided `VoteApprove` (no flags, no unknowns). near-cli `sign-with-keychain` found no key: "no access keys found in keychain, trying legacy keychain", then no `~/.near-credentials/mainnet/docket-guard.docket-aditi.near.json`. Online it uses only FullAccess keys (§17.2). The key was in the keychain under the name near-cli looks up. The run had advanced the delegate's state past #7; it was reset to 7, and a failed signature no longer advances it. #7 still had no votes |
 | T7, second attempt | none: signed offline, not sent | `signVote` signed `--offline` with `--signer-public-key ed25519:6Qzjy94h…`, nonce `223527283000001`, block `tEFLjjGrz7jGAMSnDFZwoZ8hM5zHnT8bNeA98Sc9Aiv` (223530305). The pre-send check refused it on `args` alone: near-cli re-serialises the JSON args with sorted keys. The check now compares args as key-sorted JSON (keys, values and types still exact); the fixed check passes on that file. The file was deleted unsent; the key nonce stayed `223527283000000`, #7 had no votes, and the state stayed 7 |
 | T7, third attempt | none: signed offline, checked, refused by near-cli before sending | signed with nonce `223527283000001`, block `C76ZPjEZg65aWLYZgdj1H34k7eGGz2m85wxV1eszGpVc` (223530928), 100 Tgas prepaid; the pre-send check passed. `send-signed-transaction` refused it: "does not have enough balance (0.0499173383441394 NEAR) to cover TX cost (0.1009200071517965 NEAR)". Re-read: key nonce `223527283000000`, allowance `50000000000000000000000`, balance `49917338344139400000000`, #7 votes `{}`, state 7. The delegate's prepaid gas is now 30 Tgas (`VOTE_GAS`), and the pre-send check requires exactly that. The unsent file was deleted |
+| T7 the delegate approves #7 | `HnMopqHKJaJ7jJNY4sWkHoYJH6TLwZnVFmNzPh9ur6wZ` | run by `agent/delegate.mjs` after `--pre T7` PASS: `VoteApprove`, no flags, no unknowns. Signed offline by docket-guard's FunctionCall key `ed25519:6Qzjy94h…`, nonce `223527283000001`, block `HWoN632CbYYybd6mSmF1iPtKkFFNB9KGNd5TCaGP4mqu` (223531247), 30 Tgas; the pre-send check passed. FINAL, receipts `SuccessValue`. The `act_proposal` receipt was bought at gas price `1000000000`; `30662407318791700000000` was refunded to the balance; `257599833004800000000` was burnt in all. Re-read: key nonce `223527283000001`, allowance `49742400166995200000000`, balance `49659738511134600000000`. `get_proposal(7)` at block 223531289: InProgress, `vote_counts` `{"council":["1","0","0"]}`, votes `{"docket-guard.docket-aditi.near":"Approve"}`. Delegate state `{"next":8}`. Log: `agent/log/docket-demo.sputnik-dao.near-7.json` |
 
 ---
 
