@@ -277,6 +277,20 @@ re-reads every DAO's `get_factory_info` on demand (I20).
 that read `true` or `false`. The 466 that have no `get_factory_info` are not
 in that ratio, and not in its complement.
 
+**What the 1,607 `true` DAOs run** (`graph.json`, 2026-11-07; denominator
+1,607): v3.2 on 743, v3.0 on 727 and v3.1 on 137, each joined to the factory's
+own version list (§5).
+
+**A second no-vote path.** In **1,066 of the 1,607** `true` DAOs, some role lets
+a single member's approval pass at least one of the 12 code- or rule-changing
+kinds (§6.1 policy edge, `graph.json`, 2026-11-07). For those DAOs that member
+is a no-vote root alongside the factory's keys. One of the 1,607 has no
+`get_policy` answer and is counted as not having such a role.
+
+The census does not measure size or activity: balances, members, proposals
+over time. Many of the 1,066 may be small or idle DAOs. The figure says how
+the policies are written, not how much they govern.
+
 An earlier crawl, read on or before 2026-11-05 and not in this repository,
 resolved 1,786 of 2,065 (279 unread): 1,405 `true`, 12 `false`, 369 without
 `get_factory_info`. It was quoted here as illustrative until the census above
