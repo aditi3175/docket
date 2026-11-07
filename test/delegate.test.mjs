@@ -131,9 +131,18 @@ test('offline signing (SYNTHETIC chain, fake near-cli): fresh nonce+1 and block,
   const enc = { u32: (n) => { const b = Buffer.alloc(4); b.writeUInt32LE(n); return b; }, u64: (n) => { const b = Buffer.alloc(8); b.writeBigUInt64LE(n); return b; }, str: (s) => Buffer.concat([enc.u32(Buffer.byteLength(s)), Buffer.from(s)]) };
   const signed = (over = {}) => { const t = { signer: account, pk: FC, nonce: ctx.nonce, receiver: dao, hash: HASH, method: 'act_proposal', args: JSON.parse(sa[7]), deposit: 0n, ...over };
     const tx = Buffer.concat([enc.str(t.signer), Buffer.from([0]), unb58(t.pk.slice(8)), enc.u64(t.nonce), enc.str(t.receiver), unb58(t.hash), enc.u32(1), Buffer.from([2]),
-      enc.str(t.method), enc.str(JSON.stringify(t.args)), enc.u64(100n * 10n ** 12n), enc.u64(t.deposit), enc.u64(0n), Buffer.from([0]), Buffer.alloc(64)]);
+      enc.str(t.method), enc.str(t.argsText ?? JSON.stringify(t.args)), enc.u64(100n * 10n ** 12n), enc.u64(t.deposit), enc.u64(0n), Buffer.from([0]), Buffer.alloc(64)]);
     return JSON.stringify({ signed_transaction_as_base64: tx.toString('base64') }); };
   assert.deepEqual(checkSigned(signed(), { account, dao, decision, ctx }), { ok: true });
+  // near-cli re-serialises the args with sorted keys: its exact output from T7 (2026-11-08) is the same vote
+  const NEAR_CLI_SORTED = '{"action":"VoteApprove","id":7,"proposal":{"Transfer":{"amount":"10000000000000000000000","msg":null,"receiver_id":"docket-aditi.near","token_id":""}}}';
+  assert.deepEqual(checkSigned(signed({ argsText: NEAR_CLI_SORTED }), { account, dao, decision, ctx }), { ok: true });
+  // ...but keys, values and types stay exact
+  for (const bad of [NEAR_CLI_SORTED.replace('"id":7', '"id":"7"'), NEAR_CLI_SORTED.replace('"msg":null', '"msg":""'),
+    NEAR_CLI_SORTED.replace('"amount":"10000000000000000000000"', '"amount":10000000000000000000000'), NEAR_CLI_SORTED.replace('"action"', '"memo":"x","action"'),
+    NEAR_CLI_SORTED.replace(',"token_id":""', ''), NEAR_CLI_SORTED.slice(0, -1)]) {
+    assert.match(checkSigned(signed({ argsText: bad }), { account, dao, decision, ctx }).why, /args/, bad);
+  }
   assert.match(checkSigned(signed({ nonce: ctx.nonce + 1n }), { account, dao, decision, ctx }).why, /nonce/);
   assert.match(checkSigned(signed({ args: { ...JSON.parse(sa[7]), id: 8 } }), { account, dao, decision, ctx }).why, /args/);
   assert.match(checkSigned(signed({ deposit: 1n }), { account, dao, decision, ctx }).why, /deposit/);

@@ -120,6 +120,13 @@ export function sendArgs(file) {
   return ['transaction', 'send-signed-transaction', 'file-with-base64-signed-transaction', file, 'network-config', 'mainnet', 'send'];
 }
 
+// JSON with object keys sorted, recursively: same keys, values and types compare equal whatever the key
+// order; anything that does not parse is kept as an unparseable marker, so it never matches.
+export function canonicalJson(text) {
+  const sort = (v) => (Array.isArray(v) ? v.map(sort) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sort(v[k])])) : v);
+  try { return JSON.stringify(sort(JSON.parse(text))); } catch { return `unparseable: ${text}`; }
+}
+
 const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 export function base58(bytes) {
   let n = 0n;
@@ -152,12 +159,12 @@ export function checkSigned(text, { account, dao, decision, ctx }) {
     got.actions = u32();
     got.action = take(1)[0]; // 2 = FunctionCall
     got.method = str();
-    got.args = str();
+    got.args = canonicalJson(str()); // near-cli re-serialises the args with sorted keys (T7, 2026-11-08)
     take(8); // gas
     const dep = take(16);
     got.deposit = dep.readBigUInt64LE(0) + (dep.readBigUInt64LE(8) << 64n);
     const want = { signer: account, publicKey: ctx.publicKey, nonce: ctx.nonce, receiver: dao, blockHash: ctx.blockHash,
-      actions: 1, action: 2, method: 'act_proposal', args: voteJson(decision), deposit: 0n };
+      actions: 1, action: 2, method: 'act_proposal', args: canonicalJson(voteJson(decision)), deposit: 0n };
     const bad = Object.keys(want).filter((k) => got[k] !== want[k]);
     return bad.length ? { ok: false, why: `the signed transaction differs from the intended vote in: ${bad.map((k) => `${k} (${got[k]})`).join(', ')}` } : { ok: true };
   } catch (e) { return { ok: false, why: `the signed transaction is not decodable as TransactionV0: ${e.message}` }; }
