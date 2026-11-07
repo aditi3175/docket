@@ -44,7 +44,7 @@ function render(plan) {
       s.append(el('p', `auto_update: ${c.autoUpdate}  ·  factory_id: ${c.factoryId}  ·  code: ${c.version ?? c.form} (${c.versionStatus})`));
     } else if (id === 'givenUp') {
       const ul = el('ul'); s.classList.add('warn');
-      for (const g of plan.givenUp) { const li = el('li', g.text); li.append(el('div', g.basis, 'basis')); ul.append(li); }
+      for (const g of plan.givenUp) { const li = el('li', g.text); const b = el('div', g.basis, 'basis'); if (g.link) { const l = el('a', g.link.text); l.href = g.link.href; b.append(document.createTextNode(' · '), l); } li.append(b); ul.append(li); }
       s.append(ul);
     } else if (id === 'approve') {
       if (!plan.approve) { s.append(el('p', 'unknown')); continue; }

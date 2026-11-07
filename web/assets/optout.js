@@ -11,6 +11,7 @@
 
 import { factoryInfo, codeIdentity, loadFactoryVersions } from './resolve.js';
 import { whoCanPass, formatUnits } from './decode.js';
+import { SOURCE } from './source.js';
 
 // §16.1: the FactoryInfoUpdate shape has passed on mainnet at these versions (12 DAOs, 2026-11-06).
 // v3.0 is the same shape in source but has not been run; it is refused until its [verify] is removed.
@@ -22,9 +23,9 @@ export const DESCRIPTION = 'Opt out of factory auto-update (Docket). The factory
 
 // I14 — shown above the submit control, in this order.
 export const GIVEN_UP = Object.freeze([
-  { text: 'The factory can no longer rescue this DAO if a migration bricks it.', basis: 'source (internal_get_factory_info / update(), §3.2)' },
+  { text: 'The factory can no longer rescue this DAO if a migration bricks it.', basis: 'from the source: update() accepts the factory only while auto_update is true', link: SOURCE.updateAssert },
   { text: 'UpgradeSelf no longer works on its own. Upgrading takes three proposals: auto_update back to true, then UpgradeSelf, then auto_update back to false. While true is in force, the factory\'s keys can replace the code with no vote.',
-    basis: 'confirmed on mainnet at v3.2 (§16.2): with auto_update false the factory update was rejected (tx 772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS); with true the same UpgradeSelf ran (tx EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b)' },
+    basis: 'confirmed on mainnet at v3.2: with auto_update false the factory update was rejected (tx 772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS); with true the same UpgradeSelf ran (tx EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b)', link: SOURCE.updateAssert },
 ]);
 
 // Prepaid gas ceilings Docket chooses; unused gas is refunded by the protocol.

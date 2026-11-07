@@ -44,6 +44,7 @@ voting policy. It holds no key and signs nothing.</p>
 <script type="module">
 import { createRpc } from './assets/rpc.js';
 import { accountReport, explainCode, diagramOf, FIX, CHECKED_BUILD } from './assets/account-view.js';
+import { SOURCE } from './assets/source.js';
 
 const rpc = createRpc();
 const out = document.getElementById('out');
@@ -79,9 +80,9 @@ function render(r) {
 
   if (r.explainer) {
     const s = section('Why no vote is needed');
-    para(s, 'Sputnik DAOs vote on proposals. Changing a DAO\'s code by proposal (UpgradeSelf) takes the vote its policy requires. But the contract has a second way in: a function called update(), which is not a proposal at all. It checks one thing, the caller (ARCHITECTURE.md §3.1, Sputnik v3.2):');
+    para(s, 'Sputnik DAOs vote on proposals. Changing a DAO\'s code by proposal (UpgradeSelf) takes the vote its policy requires. But the contract has a second way in: a function called update(), which is not a proposal at all. It checks one thing, the caller (Sputnik v3.2, ', link(SOURCE.updateAssert.href, SOURCE.updateAssert.text), '):');
     s.append(el('pre', 'assert!(\n    predecessor == this DAO\n    || (predecessor == factory_id && auto_update),\n    "ERR_MUST_BE_SELF_OR_FACTORY");'));
-    para(s, 'So when auto_update is true, the factory can replace the DAO\'s code with no proposal, no vote and no waiting period. A DAO that never set this value reads true: true is the default in the contract (§3.2). Turning it off takes a FactoryInfoUpdate proposal that the DAO itself passes.');
+    para(s, 'So when auto_update is true, the factory can replace the DAO\'s code with no proposal, no vote and no waiting period. A DAO that never set this value reads true: true is the default in the contract (', link(SOURCE.defaultTrue.href, SOURCE.defaultTrue.text), '). Turning it off takes a FactoryInfoUpdate proposal that the DAO itself passes.');
     for (const dao of r.explainer.daos) {
       const v = r.votes.filter((x) => x.dao === dao);
       if (v.length) para(s, `For contrast: to change ${dao}'s code or rules by proposal, its policy requires ${v.map((x) => `${x.k} of ${x.n} in "${x.role}"`).join(' or ')}. The factory path above needs none of them.`);
