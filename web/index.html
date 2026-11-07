@@ -83,7 +83,7 @@ async function counter() {
   const b = el('button', 'Recount from the chain now (about 15 minutes)'); s.append(b);
   const live = el('p', '', 'basis'); s.append(live);
   b.addEventListener('click', async () => {
-    b.disabled = true; live.textContent = 'reading the factory's DAO list…';
+    b.disabled = true; live.textContent = 'reading the DAO list from the factory…';
     const r = await liveCounter(rpc, { onProgress: ({ done, total, counts }) => { live.textContent = `${counts.false} opted out so far · ${done} of ${total} DAOs read`; } });
     if (r.status !== 'ok') { live.textContent = `Unknown: ${r.reason}`; b.disabled = false; return; }
     live.textContent = `Recounted from the chain (${r.readAt}): ${r.counts.false} of ${r.denominator} read false, ${r.counts.true} true, ${r.counts['no-factory-info']} no get_factory_info, ${r.counts.unread} unread.`;
