@@ -1363,17 +1363,36 @@ tools over stdio, so any MCP-capable agent can call Docket before it acts.
 
 ### 17.2 The delegate
 
-- **Seat.** An account added to the demo DAO's council by an
-  `AddMemberToRole` proposal.
+- **Seat.** `docket-guard.docket-aditi.near`, added to the demo DAO's
+  `council` by an `AddMemberToRole` proposal.
+
+  **After the seat, the council has 2 members, so every proposal needs both
+  approvals.** The demo DAO's threshold `[1, 2]` gives min(1·2/2 + 1, 2) = 2
+  (`decode.js` `whoCanPass`, which follows `policy.rs`). From then on the
+  demo DAO can pass only what the delegate approves, and the delegate approves
+  only `policy.json` kinds (§17.3). A `FactoryInfoUpdate` is never one of
+  them. **The demo DAO's `auto_update` can therefore never be switched back to
+  `true`.** A proposal the delegate refuses cannot be rejected by one member
+  either. It stays open until it expires (`proposal_period`, 7 days), and its
+  bond comes back with a `Finalize` after that.
 - **Key.** One `FunctionCall` access key: receiver = the demo DAO, methods =
   `["act_proposal"]`, a small gas allowance (I17). It cannot transfer, deploy,
   or call any other contract. `act_proposal` takes no deposit, so a function-call
-  key can call it. **[verify]** on mainnet.
-- **Loop.** Poll `get_last_proposal_id`; for each new proposal call
-  `checkProposal`; vote `VoteApprove` only if the kind is in `policy.json` and
-  there are no critical or high flags and no unknowns (I16). Otherwise do not
-  vote and escalate: write the Docket report to the delegate's log, linked
-  from the README, and wait for a human.
+  key can call it. **[verify]** on mainnet: the delegate's first vote settles it.
+
+  The key is generated into the operator's OS keychain by near-cli; Docket's
+  code never handles it (I13). The account is created with a temporary
+  full-access key, which is deleted once the function-call key is added. **After
+  that, the account's 0.05 NEAR is locked:** with no full-access key, nothing
+  can transfer it out, and it only pays the gas for the delegate's votes.
+- **Loop** (`agent/delegate.mjs`). Poll `get_last_proposal_id`. For each new
+  proposal, call `checkProposal`. Vote `VoteApprove` only if the kind is in
+  `policy.json` and there are no critical or high flags and no unknowns (I16).
+  The vote is signed by the delegate's own function-call key, from the keychain
+  (`near ... sign-with-keychain`); `--dry-run` prints it instead. Otherwise it
+  does not vote, and escalates for a human to decide. Every decision, approval
+  or escalation, is written to `agent/log/<dao>-<id>.json` with its Docket
+  report, and the log is linked from the README.
 - **Binding the vote to what was checked.** In v3.2, the version the demo DAO
   runs, `act_proposal(id, action, proposal: ProposalKind, memo)` takes the
   proposal kind as a required argument. It asserts
@@ -1390,7 +1409,12 @@ tools over stdio, so any MCP-capable agent can call Docket before it acts.
 
 Starts narrow: `ChangeConfig`, and `Transfer` below a fixed cap where the
 description's named amount matches the decoded amount (§6.5). Everything in
-the critical and high rows of §6.4 is permanently outside it.
+the critical and high rows of §6.4 is permanently outside it:
+`loadPolicy` refuses a `policy.json` that lists one.
+
+**The cap is 0.5 NEAR, native NEAR only. That is a chosen setting, not a
+measurement** (`maxYocto` in `agent/policy.json`). The description must name
+an amount, and the named-amounts check must not fire.
 
 ### 17.4 The optional LLM layer
 
@@ -1405,6 +1429,18 @@ One routine proposal the delegate approves, and one proposal that copies the
 pattern of #1741/#1743 and #1742/#1744 — same description, different receiver — which it refuses
 and escalates. Both are mainnet transactions on the demo DAO, linked from the
 README.
+
+Both are `Transfer`s of 0.01 NEAR with the description "Send 0.01 NEAR to
+docket-aditi.near (Docket test)":
+
+- **The routine one** goes to `docket-aditi.near`. The delegate approves it,
+  and the human council member's approval passes it.
+- **The planted one** goes to `docket-guard.docket-aditi.near`. Its kind is
+  allowed and it is under the cap, so only Docket's checks can refuse it, and
+  they do: named receiver, silent reach and sibling collision all fire at high.
+
+The checks were rehearsed with the real decoder, linter and `decide()` before
+anything was proposed (`test/delegate.test.mjs`).
 
 ---
 
