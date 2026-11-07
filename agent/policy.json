@@ -1,0 +1,9 @@
+{
+  "comment": "What the delegate may approve (ARCHITECTURE.md §17.3). Everything else escalates to a human. Kinds rated critical or high in §6.4 are refused even if listed here (agent/delegate.mjs). The Transfer cap is Docket's own setting, not a measurement.",
+  "dao": "docket-demo.sputnik-dao.near",
+  "allow": {
+    "ChangeConfig": {},
+    "Transfer": { "nativeNearOnly": true, "maxYocto": "500000000000000000000000", "descriptionMustNameAmount": true }
+  },
+  "llm": { "enabled": false }
+}
