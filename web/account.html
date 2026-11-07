@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Docket — who can change this account without a vote</title>
+<style>
+  body { font: 16px/1.55 system-ui, sans-serif; max-width: 48rem; margin: 2rem auto; padding: 0 1rem; color: #1b1b1b; }
+  h1 { font-size: 1.45rem; margin-bottom: .2rem; } h2 { font-size: 1.08rem; margin-top: 1.8rem; border-bottom: 1px solid #ddd; padding-bottom: .2rem; }
+  code, pre, .mono { font: 13px/1.45 ui-monospace, monospace; } pre { background: #f4f4f4; padding: .8rem; overflow-x: auto; }
+  .headline { font-size: 1.15rem; font-weight: 600; margin: 1.2rem 0; padding: .8rem 1rem; border-left: 5px solid #b91c1c; background: #fef2f2; }
+  .headline.none { border-color: #6b7280; background: #f3f4f6; } .headline.unknown { border-color: #b45309; background: #fffbeb; }
+  ol.path { padding-left: 1.4rem; } ol.path li { margin: .45rem 0; }
+  .key { font: 13px ui-monospace, monospace; word-break: break-all; }
+  .basis { color: #555; font-size: .86rem; } .muted { color: #666; }
+  .examples button { margin: 0 .3rem .3rem 0; } nav a { margin-right: .8rem; }
+</style>
+</head>
+<body>
+<nav class="basis"><a href="account.html">account</a><a href="docket.html">docket</a><a href="optout.html">opt-out</a></nav>
+<h1>Who can change this account without a vote?</h1>
+<p class="muted">Docket reads NEAR mainnet from your browser and follows every path by which an account's code or
+rules can be changed: its keys, its owner, the global contract it runs, and, for a Sputnik DAO, its factory and its
+voting policy. It holds no key and signs nothing.</p>
+<form id="pick"><label>NEAR account <input id="acct" size="38" value="meta-pool.near" autocomplete="off" spellcheck="false"></label>
+<button>Read</button></form>
+<p class="examples basis">Examples:
+  <button type="button" data-a="meta-pool.near">meta-pool.near (Meta Pool stNEAR)</button>
+  <button type="button" data-a="linear-protocol.near">linear-protocol.near (LiNEAR)</button>
+  <button type="button" data-a="contract.main.burrow.near">contract.main.burrow.near (Burrow)</button>
+  <button type="button" data-a="lst.rhealab.near">lst.rhealab.near (RHEA LST)</button></p>
+<div id="out" aria-live="polite"></div>
+
+<script type="module">
+import { createRpc } from './assets/rpc.js';
+import { accountReport, explainCode, FIX, CHECKED_BUILD } from './assets/account-view.js';
+
+const rpc = createRpc();
+const out = document.getElementById('out');
+const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
+const link = (href, text) => { const a = el('a', text); a.href = href; return a; };
+const section = (title) => { const s = el('section'); s.append(el('h2', title)); out.append(s); return s; };
+const para = (s, ...parts) => { const p = el('p'); for (const x of parts) p.append(typeof x === 'string' ? document.createTextNode(x) : x); s.append(p); return p; };
+
+function render(r) {
+  out.replaceChildren();
+  const cls = r.status === 'unknown' ? 'headline unknown' : r.groups?.length ? 'headline' : 'headline none';
+  out.append(el('p', r.headline, cls));
+  if (r.status === 'invalid' || r.status === 'no-account') return;
+
+  for (const [i, g] of r.groups.entries()) {
+    const s = section(r.groups.length > 1 ? `Path ${i + 1} of ${r.groups.length}` : 'The path');
+    s.append(el('p', g.path.join('  →  '), 'mono'));
+    const ol = el('ol', undefined, 'path');
+    for (const h of g.hops ?? []) ol.append(el('li', h.text));
+    const last = el('li', `At the end: ${g.keys.length} key${g.keys.length > 1 ? 's' : ''}, each ${g.keys[0].text.replace(/^a /, '')}`);
+    const ul = el('ul'); for (const k of g.keys) ul.append(el('li', k.publicKey, 'key')); last.append(ul);
+    ol.append(last); s.append(ol);
+    if (g.hops?.some((h) => h.type.startsWith('owner via '))) {
+      s.append(el('p', 'An owner edge means the contract names that account as its owner. What an owner may do is set by the contract\'s own code; Docket follows the owner as authority and does not check each contract\'s owner-only methods.', 'basis'));
+    }
+  }
+
+  if (r.explainer) {
+    const s = section('Why no vote is needed');
+    para(s, 'Sputnik DAOs vote on proposals. Changing a DAO\'s code by proposal (UpgradeSelf) takes the vote its policy requires. But the contract has a second way in: a function called update(), which is not a proposal at all. It checks one thing, the caller (ARCHITECTURE.md §3.1, Sputnik v3.2):');
+    s.append(el('pre', 'assert!(\n    predecessor == this DAO\n    || (predecessor == factory_id && auto_update),\n    "ERR_MUST_BE_SELF_OR_FACTORY");'));
+    para(s, 'So when auto_update is true, the factory can replace the DAO\'s code with no proposal, no vote and no waiting period. A DAO that never set this value reads true: true is the default in the contract (§3.2). Turning it off takes a FactoryInfoUpdate proposal that the DAO itself passes.');
+    for (const dao of r.explainer.daos) {
+      const v = r.votes.filter((x) => x.dao === dao);
+      if (v.length) para(s, `For contrast: to change ${dao}'s code or rules by proposal, its policy requires ${v.map((x) => `${x.k} of ${x.n} in "${x.role}"`).join(' or ')}. The factory path above needs none of them.`);
+    }
+    const fd = r.explainer.factoryDefault;
+    para(s, `The factory, ${'sputnik-dao.near'}, owns itself, so its access keys are its only authority. They are the keys at the end of the path.`);
+    para(s, `A fix exists. PR #${FIX.pr} in near-daos/sputnik-dao-contract (merged ${FIX.merged}, merge commit ${FIX.mergeCommit}) makes a factory update wait for an UpgradeSelf proposal that has been open for two weeks. `,
+      fd && String(fd.commit ?? '').startsWith(CHECKED_BUILD) ? `Read just now, the factory's default build is ${fd.version}, commit ${CHECKED_BUILD}, which does not contain it (GitHub compare: the fix is 2 commits ahead of that commit; tools/verify.mjs re-checks this).`
+        : fd ? `Read just now, the factory's default build is ${fd.version}, commit ${String(fd.commit ?? 'unknown').slice(0, 12)}. That is not the build Docket checked against the fix (${CHECKED_BUILD}), so whether it contains the fix is unknown here.`
+        : `The factory's default build could not be read just now (${r.explainer.factoryReason}), so whether it contains the fix is unknown here.`);
+    para(s, 'Shipping the fix would not close the path by itself: each DAO runs the code it has until it upgrades. Today the only setting that puts a vote in front of every code change is auto_update: false, which a DAO sets for itself:');
+    const ul = el('ul'); for (const dao of r.explainer.daos) { const li = el('li'); li.append(link(`optout.html?dao=${encodeURIComponent(dao)}`, `Draft the opt-out for ${dao}`), document.createTextNode(' · '), link(`docket.html?dao=${encodeURIComponent(dao)}`, 'its proposals')); ul.append(li); }
+    s.append(ul);
+  }
+
+  if (r.gates.length || (!r.explainer && r.votes.length)) {
+    const s = section('Where a vote is required');
+    for (const g of r.gates) {
+      const v = r.votes.filter((x) => x.dao === g);
+      para(s, `${g} reads auto_update: false, so its factory cannot replace its code without a vote. `, v.length ? `Changing its code or rules takes ${v.map((x) => `${x.k} of ${x.n} in "${x.role}"`).join(' or ')}.` : '', ' ', link(`docket.html?dao=${encodeURIComponent(g)}`, 'its proposals'));
+    }
+    for (const v of r.votes.filter((x) => !r.gates.includes(x.dao) && !r.explainer)) para(s, `${v.dao}: ${v.k} of ${v.n} in "${v.role}" to pass a code- or rule-changing proposal.`);
+  }
+
+  { const s = section('The code it runs'); para(s, `${r.account} runs `, explainCode(r.code)); }
+
+  if (r.unknowns.length) {
+    const s = section(`Reads that failed (${r.unknowns.length})`);
+    s.append(el('p', 'Each of these is unknown, not empty. A failed read never counts as "no key" or "no owner".', 'basis'));
+    const ul = el('ul'); for (const u of r.unknowns) ul.append(el('li', `${u.at} · ${u.read}: ${u.reason}`)); s.append(ul);
+  }
+
+  { const s = section('What Docket cannot see');
+    s.append(el('p', 'Only on-chain authority. Docket does not know who holds a key, whether several people share one, or what a multisig agrees off-chain. An empty result is never a statement that an account is safe.', 'basis')); }
+}
+
+async function run(id) {
+  history.replaceState(null, '', `?account=${encodeURIComponent(id)}`);
+  out.replaceChildren(el('p', `reading ${id} from mainnet…`, 'muted'));
+  try { render(await accountReport(rpc, id)); }
+  catch (e) { out.replaceChildren(el('p', `Unknown: the page failed while reading (${e?.message ?? e}).`, 'headline unknown')); }
+}
+document.getElementById('pick').addEventListener('submit', (e) => { e.preventDefault(); run(document.getElementById('acct').value.trim()); });
+for (const b of document.querySelectorAll('.examples button')) b.addEventListener('click', () => { document.getElementById('acct').value = b.dataset.a; run(b.dataset.a); });
+const q = new URLSearchParams(location.search).get('account');
+if (q) { document.getElementById('acct').value = q; run(q); }
+</script>
+</body>
+</html>
