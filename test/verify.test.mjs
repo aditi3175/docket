@@ -6,7 +6,7 @@ import { createRpc } from '../web/assets/rpc.js';
 import { collect, exitCodeFor } from '../tools/verify.mjs';
 import { replayFetch, githubReplay, loadFixture, jsonResponse, noSleep } from './helpers.mjs';
 
-const STRUCTURAL = 69; // 38 + the §6.1 policy edge for 5 DAOs + 2 × 13 named opt-outs (§3.3 E1 + the demo DAO)
+const STRUCTURAL = 73; // 38 + the §6.1 policy edge for 5 DAOs + 2 × 13 named opt-outs (§3.3 E1 + the demo DAO) + 4 §17 delegate claims
 const GITHUB = 3;
 const TVL = 3;
 const AMOUNT = 1; // NearX staked NEAR, read on chain (§2)
@@ -53,6 +53,22 @@ test('coverage: an unreadable owner is named and not counted — 3 of 5, never r
   assert.equal(r.claims.find((c) => c.section === '§1/§2').status, 'moved');
   assert.ok(r.warnings.some((w) => /3 of 5/.test(w) && /meta-pool-near/.test(w)));
   assert.equal(exitCodeFor(r.claims), 2); // the structural owner claim is unknown
+});
+
+test('§17 I17 (recorded, then SYNTHETIC second key): a full-access key added to the delegate diverges, exit 1; unreadable keys are unknown, exit 2', async () => {
+  const GUARD = 'docket-guard.docket-aditi.near';
+  const rec = loadFixture('2026-11-07.access_keys.docket-guard.docket-aditi.near.json').body;
+  const added = { ...rec, result: { ...rec.result, keys: [...rec.result.keys, { public_key: 'ed25519:11111111111111111111111111111111', access_key: { nonce: 0, permission: 'FullAccess' } }] } };
+  const f = replayFetch({ override: (p) => (p.request_type === 'view_access_key_list' && p.account_id === GUARD ? jsonResponse(added) : undefined) });
+  const r = await collect({ rpc: createRpc({ fetch: f, sleep: noSleep }), llamaFetch: llamaFixture, githubFetch: githubReplay() });
+  const i17 = r.claims.find((c) => c.section === '§17' && /\(I17\)/.test(c.what));
+  assert.equal(i17.status, 'diverged');
+  assert.equal(i17.actual.length, 2);
+  assert.equal(exitCodeFor(r.claims), 1);
+  const down = replayFetch({ override: (p) => (p.account_id === GUARD ? jsonResponse({}, 503) : undefined) });
+  const u = await collect({ rpc: createRpc({ fetch: down, sleep: noSleep }), llamaFetch: llamaFixture, githubFetch: githubReplay() });
+  assert.equal(u.claims.find((c) => c.section === '§17' && /\(I17\)/.test(c.what)).status, 'unverifiable');
+  assert.equal(exitCodeFor(u.claims), 2);
 });
 
 test('coverage: a protocol the rule selects but Docket has no contract for is named — 4 of 6', async () => {

@@ -83,6 +83,12 @@ const policySummary = (pe) => [
 ].sort();
 // §2 — owners that are keys, not DAOs: no contract, and exactly these access keys
 const KEY_OWNERS = [{ account: 'rhealab.near', keys: ['FullAccess'] }];
+// §17 the delegate on the demo DAO (§17.5, T1-T9): I17 its only key; the 2-of-2 council; its vote on #7
+// (approved, then passed by the human vote) and no vote on the planted #8 (escalated)
+const GUARD = 'docket-guard.docket-aditi.near';
+const DEMO = 'docket-demo.sputnik-dao.near';
+const GUARD_KEYS = [['FunctionCall', 'ed25519:6Qzjy94hpju5qHvLkth44zbFzCTKjNp5WcUT71DyQALQ', DEMO, ['act_proposal']]];
+const DEMO_COUNCIL = ['docket-aditi.near', GUARD];
 const SPEC_TVL_DATE = '2026-11-06';
 const SPEC_HEADLINE = 126_665_546; // §3.3 — sum of the auto_update:true protocols DefiLlama values
 // TVL moves daily. Beyond this relative move from the spec figure verify.mjs warns; it never fails.
@@ -159,7 +165,7 @@ export async function collect({ rpc = createRpc(), llamaFetch, githubFetch } = {
     githubGet(`${REPO}/compare/${DEPLOYED_SHA}...${FIX_SHA}`, gh),
   ]);
   const [owners, infos, codes, stnearRaw, noOwner, factoryOwner, factoryKeys, walks,
-    ocOwners, ocInfos, ocWalks, ocStaked, keyOwnerCodes, keyOwnerKeys, optInfos, optProps] = await Promise.all([
+    ocOwners, ocInfos, ocWalks, ocStaked, keyOwnerCodes, keyOwnerKeys, optInfos, optProps, guardKeys, demoPolicy, demo7, demo8] = await Promise.all([
     Promise.all(PROTOCOLS.map((p) => resolveOwner(rpc, p.contract))),
     Promise.all(PROTOCOLS.map((p) => (p.ownerIsDao ? factoryInfo(rpc, p.owner) : null))),
     Promise.all(CODE.map((c) => codeIdentity(rpc, c.account, factory))),
@@ -176,6 +182,10 @@ export async function collect({ rpc = createRpc(), llamaFetch, githubFetch } = {
     Promise.all(KEY_OWNERS.map((k) => accessKeys(rpc, k.account))),
     Promise.all(OPTED_OUT.map((o) => factoryInfo(rpc, o.dao))),
     Promise.all(OPTED_OUT.map((o) => rpc.viewFunction(o.dao, 'get_proposal', { id: o.proposal }))),
+    accessKeys(rpc, GUARD),
+    rpc.viewFunction(DEMO, 'get_policy'),
+    rpc.viewFunction(DEMO, 'get_proposal', { id: 7 }),
+    rpc.viewFunction(DEMO, 'get_proposal', { id: 8 }),
   ]);
 
   // §5 factory list
@@ -217,6 +227,20 @@ export async function collect({ rpc = createRpc(), llamaFetch, githubFetch } = {
     if (p.status === 'unknown') claim('§3.3', whatP, ['Approved', OPT_OUT_KIND], null, p.reason);
     else claim('§3.3', whatP, ['Approved', OPT_OUT_KIND], p.status === 'ok' ? [p.value?.status, p.value?.kind] : [p.status]);
   });
+
+  // §17 — the delegate (I17) and what it did on the demo DAO
+  {
+    const unread = (r) => (r.status === 'unknown' ? r.reason ?? 'unread' : undefined);
+    const whatK = `${GUARD} has exactly one key: FunctionCall, ${DEMO}, act_proposal (I17)`;
+    if (guardKeys.status === 'unknown') claim('§17', whatK, GUARD_KEYS, null, guardKeys.reason);
+    else claim('§17', whatK, GUARD_KEYS, guardKeys.status === 'ok' ? guardKeys.keys.map((k) => [k.kind, k.publicKey, k.receiver ?? null, k.methods ?? null]) : [guardKeys.status]);
+    const whatC = `${DEMO} council is [docket-aditi.near, ${GUARD}] (2 of 2)`;
+    const council = demoPolicy.status === 'ok' ? demoPolicy.value?.roles?.find((r) => r.name === 'council')?.kind?.Group : undefined;
+    claim('§17', whatC, DEMO_COUNCIL, demoPolicy.status === 'ok' ? (Array.isArray(council) ? [...council].sort() : null) : [demoPolicy.status], unread(demoPolicy));
+    const vote = (p) => (p.status === 'ok' ? [p.value?.status, p.value?.kind?.Transfer?.receiver_id, p.value?.votes?.[GUARD] ?? null] : [p.status]);
+    claim('§17', `${DEMO} #7: Approved, receiver docket-aditi.near, the delegate voted Approve`, ['Approved', 'docket-aditi.near', 'Approve'], vote(demo7), unread(demo7));
+    claim('§17', `${DEMO} #8 (planted, receiver ${GUARD}): the delegate did not vote`, ['InProgress', GUARD, null], vote(demo8), unread(demo8));
+  }
 
   // §2 — owners that are keys: no contract, and exactly these access keys
   KEY_OWNERS.forEach((k, i) => {

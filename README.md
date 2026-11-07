@@ -5,7 +5,9 @@
 Docket follows every path by which an account's code or rules can change: its
 access keys, its owner, the global contract it runs, and, for a Sputnik DAO, the
 factory and the DAO's voting policy. It reads public view calls and nothing
-else. It holds no key, needs no account and signs nothing.
+else. It holds no key, needs no account and signs nothing. The one exception is
+the optional delegate (below): it signs its own votes with a key that can do
+nothing else.
 
 What it found: a Sputnik DAO's contract has a function, `update()`, that is not
 a proposal. While the DAO's `auto_update` setting is `true`, which is the
@@ -86,6 +88,9 @@ also prints the same transaction as a `near-cli` command.
 | `node tools/demo-dao.mjs <you.near>` | prints the transactions of the demo-DAO opt-out test (spec §16.5). Read-only: you sign them yourself |
 | `node tools/receipts.mjs <tx> <signer> --step 5\|9` | judges that test from a transaction's receipts |
 | `node tools/capture-fixtures.mjs` | re-records the mainnet responses the tests replay |
+| `node guard/mcp.mjs` | Docket's two checks, `check_proposal` and `check_account`, as MCP tools over stdio (spec §17.1) |
+| `node agent/delegate.mjs --account <delegate.near> [--dry-run]` | the delegate (spec §17.2): checks each new proposal and votes only on a clean one that `agent/policy.json` allows, signing with its own FunctionCall key from the OS keychain; otherwise it escalates to a human. `--dry-run` signs nothing |
+| `node tools/guard-setup.mjs [--pre T<n>]` | prints the delegate's setup and demo transactions T1–T9, with a read-only pre-check for each |
 
 ## What has been run on mainnet
 
@@ -101,13 +106,42 @@ LiNEAR has been asked for a private security contact and has not yet been sent
 the details. [REPORT.md](REPORT.md) has the text that was sent, to whom, when,
 and every reply.
 
+### The delegate, on the demo DAO
+
+On 2026-11-08 the demo DAO got a second council member,
+`docket-guard.docket-aditi.near`. Its only key is a FunctionCall key that can
+call `act_proposal` on the demo DAO and nothing else (I17; `verify.mjs`
+re-reads it). With two members, every proposal needs both votes. Then two
+proposals with the same words, "Send 0.01 NEAR to docket-aditi.near (Docket
+test)", were put to it:
+
+- **#7 sends the 0.01 NEAR to docket-aditi.near, as it says.** The delegate
+  found no flags and voted to approve, signing with its own key:
+  [`HnMopqHK…`](https://nearblocks.io/txns/HnMopqHKJaJ7jJNY4sWkHoYJH6TLwZnVFmNzPh9ur6wZ).
+  The human vote passed it:
+  [`41FThx6G…`](https://nearblocks.io/txns/41FThx6G6n8osp4bRqtPfvpCa4VRr83Wu6obUosvcG72).
+  Decision log: [`agent/log/docket-demo.sputnik-dao.near-7.json`](agent/log/docket-demo.sputnik-dao.near-7.json).
+- **#8 sends it to docket-guard instead.** It was proposed in
+  [`oE8yyRjD…`](https://nearblocks.io/txns/oE8yyRjDfWRLLWj6usvaxiVFawZLHcS9UTZ76v4JGfH).
+  Its kind is allowed and its amount is under the cap, but Docket's checks raised
+  three high flags: named-receiver, silent-reach, and a sibling collision with
+  #7. The delegate did not vote, and escalated it to a human. Decision log:
+  [`agent/log/docket-demo.sputnik-dao.near-8.json`](agent/log/docket-demo.sputnik-dao.near-8.json).
+
+Every transaction of the setup and the demo, including three first attempts at
+#7's vote that never reached the chain, is in the spec, §17.5.
+
 ## How this was built
 
 Docket was written with **Claude Code**, Anthropic's coding agent, running
 Claude models, under the direction of its author. That covers the code, the
-tests and the documents. The author decided what to build, reviewed it, sent
-the disclosure, and signed every mainnet transaction. No key was ever given to
-the agent. Every number in the spec traces to a read that `verify.mjs`, the
+tests and the documents. The author decided what to build, reviewed it, and
+sent the disclosure. The author approved every mainnet transaction, one at a
+time. Most were signed by the author. For the last steps, T7–T9 of §17, Claude
+Code ran each command after the author's explicit yes, and the signing used the
+author's OS keychain. The delegate's vote on #7 was signed by the delegate's own
+FunctionCall key, also from the keychain. No key was ever shown to, or handled
+by, the agent. Every number in the spec traces to a read that `verify.mjs`, the
 crawl or a documented command can repeat.
 
 ## License

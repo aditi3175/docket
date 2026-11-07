@@ -1,0 +1,40 @@
+{
+  "endpoint": "https://free.rpc.fastnear.com",
+  "captured_at": "2026-11-07T23:08:59.903Z",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "docket",
+    "method": "query",
+    "params": {
+      "request_type": "view_access_key_list",
+      "finality": "final",
+      "account_id": "docket-guard.docket-aditi.near"
+    }
+  },
+  "http_status": 200,
+  "body": {
+    "jsonrpc": "2.0",
+    "result": {
+      "block_hash": "CWm4tmZo5tAJnjZH99auWUavaSwhywzrBe8pvqrCCN57",
+      "block_height": 223531968,
+      "keys": [
+        {
+          "access_key": {
+            "nonce": 223527283000001,
+            "permission": {
+              "FunctionCall": {
+                "allowance": "49742400166995200000000",
+                "method_names": [
+                  "act_proposal"
+                ],
+                "receiver_id": "docket-demo.sputnik-dao.near"
+              }
+            }
+          },
+          "public_key": "ed25519:6Qzjy94hpju5qHvLkth44zbFzCTKjNp5WcUT71DyQALQ"
+        }
+      ]
+    },
+    "id": "docket"
+  }
+}
