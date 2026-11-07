@@ -11,10 +11,17 @@ the sender, in IST (UTC+05:30), with UTC beside them.
 | Stader | admin@staderlabs.com | 2026-11-06 14:50 | 09:20 | none yet |
 | LiNEAR | X DM to @LinearProtocol | **not reached** | — | **pending.** The X DM is blocked because the account accepts DMs from verified accounts only. Contact requested instead, with no details of the finding: a public X reply to @LinearProtocol at 2026-11-06 15:07 IST (09:37 UTC; time as reported, read as PM); and [linear-protocol/LiNEAR#215](https://github.com/linear-protocol/LiNEAR/issues/215), *"Request: private security contact for LiNEAR"*, opened 2026-11-06 15:11 IST (09:41:29 UTC, `gh issue view`). The report itself is not yet sent |
 
-**Follow-up, the `UpgradeSelf` result promised in section 5: drafted
-2026-11-07, NOT SENT.** It goes to the three recipients above (not LiNEAR,
-which has no private contact yet). The text is under "Follow-up 1" at the end
-of this file.
+**Follow-up 1: the `UpgradeSelf` mainnet result promised in section 5.** Sent
+2026-11-07 to the three recipients above. LiNEAR was not sent it, because it
+has no private contact yet. Times are as reported by the sender, in IST, with
+UTC beside them. The text that was sent is under "Follow-up 1" at the end of
+this file.
+
+| recipient | channel | sent (IST) | sent (UTC) | response |
+|---|---|---|---|---|
+| NEAR security | security@near.org | 2026-11-07 14:44 | 09:14 | none yet |
+| Stader | admin@staderlabs.com | 2026-11-07 14:47 | 09:17 | none yet |
+| Meta Pool | bug-bounty form | 2026-11-07 14:50 | 09:20 | none yet |
 
 Every response will be published verbatim at submission, including "no
 response" (§11). Everything between the first two `✂` lines is the report text that was
@@ -245,7 +252,7 @@ detail of the finding.
 
 Sent: see the send log at the top. LiNEAR is pending.
 
-## Follow-up 1 (drafted 2026-11-07, not sent; not part of the pasted text above)
+## Follow-up 1 (sent 2026-11-07; not part of the report text above)
 
 To: NEAR security (security@near.org), Meta Pool (bug-bounty form; a new
 submission if the form gave no thread to reply to), Stader
@@ -253,9 +260,11 @@ submission if the form gave no thread to reply to), Stader
 
 Subject: Docket follow-up: UpgradeSelf on an opted-out Sputnik DAO, mainnet result
 
-Everything between the two `✂` lines below is the text to send. The
-reproduce command and its expected output were run against mainnet on
-2026-11-07.
+Everything between the two `✂` lines below is the text that was sent. It
+is the draft with one paragraph reworded before sending: the one starting
+"One detail matters". The new wording explains why an explorer shows the
+step 5 transaction as failed. The reproduce command and its expected output
+were run against mainnet on 2026-11-07.
 
 ✂ ----------------------------------------------------------------------------
 
@@ -288,7 +297,7 @@ with no vote.
 
 One detail matters for anyone checking an upgrade: in the auto_update: false
 case, the proposal still reads Approved and the bond is returned. Only the
-receipts show that the upgrade did not happen.
+receipts show that the upgrade did not happen. (An explorer shows the step 5 transaction itself as failed, because UpgradeSelf returns the factory’s call as its result; the proposal state alone would not tell you.)
 
 The demo DAO is opted out again (7AaKHUxnCx1XdHUrrfMzHk6xUCMSYz9xm5j5Bi2gy36X).
 Its get_factory_info reads auto_update: false.
@@ -322,5 +331,4 @@ Reply to: aditigupta3175@gmail.com
 
 ✂ ----------------------------------------------------------------------------
 
-Sent: **not yet.** Record the send time (IST and UTC) and each response in the
-send log at the top.
+Sent: see the follow-up table in the send log at the top.
