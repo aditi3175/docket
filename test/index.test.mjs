@@ -39,11 +39,15 @@ test('I2: chain unreachable -> owners and auto_update unknown, the badge unknown
   assert.equal(r.exposedUsd, 'unknown');
 });
 
-test('index.html: static, textContent only, the counter recomputed on load (I20), the badge from badge.js (I19)', () => {
+test('index.html: static, textContent only, the counter from the dated census with an on-demand chain recount (I20)', () => {
   const html = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8');
   assert.doesNotMatch(html, /innerHTML|outerHTML|insertAdjacentHTML|document\.write/);
   assert.doesNotMatch(html, /<script[^>]+src=["']https?:/);
-  assert.match(html, /liveCounter\(rpc/);
+  // I20: the dated census is shown at once; the chain recount runs only on the reader's click
+  assert.match(html, /addEventListener\('click', async \(\) => \{[\s\S]*?liveCounter\(rpc/);
+  assert.equal((html.match(/liveCounter\(rpc/g) ?? []).length, 1);
+  assert.match(html, /Recount from the chain now \(about 15 minutes\)/);
+  assert.match(html, /census\(Object\.values\(g\.daos\)\)/);
   assert.match(html, /from '\.\/assets\/index-view\.js'/);
   assert.doesNotMatch(html, /\b1[0-9]\b opted out|\b12 opted/); // no stored counter
 });
