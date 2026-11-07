@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Docket — the register: every Sputnik DAO, by reach</title>
+<style>
+  body { font: 15px/1.5 system-ui, sans-serif; max-width: 72rem; margin: 2rem auto; padding: 0 1rem; color: #1b1b1b; }
+  h1 { font-size: 1.45rem; margin-bottom: .2rem; }
+  .floor { font-weight: 600; padding: .6rem .9rem; border-left: 5px solid #6b7280; background: #f3f4f6; }
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; } td, th { text-align: left; padding: .3rem .45rem; border-bottom: 1px solid #eee; vertical-align: top; }
+  th { position: sticky; top: 0; background: #fff; } td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .mono { font: 12.5px ui-monospace, monospace; } .t-true { color: #991b1b; font-weight: 600; } .t-false { color: #166534; font-weight: 600; } .t-unknown { color: #6b7280; }
+  .basis { color: #555; font-size: .86rem; } nav a { margin-right: .8rem; } tr.mapped td { background: #fafafa; }
+</style>
+</head>
+<body>
+<nav class="basis"><a href="index.html">finding</a><a href="account.html">account</a><a href="docket.html">docket</a><a href="register.html">register</a><a href="optout.html">opt-out</a></nav>
+<h1>The register: every Sputnik DAO, by reach</h1>
+<p id="floor" class="floor"></p>
+<p class="basis">Order: first the DAOs that administer a protocol Docket has mapped, by the value they administer
+(DefiLlama, read now); then every other DAO by its own NEAR balance. Rows come from the last census
+(<code>graph.json</code>, written by <code>tools/crawl.mjs</code>); the values are read when this page loads.
+"No-vote roots" looks one hop out: the factory, keys on the DAO, members who can pass a code or rule change alone.
+Each DAO's account page follows the whole path.</p>
+<p><label>Filter <input id="q" size="30" placeholder="part of a DAO name" spellcheck="false"></label>
+<label><input type="checkbox" id="onlyTrue"> only auto_update: true</label> <span id="count" class="basis"></span></p>
+<div id="out" aria-live="polite"><p class="basis">reading graph.json, DefiLlama and the factory's keys…</p></div>
+
+<script type="module">
+import { createRpc } from './assets/rpc.js';
+import { accessKeys } from './assets/resolve.js';
+import { fetchDefiLlama } from './assets/value.js';
+import { census } from './assets/census.js';
+import { registerRows, FLOOR } from './assets/register-view.js';
+
+const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
+const out = document.getElementById('out');
+document.getElementById('floor').textContent = FLOOR;
+const SHOW = 300;
+
+const [graph, llama, keys] = await Promise.all([
+  fetch('../graph.json').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+  fetchDefiLlama(),
+  accessKeys(createRpc(), 'sputnik-dao.near'),
+]);
+if (!graph) { out.replaceChildren(el('p', 'Unknown: graph.json could not be loaded. Serve the repository root, so that ../graph.json is reachable, or run node tools/crawl.mjs.')); }
+else {
+  const factoryKeys = keys.status === 'ok' ? keys.keys.filter((k) => k.kind === 'FullAccess').length : 'unknown';
+  const reg = registerRows(graph, llama, factoryKeys);
+  const c = census(Object.values(graph.daos));
+  const head = el('p', `${reg.rows.length} DAOs (the factory listed ${reg.numberDaos}) · census ${reg.crawl?.lastRunAt?.slice(0, 16).replace('T', ' ')} UTC${reg.crawl?.complete ? '' : ', INCOMPLETE'} · auto_update true ${c.counts.true}, false ${c.counts.false}, unknown ${c.counts['no-factory-info'] + c.counts.unread} · DefiLlama ${llama.status === 'ok' ? `read ${llama.readAt.slice(0, 16).replace('T', ' ')} UTC` : `unknown (${llama.reason})`}`, 'basis');
+
+  const draw = () => {
+    const q = document.getElementById('q').value.trim().toLowerCase();
+    const onlyTrue = document.getElementById('onlyTrue').checked;
+    const rows = reg.rows.filter((r) => (!q || r.dao.includes(q)) && (!onlyTrue || r.autoUpdate === 'true'));
+    document.getElementById('count').textContent = `${rows.length} shown${rows.length > SHOW ? ` (first ${SHOW})` : ''}`;
+    const t = el('table'); const h = el('tr');
+    for (const x of ['#', 'DAO', 'administered value', 'own balance (NEAR)', 'auto_update', 'code', 'no-vote roots']) h.append(el('th', x));
+    t.append(h);
+    for (const r of rows.slice(0, SHOW)) {
+      const tr = el('tr', undefined, r.protocol ? 'mapped' : '');
+      tr.append(el('td', String(r.rank), 'num'));
+      const d = el('td'); const a = el('a', r.dao, 'mono'); a.href = `account.html?account=${encodeURIComponent(r.dao)}`; d.append(a);
+      if (r.protocol) d.append(el('div', `administers ${r.protocol} (${r.contract})`, 'basis'));
+      tr.append(d, el('td', r.administered, r.protocol ? 'num' : ''), el('td', r.balance, 'num'));
+      const au = r.autoUpdate === 'true' ? 'true' : r.autoUpdate === 'false' ? 'false' : r.autoUpdate === 'no-factory-info' ? 'unknown (no get_factory_info)' : 'unknown (unread)';
+      tr.append(el('td', au, r.autoUpdate === 'true' ? 't-true' : r.autoUpdate === 'false' ? 't-false' : 't-unknown'), el('td', r.version), el('td', r.roots));
+      t.append(tr);
+    }
+    out.replaceChildren(head, t);
+  };
+  document.getElementById('q').addEventListener('input', draw);
+  document.getElementById('onlyTrue').addEventListener('change', draw);
+  draw();
+}
+</script>
+</body>
+</html>
