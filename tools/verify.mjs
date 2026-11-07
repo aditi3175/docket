@@ -53,6 +53,16 @@ const ONCHAIN_ONLY = [
   { name: 'NearX', contract: 'nearx.stader-labs.near', owner: 'stader-nearx.sputnik-dao.near', via: 'get_owner_id', autoUpdate: true,
     stakedMethod: 'get_total_staked_balance', specStakedNear: 2_553_885n },
 ];
+// §3.3 the twelve opt-outs (REPORT.md E1) and the demo DAO (§16.5): each reads auto_update:false, and
+// its opt-out proposal is an Approved FactoryInfoUpdate {factory_id: sputnik-dao.near, auto_update: false}.
+// Read 2026-11-07. These are named claims only: the counter (how many of all DAOs) is the crawl's (I20).
+const OPTED_OUT = [
+  ['ref-finance', 968], ['burrow', 1725], ['ref-labs', 285], ['rhea-conversion', 8], ['rhea-lostfound', 2], ['rhea-ccdfm', 9],
+  ['rhea-airdrop', 13], ['rhea-lsd', 4], ['neardragons', 0], ['testgfdg', 0], ['unrlzd', 1], ['nearlytrade', 8],
+  ['docket-demo', 5],
+].map(([d, proposal]) => ({ dao: `${d}.sputnik-dao.near`, proposal }));
+const OPT_OUT_KIND = { FactoryInfoUpdate: { factory_info: { factory_id: 'sputnik-dao.near', auto_update: false } } };
+
 // §6.1 policy edge — per Sputnik DAO, who can pass a code- or rule-changing proposal (the 12 critical/
 // high kinds of §6.4) alone: "<role> k of n (<kinds>)"; "ignored: <role>" for an Everyone role whose
 // votes never count; "nobody can propose: <labels>". Read from get_policy on 2026-11-06.
@@ -148,7 +158,7 @@ export async function collect({ rpc = createRpc(), llamaFetch, githubFetch } = {
     githubGet(`${REPO}/compare/${DEPLOYED_SHA}...${FIX_SHA}`, gh),
   ]);
   const [owners, infos, codes, stnearRaw, noOwner, factoryOwner, factoryKeys, walks,
-    ocOwners, ocInfos, ocWalks, ocStaked, keyOwnerCodes, keyOwnerKeys] = await Promise.all([
+    ocOwners, ocInfos, ocWalks, ocStaked, keyOwnerCodes, keyOwnerKeys, optInfos, optProps] = await Promise.all([
     Promise.all(PROTOCOLS.map((p) => resolveOwner(rpc, p.contract))),
     Promise.all(PROTOCOLS.map((p) => (p.ownerIsDao ? factoryInfo(rpc, p.owner) : null))),
     Promise.all(CODE.map((c) => codeIdentity(rpc, c.account, factory))),
@@ -163,6 +173,8 @@ export async function collect({ rpc = createRpc(), llamaFetch, githubFetch } = {
     Promise.all(ONCHAIN_ONLY.map((x) => rpc.viewFunction(x.contract, x.stakedMethod))),
     Promise.all(KEY_OWNERS.map((k) => codeIdentity(rpc, k.account, factory))),
     Promise.all(KEY_OWNERS.map((k) => accessKeys(rpc, k.account))),
+    Promise.all(OPTED_OUT.map((o) => factoryInfo(rpc, o.dao))),
+    Promise.all(OPTED_OUT.map((o) => rpc.viewFunction(o.dao, 'get_proposal', { id: o.proposal }))),
   ]);
 
   // §5 factory list
@@ -192,6 +204,18 @@ export async function collect({ rpc = createRpc(), llamaFetch, githubFetch } = {
     if (p.ownerIsDao) factoryInfoClaim(p, infos[i]);
   });
   ONCHAIN_ONLY.forEach((x, i) => { ownerClaim(x, ocOwners[i]); factoryInfoClaim(x, ocInfos[i]); });
+
+  // §3.3 the named opt-outs (E1) + the demo DAO: auto_update false now, set by an approved proposal
+  OPTED_OUT.forEach((o, i) => {
+    const f = optInfos[i];
+    const whatF = `${o.dao} opted out: get_factory_info (§3.3 E1)`;
+    if (f.status === 'unknown') claim('§3.3', whatF, [FACTORY, false], null, f.reason);
+    else claim('§3.3', whatF, [FACTORY, false], f.status === 'ok' ? [f.factoryId, f.autoUpdate] : ['absent']);
+    const p = optProps[i];
+    const whatP = `${o.dao} #${o.proposal} is the approved opt-out (§3.3 E1)`;
+    if (p.status === 'unknown') claim('§3.3', whatP, ['Approved', OPT_OUT_KIND], null, p.reason);
+    else claim('§3.3', whatP, ['Approved', OPT_OUT_KIND], p.status === 'ok' ? [p.value?.status, p.value?.kind] : [p.status]);
+  });
 
   // §2 — owners that are keys: no contract, and exactly these access keys
   KEY_OWNERS.forEach((k, i) => {

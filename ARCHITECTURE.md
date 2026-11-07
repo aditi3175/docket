@@ -30,7 +30,7 @@ explanation, dated, and not re-run.
 
 | source | claims | decides the exit code |
 |---|---|---|
-| **chain** (NEAR mainnet RPC, §9) | owners (§2), including that `rhealab.near` has no contract and one full-access key; NearX's owner, walk, and that `get_total_staked_balance` reads as a U128 (§2); `auto_update` (§3.3), the factory's owner and keys and the §6.1 walk from each protocol (§3.4), the §6.1 policy edge of each of the five DAOs (who can pass code or rule changes alone), code identity (§4, §5), the factory's version list and default (§5) | yes: diverged → 1, unknown → 2. NearX's staked NEAR *amount* is warn-only, like TVL |
+| **chain** (NEAR mainnet RPC, §9) | owners (§2), including that `rhealab.near` has no contract and one full-access key; NearX's owner, walk, and that `get_total_staked_balance` reads as a U128 (§2); `auto_update` (§3.3), the twelve named opt-outs and the demo DAO, each reading `auto_update: false` with its approved opt-out proposal (§3.3, REPORT.md E1, §16.5), the factory's owner and keys and the §6.1 walk from each protocol (§3.4), the §6.1 policy edge of each of the five DAOs (who can pass code or rule changes alone), code identity (§4, §5), the factory's version list and default (§5) | yes: diverged → 1, unknown → 2. NearX's staked NEAR *amount* is warn-only, like TVL |
 | **GitHub** (`api.github.com`, unauthenticated) | PR #233 merged and its merge commit; the fix two commits ahead of and none behind the deployed `2b0f34a38604`; both commit dates (§3.4) | yes, same rules; a failed read or rate limit is unknown → 2 |
 | **DefiLlama** (`api.llama.fi`) | TVL, the coverage count, the liquid-staking share (§2, §3.3) | no — warn-only |
 
@@ -52,7 +52,7 @@ SRC=https://raw.githubusercontent.com/near-daos/sputnik-dao-contract
 
 | claim class | section | reproduce with |
 |---|---|---|
-| census: DAO count, resolved count, the `true` / `false` / unknown buckets, the twelve `false` names, the implicit-account `factory_id` outlier | §3.3 | `tools/crawl.mjs` is **not in this repository yet** (Nov 10, §14), so these counts cannot be reproduced from the repo today. By hand: `viewa sputnik-dao.near get_number_daos '{}'`, `viewa sputnik-dao.near get_daos '{"from_index":0,"limit":100}'` (page on), then `viewa <dao> get_factory_info '{}'` on each |
+| census: DAO count, resolved count, the `true` / `false` / unknown buckets, the implicit-account `factory_id` outlier | §3.3 | `tools/crawl.mjs` is **not in this repository yet** (Nov 10, §14), so these counts cannot be reproduced from the repo today. By hand: `viewa sputnik-dao.near get_number_daos '{}'`, `viewa sputnik-dao.near get_daos '{"from_index":0,"limit":100}'` (page on), then `viewa <dao> get_factory_info '{}'` on each |
 | burrow #1741–#1744 | §7.1 | the `get_proposals` command in §7.1 |
 | marmaj #1016 | §7.2 | `viewa marmaj.sputnik-dao.near get_proposal '{"id":1016}'` |
 | linear council changes | §7.3 | `viewa linear.sputnik-dao.near get_proposals '{"from_index":0,"limit":100}'` (page on), filter `AddMemberToRole` / `RemoveMemberFromRole` |
@@ -280,8 +280,10 @@ crawl, same caveat).
 The twelve exceptions are the most informative number here, because eight of
 them are one organisation. Unlike the counts, each of the twelve was read
 individually on 2026-11-06: each reads `auto_update: false`, set by an approved
-`FactoryInfoUpdate` (§16.1). That they are the *only* twelve is a census claim,
-and has the same caveat as the table.
+`FactoryInfoUpdate` (§16.1). Since 2026-11-07 `verify.mjs` re-reads all twelve,
+plus the demo DAO (§16.5), on every run: `get_factory_info` and the opt-out
+proposal (names and ids: REPORT.md E1). That they are the *only* twelve is a
+census claim, and has the same caveat as the table.
 
 ```
 ref-finance · burrow · ref-labs · rhea-conversion
@@ -1242,10 +1244,12 @@ NEAR: 0.1 NEAR is the demo DAO's balance, and about 0.0191 NEAR was gas.
 **Counter not confirmed.** The Nov 8 done-when "counter reads 13" (§14) is
 still open. I20 needs the counter recomputed from the chain with its
 denominator (2,080 DAOs, `get_number_daos` at block 223357655) and its
-unknown bucket, and that is the crawl (`tools/crawl.mjs`, Nov 10). The twelve
-names from §3.3 are not in this repository either. What is measured: the demo
-DAO reads `auto_update: false`, and it was created after the census, so it is
-not one of the twelve.
+unknown bucket, and that is the crawl (`tools/crawl.mjs`, Nov 10). What is
+measured: the twelve named in REPORT.md E1 and the demo DAO each read
+`auto_update: false`, set by an approved `FactoryInfoUpdate`. `verify.mjs`
+checks all thirteen on every run (§3.3). The demo DAO was created after the
+census, so it is not one of the twelve. Whether these thirteen are the *only*
+ones is the crawl's question.
 
 **§16.2 result.** Steps 5 and 9 are the same `UpgradeSelf` to the same hash,
 with only `auto_update` different. With `false`, the factory's `update` call

@@ -61,6 +61,13 @@ for (const t of ['meta-pool.near', 'lst.rhealab.near', 'usdt.tether-token.near',
 // policy, anything else with MethodNotFound / CodeDoesNotExist. stader-nearx is also decode.js's
 // real-policy test (its Everyone role holds policy:VoteApprove).
 for (const id of [...CONTRACTS, ...DAOS, 'sputnik-dao.near', ...KEY_OWNERS]) jobs.push([`call.${id}.get_policy`, FASTNEAR, call(id, 'get_policy')]);
+// §3.3 E1 (Nov 8): the twelve opt-outs and the demo DAO — factory info and the opt-out proposal
+for (const [d, id] of [['ref-finance', 968], ['burrow', 1725], ['ref-labs', 285], ['rhea-conversion', 8], ['rhea-lostfound', 2],
+  ['rhea-ccdfm', 9], ['rhea-airdrop', 13], ['rhea-lsd', 4], ['neardragons', 0], ['testgfdg', 0], ['unrlzd', 1], ['nearlytrade', 8], ['docket-demo', 5]]) {
+  const dao = `${d}.sputnik-dao.near`;
+  if (!DAOS.includes(dao)) jobs.push([`call.${dao}.get_factory_info`, FASTNEAR, call(dao, 'get_factory_info')]);
+  jobs.push([`call.${dao}.get_proposal.${id}`, FASTNEAR, call(dao, 'get_proposal', { id })]);
+}
 // Error shapes from the failover endpoints, so rpc.js classifies them from data, not guesses.
 for (const e of OTHERS) {
   const host = new URL(e).host;

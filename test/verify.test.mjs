@@ -6,7 +6,7 @@ import { createRpc } from '../web/assets/rpc.js';
 import { collect, exitCodeFor } from '../tools/verify.mjs';
 import { replayFetch, githubReplay, loadFixture, jsonResponse, noSleep } from './helpers.mjs';
 
-const STRUCTURAL = 43; // 38 + the §6.1 policy edge for 5 DAOs
+const STRUCTURAL = 69; // 38 + the §6.1 policy edge for 5 DAOs + 2 × 13 named opt-outs (§3.3 E1 + the demo DAO)
 const GITHUB = 3;
 const TVL = 3;
 const AMOUNT = 1; // NearX staked NEAR, read on chain (§2)
@@ -174,4 +174,27 @@ test('GitHub claim names are the same whether or not GitHub answers', async () =
   const ok = await collect({ rpc: rpcOk(), llamaFetch: llamaFixture, githubFetch: githubReplay() });
   const bad = await collect({ rpc: rpcOk(), llamaFetch: llamaFixture, githubFetch: blocked });
   assert.deepEqual(github(bad).map((c) => c.what), github(ok).map((c) => c.what));
+});
+
+test('§3.3 E1: the twelve named opt-outs and the demo DAO each read auto_update:false, set by an approved FactoryInfoUpdate (recorded 2026-11-07)', async () => {
+  const r = await collect({ rpc: createRpc({ fetch: replayFetch(), sleep: noSleep }), llamaFetch: llamaFixture, githubFetch: githubReplay() });
+  const e1 = structural(r).filter((c) => /§3.3 E1/.test(c.what));
+  assert.equal(e1.length, 26);
+  assert.deepEqual(e1.filter((c) => c.status !== 'confirmed').map((c) => c.what), []);
+  assert.ok(e1.some((c) => c.what === 'docket-demo.sputnik-dao.near opted out: get_factory_info (§3.3 E1)'));
+  assert.ok(e1.some((c) => c.what === 'docket-demo.sputnik-dao.near #5 is the approved opt-out (§3.3 E1)'));
+});
+
+test('§3.3 E1 (SYNTHETIC): a named DAO back on auto_update:true is a divergence, exit 1; unreadable is unknown, exit 2', async () => {
+  const flip = replayFetch({ override: (p) => (p.account_id === 'rhea-lsd.sputnik-dao.near' && p.method_name === 'get_factory_info'
+    ? jsonResponse({ jsonrpc: '2.0', id: 'docket', result: { result: [...Buffer.from('{"factory_id":"sputnik-dao.near","auto_update":true}')], logs: [], block_height: 1, block_hash: 'x' } })
+    : undefined) });
+  const r = await collect({ rpc: createRpc({ fetch: flip, sleep: noSleep }), llamaFetch: llamaFixture, githubFetch: githubReplay() });
+  assert.deepEqual(structural(r).filter((c) => c.status === 'diverged').map((c) => c.what), ['rhea-lsd.sputnik-dao.near opted out: get_factory_info (§3.3 E1)']);
+  assert.equal(exitCodeFor(r.claims), 1);
+  const gone = replayFetch({ override: (p) => (p.account_id === 'unrlzd.sputnik-dao.near' ? jsonResponse({}, 503) : undefined) });
+  const g = await collect({ rpc: createRpc({ fetch: gone, sleep: noSleep }), llamaFetch: llamaFixture, githubFetch: githubReplay() });
+  assert.deepEqual(g.claims.filter((c) => c.status === 'unverifiable').map((c) => c.what).sort(),
+    ['unrlzd.sputnik-dao.near #1 is the approved opt-out (§3.3 E1)', 'unrlzd.sputnik-dao.near opted out: get_factory_info (§3.3 E1)']);
+  assert.equal(exitCodeFor(g.claims), 2);
 });
