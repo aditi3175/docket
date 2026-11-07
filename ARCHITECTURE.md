@@ -1035,7 +1035,7 @@ that day, not the last hour.
 | Nov 6 | Authority walk (§6.1); `auto_update`; access keys | **gate:** the §3.4 chain prints from `node tools/verify.mjs`, cold. Passed 2026-11-06, then printing $199.4M; the figure was wrong and is now $126.7M (§12.10) |
 | Nov 6 | Report sent (§11), with opt-out links | sent, timestamped. **Done 2026-11-06 for 3 of 4** (UTC): NEAR security 09:07 (automated ack), Meta Pool 09:17, Stader 09:20. **LiNEAR pending**: X DMs are verified-only, so another channel is being sought. The opt-out flow isn't built yet (Nov 8), so the report carried the proposal JSON instead of a link. Send log: `REPORT.md` |
 | Nov 7 | `decode.js`, `lint.js`; the §6.1 `*:*` / self-sufficient-role edge, using `decode.js` permission matching | I7, I8, I10 hold; fires on #1741/#1743, #1742/#1744 and marmaj #1016; the walk evaluates the policy edge |
-| Nov 8 | §16 opt-out; create the demo DAO; opt it out through Docket; then attempt `UpgradeSelf` on it (§16.2) | every §16 **[verify]** removed; I15 passes; counter reads 13; the `UpgradeSelf` outcome recorded. **Done 2026-11-06/07 except the counter**: demo DAO created and left opted out (§16.5); I15 re-reads after steps 3, 7, 11; §16.2 [verify] removed with mainnet evidence (steps 5 and 9). §16.1 v3.0 and §16.3 [verify] stay: they are outside what this test exercises. The counter waits for `crawl.mjs` (Nov 10, I20) |
+| Nov 8 | §16 opt-out; create the demo DAO; opt it out through Docket; then attempt `UpgradeSelf` on it (§16.2) | every §16 **[verify]** removed; I15 passes; counter reads 13; the `UpgradeSelf` outcome recorded. **Done 2026-11-06/07 except the counter**: demo DAO created and left opted out (§16.5); I15 re-reads after steps 3, 7, 11; §16.2 [verify] removed with mainnet evidence (steps 5 and 9). The §16.1 v3.0 [verify] stays: this test does not exercise it. The §16.3 [verify] was removed 2026-11-07: the Wallet Selector build loads in Chrome with no bundler. The counter waits for `crawl.mjs` (Nov 10, I20) |
 | Nov 9 | `account.html`, `docket.html`, `optout.html` | a stranger understands §3 without reading this file |
 | Nov 10 | `crawl.mjs` census complete; `register.html`; §18 badge | I19, I20 hold |
 | Nov 11 | Each of I1–I15, I19, I20 has a test; README; clone into a clean machine and run the README cold | pre-screen would pass |
@@ -1200,9 +1200,29 @@ Until this marker is removed, that includes v3.0.
 ### 16.3 Signing
 
 `wallet.js` connects through NEAR Wallet Selector, loaded as a pinned ESM build
-so the no-bundler rule holds. **[verify]** that the pinned build loads
-without a bundler; if it does not, ship the `near-cli` path only and say so on
-the page. Docket builds the transaction; the wallet signs it (I13).
+so the no-bundler rule holds. Docket builds the transaction; the wallet signs it
+(I13).
+
+**Loads without a bundler (checked in Chrome, 2026-11-07).**
+`@near-wallet-selector/core`, `modal-ui`, `meteor-wallet`, `here-wallet` and
+`intear-wallet`, all at **10.1.4** (the npm `latest` for each, published
+2025-12-04), load by dynamic `import()` from `esm.sh` on a page served from
+`127.0.0.1`. `setupWalletSelector({ network: 'mainnet' })` initialises with all
+three wallet modules available, and the modal lists them. MyNearWallet is
+absent: it shut down on 2026-10-31.
+
+- **Cost.** 236 requests to `esm.sh`, about 10.7 s, so the build is fetched
+  only when the user clicks "Connect a wallet".
+- **Sign-in.** Sign-in passes no `contractId`, so the wallet adds no
+  function-call key for Docket.
+- **The transaction.** `add_proposal` is built in the 10.1.4
+  `FunctionCallAction` shape and converted with the package's own
+  `internalActionToNaj`.
+- **Trust.** The pin fixes the top-level version. The transitive builds are
+  whatever `esm.sh` serves for that version, so `esm.sh` is trusted for this
+  one, opt-in step.
+- **Not yet run:** a wallet actually signing an opt-out. The `near-cli` path is
+  the one run on mainnet (§16.5), and the page says so.
 
 ### 16.4 Confirmation
 

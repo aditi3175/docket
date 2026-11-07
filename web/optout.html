@@ -23,6 +23,7 @@ re-reading the chain. It never holds a key and signs nothing.</p>
 <script type="module">
 import { createRpc } from './assets/rpc.js';
 import { planOptOut, confirmOptOut, screenModel } from './assets/optout.js';
+import { loadWalletSelector, submitWithWallet, addProposalTransaction, WALLET_SELECTOR_VERSION } from './assets/wallet.js';
 
 const rpc = createRpc();
 const out = document.getElementById('out');
@@ -53,9 +54,32 @@ function render(plan) {
     } else if (id === 'cost') {
       s.append(el('p', plan.bond ? `Proposal bond: ${plan.bond.near} NEAR, attached to add_proposal, ${plan.bond.refund}. Plus gas.` : 'unknown'));
     } else if (id === 'submit') {
-      const b = el('button', 'Submit from my wallet'); b.disabled = true;
-      s.append(b, el('p', 'Wallet signing is not enabled yet (§16.3 [verify]: the pinned Wallet Selector build must load with no bundler). Use the near-cli command below.', 'basis'));
+      const b = el('button', 'Connect a wallet'); b.disabled = plan.status !== 'draft';
+      const ws = el('p', '', 'status');
+      s.append(b, ws, el('p', `Clicking loads NEAR Wallet Selector ${WALLET_SELECTOR_VERSION} from esm.sh (about 236 files, a few seconds). Your wallet shows the add_proposal transaction, with the ${plan.bond ? plan.bond.near + ' NEAR' : ''} bond, and signs it; Docket never sees a key. This path loads and connects in Chrome, but no opt-out has yet been signed through it: the near-cli command below is the one run on mainnet.`, 'basis'));
       if (plan.status === 'draft') {
+        let ctx = null;
+        const submitTo = async () => {
+          const accounts = ctx.selector.store.getState().accounts;
+          const who = accounts.find((a) => a.active)?.accountId ?? accounts[0]?.accountId;
+          if (!who) return;
+          b.textContent = `Submit add_proposal from ${who}`; b.disabled = false;
+          b.onclick = async () => {
+            b.disabled = true; ws.textContent = 'waiting for your wallet…';
+            try { await submitWithWallet(ctx, addProposalTransaction(plan)); ws.textContent = 'Your wallet returned. That is not the confirmation: once the proposal passes, use the re-read below (I15).'; }
+            catch (e) { ws.textContent = `Not submitted: ${e?.message ?? e}`; }
+            b.disabled = false;
+          };
+        };
+        b.onclick = async () => {
+          b.disabled = true; ws.textContent = 'loading the wallet selector…';
+          try {
+            ctx ??= await loadWalletSelector();
+            ctx.selector.store.observable.subscribe(() => submitTo());
+            ws.textContent = '';
+            if (ctx.selector.isSignedIn()) await submitTo(); else { ctx.modal.show(); b.disabled = false; }
+          } catch (e) { ws.textContent = `The wallet selector did not load (${e?.message ?? e}). Use the near-cli command below.`; b.disabled = false; }
+        };
         const c = el('button', 'I have voted — re-read get_factory_info'); s.append(c);
         const r = el('p', '', 'status'); s.append(r);
         c.addEventListener('click', async () => { r.textContent = 'reading…'; const x = await confirmOptOut(rpc, plan.dao);
