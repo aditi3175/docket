@@ -5,7 +5,8 @@
 //   node tools/guard-setup.mjs                 print T1–T9
 //   node tools/guard-setup.mjs --pre <T>       re-read the chain; PASS only if the step's pre-condition holds
 //
-// Keys: T1 and T2 generate keys straight into the OS keychain (near-cli save-to-keychain / autogenerate);
+// Keys: T1 and T2 generate ed25519 keys straight into the OS keychain (near-cli autogenerate, --signature-scheme
+// ed25519 so it does not prompt; save-to-keychain);
 // no private key is ever printed (I13). T3 deletes the temporary full-access key, leaving the delegate one
 // FunctionCall key: receiver = the demo DAO, methods = ["act_proposal"] (I17).
 //
@@ -41,10 +42,10 @@ const vote = (id, kind) => nearCli(DAO, 'act_proposal', { id, action: 'VoteAppro
 // The steps. ids follow get_last_proposal_id = 6 on 2026-11-07; --pre re-reads them, they are never assumed.
 export const STEPS = Object.freeze([
   { t: 'T1', signer: HUMAN, what: `create ${GUARD} with a temporary full-access key, generated into the keychain; fund it ${FUNDING}`,
-    cmd: `near account create-account fund-myself ${GUARD} '${FUNDING}' autogenerate-new-keypair save-to-keychain sign-as ${HUMAN} network-config mainnet sign-with-keychain send`,
+    cmd: `near account create-account fund-myself ${GUARD} '${FUNDING}' autogenerate-new-keypair --signature-scheme ed25519 save-to-keychain sign-as ${HUMAN} network-config mainnet sign-with-keychain send`,
     expect: `${GUARD} exists with exactly 1 key, FullAccess; balance ${FUNDING}` },
   { t: 'T2', signer: `${GUARD} (full-access key)`, what: `add the delegate's FunctionCall key (receiver ${DAO}, methods act_proposal), generated into the keychain`,
-    cmd: `near account add-key ${GUARD} grant-function-call-access --allowance '${ALLOWANCE}' --contract-account-id ${DAO} --function-names act_proposal autogenerate-new-keypair save-to-keychain network-config mainnet sign-with-keychain send`,
+    cmd: `near account add-key ${GUARD} grant-function-call-access --allowance '${ALLOWANCE}' --contract-account-id ${DAO} --function-names act_proposal autogenerate-new-keypair --signature-scheme ed25519 save-to-keychain network-config mainnet sign-with-keychain send`,
     expect: `${GUARD} has 2 keys: the FullAccess one and a FunctionCall key for ${DAO}, ["act_proposal"]` },
   { t: 'T3', signer: `${GUARD} (full-access key)`, what: 'delete the temporary full-access key',
     cmd: `near account delete-keys ${GUARD} public-keys <the FullAccess public key printed by --pre T3> network-config mainnet sign-with-keychain send`,

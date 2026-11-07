@@ -14,8 +14,8 @@ test('the steps: T1-T9 in order; keys only ever saved to the keychain; JSON args
     const j = s.cmd.match(/json-args '(.*?)' prepaid-gas/);
     if (j) assert.doesNotThrow(() => JSON.parse(j[1]), s.t);
   }
-  assert.match(STEPS[0].cmd, /autogenerate-new-keypair save-to-keychain sign-as docket-aditi\.near/);
-  assert.match(STEPS[1].cmd, new RegExp(`--contract-account-id ${DAO} --function-names act_proposal autogenerate-new-keypair save-to-keychain`));
+  assert.match(STEPS[0].cmd, /autogenerate-new-keypair --signature-scheme ed25519 save-to-keychain sign-as docket-aditi\.near/);
+  assert.match(STEPS[1].cmd, new RegExp(`--contract-account-id ${DAO} --function-names act_proposal autogenerate-new-keypair --signature-scheme ed25519 save-to-keychain`));
   assert.deepEqual(Object.keys(KINDS.seat.AddMemberToRole), ['member_id', 'role']);
   assert.deepEqual(Object.keys(KINDS.routine.Transfer), ['token_id', 'receiver_id', 'amount', 'msg']);
   assert.equal(KINDS.planted.Transfer.receiver_id, GUARD);

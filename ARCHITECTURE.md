@@ -1442,6 +1442,14 @@ docket-aditi.near (Docket test)":
 The checks were rehearsed with the real decoder, linter and `decide()` before
 anything was proposed (`test/delegate.test.mjs`).
 
+The setup and the demo, on mainnet (`tools/guard-setup.mjs`, each step after
+its `--pre` check printed PASS):
+
+| Step | Transaction | On-chain result |
+|---|---|---|
+| T1 create docket-guard | `CvqdjRZH6NBscoETQoyTXNHB3HxzHkZDUMYWJSd7gDEE` | signed by `docket-aditi.near`; FINAL, both receipts `SuccessValue`; `view_account`: `docket-guard.docket-aditi.near` holds `50000000000000000000000` (0.05 NEAR), code hash `11111111111111111111111111111111`; one key, FullAccess `ed25519:2J6p9TXuqff3GS53Kp5UjpWRSDBKy3CjtENW861dyLTH` (ed25519, generated into the keychain) |
+| T2 add the delegate key | `AK6yt5vhopdjfnSne2vq7qbatLJZKc8tVbeRQWVGJQjP` | signed by docket-guard's T1 full-access key; FINAL, `SuccessValue`; `view_access_key_list` at block 223527354: exactly 2 keys — FullAccess `ed25519:2J6p9TXu…`, and FunctionCall `ed25519:6Qzjy94hpju5qHvLkth44zbFzCTKjNp5WcUT71DyQALQ` with `receiver_id` `docket-demo.sputnik-dao.near`, `method_names` `["act_proposal"]`, `allowance` `50000000000000000000000` (0.05 NEAR) |
+
 ---
 
 ## 18. Watch — reduced to one badge: "fix shipped?"
