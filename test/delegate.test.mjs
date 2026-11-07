@@ -124,6 +124,7 @@ test('offline signing (SYNTHETIC chain, fake near-cli): fresh nonce+1 and block,
   // the exact argument lists (execFile, no shell)
   const sa = signArgs(dao, decision, account, ctx, 'agent/signed/x.json');
   assert.deepEqual(sa.slice(0, 8), ['--offline', 'contract', 'call-function', 'as-transaction', dao, 'act_proposal', 'json-args', '{"id":7,"action":"VoteApprove","proposal":{"Transfer":{"token_id":"","receiver_id":"docket-aditi.near","amount":"10000000000000000000000","msg":null}}}']);
+  assert.deepEqual(sa.slice(8, 12), ['prepaid-gas', '30 Tgas', 'attached-deposit', '0 NEAR']);
   assert.deepEqual(sa.slice(12), ['sign-as', account, 'network-config', 'mainnet', 'sign-with-keychain', '--signer-public-key', FC, '--nonce', '223527283000001',
     '--block-hash', HASH, '--block-height', '223527713', 'save-to-file', 'agent/signed/x.json']);
   assert.deepEqual(sendArgs('f.json'), ['transaction', 'send-signed-transaction', 'file-with-base64-signed-transaction', 'f.json', 'network-config', 'mainnet', 'send']);
@@ -131,7 +132,7 @@ test('offline signing (SYNTHETIC chain, fake near-cli): fresh nonce+1 and block,
   const enc = { u32: (n) => { const b = Buffer.alloc(4); b.writeUInt32LE(n); return b; }, u64: (n) => { const b = Buffer.alloc(8); b.writeBigUInt64LE(n); return b; }, str: (s) => Buffer.concat([enc.u32(Buffer.byteLength(s)), Buffer.from(s)]) };
   const signed = (over = {}) => { const t = { signer: account, pk: FC, nonce: ctx.nonce, receiver: dao, hash: HASH, method: 'act_proposal', args: JSON.parse(sa[7]), deposit: 0n, ...over };
     const tx = Buffer.concat([enc.str(t.signer), Buffer.from([0]), unb58(t.pk.slice(8)), enc.u64(t.nonce), enc.str(t.receiver), unb58(t.hash), enc.u32(1), Buffer.from([2]),
-      enc.str(t.method), enc.str(t.argsText ?? JSON.stringify(t.args)), enc.u64(100n * 10n ** 12n), enc.u64(t.deposit), enc.u64(0n), Buffer.from([0]), Buffer.alloc(64)]);
+      enc.str(t.method), enc.str(t.argsText ?? JSON.stringify(t.args)), enc.u64(t.gas ?? 30n * 10n ** 12n), enc.u64(t.deposit), enc.u64(0n), Buffer.from([0]), Buffer.alloc(64)]);
     return JSON.stringify({ signed_transaction_as_base64: tx.toString('base64') }); };
   assert.deepEqual(checkSigned(signed(), { account, dao, decision, ctx }), { ok: true });
   // near-cli re-serialises the args with sorted keys: its exact output from T7 (2026-11-08) is the same vote
@@ -146,6 +147,8 @@ test('offline signing (SYNTHETIC chain, fake near-cli): fresh nonce+1 and block,
   assert.match(checkSigned(signed({ nonce: ctx.nonce + 1n }), { account, dao, decision, ctx }).why, /nonce/);
   assert.match(checkSigned(signed({ args: { ...JSON.parse(sa[7]), id: 8 } }), { account, dao, decision, ctx }).why, /args/);
   assert.match(checkSigned(signed({ deposit: 1n }), { account, dao, decision, ctx }).why, /deposit/);
+  // the prepaid gas is exactly VOTE_GAS (30 Tgas): the 100 Tgas that could not be sent from 0.05 NEAR is refused
+  assert.match(checkSigned(signed({ gas: 100n * 10n ** 12n }), { account, dao, decision, ctx }).why, /gas \(100000000000000\)/);
   assert.match(checkSigned('{}', { account, dao, decision, ctx }).why, /not decodable|unreadable/);
   // signVote end to end with a fake near-cli: step 2 writes the file, step 3 prints the transaction id
   const calls = [];

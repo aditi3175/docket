@@ -81,9 +81,15 @@ export function delegateKeyOk(keys, dao) {
   return { ok: true };
 }
 
+// The delegate's prepaid gas per vote. Its 0.05 NEAR is locked and its key's allowance is 0.05 NEAR, so
+// 100 Tgas could not be sent: near-cli priced it at 0.1009 NEAR (T7, 2026-11-08). A vote that is not the
+// deciding one runs nothing; the deciding vote on #6 (a whole act_proposal with its bond transfer) used 3.7 Tgas.
+export const VOTE_GAS = '30 Tgas';
+const VOTE_GAS_UNITS = 30n * 10n ** 12n;
+
 // The vote, as a near-cli call (printed in the log). The delegate signs it offline, below.
 export function voteCommand(dao, decision, account) {
-  return nearCli(dao, 'act_proposal', { id: decision.id, action: 'VoteApprove', proposal: decision.proposalKind }, '100 Tgas', '0 NEAR', account);
+  return nearCli(dao, 'act_proposal', { id: decision.id, action: 'VoteApprove', proposal: decision.proposalKind }, VOTE_GAS, '0 NEAR', account);
 }
 const voteJson = (decision) => JSON.stringify({ id: decision.id, action: 'VoteApprove', proposal: decision.proposalKind });
 
@@ -111,7 +117,7 @@ export async function signingContext(rpc, account, dao, { minHeight = 0 } = {}) 
 // Step 2. Sign offline with that exact key; near-cli writes the signed transaction to `file`.
 export function signArgs(dao, decision, account, ctx, file) {
   return ['--offline', 'contract', 'call-function', 'as-transaction', dao, 'act_proposal', 'json-args', voteJson(decision),
-    'prepaid-gas', '100 Tgas', 'attached-deposit', '0 NEAR', 'sign-as', account, 'network-config', 'mainnet',
+    'prepaid-gas', VOTE_GAS, 'attached-deposit', '0 NEAR', 'sign-as', account, 'network-config', 'mainnet',
     'sign-with-keychain', '--signer-public-key', ctx.publicKey, '--nonce', String(ctx.nonce),
     '--block-hash', ctx.blockHash, '--block-height', String(ctx.blockHeight), 'save-to-file', file];
 }
@@ -139,7 +145,7 @@ export function base58(bytes) {
 
 // Between steps 2 and 3: decode the signed transaction near-cli wrote ({"signed_transaction_as_base64"},
 // borsh TransactionV0), and send it only if it is exactly the vote that was meant: the signer, key, nonce,
-// receiver and block hash, one FunctionCall to act_proposal with these args, and 0 deposit.
+// receiver and block hash, one FunctionCall to act_proposal with these args, VOTE_GAS, and 0 deposit.
 // -> { ok: true } | { ok: false, why }
 export function checkSigned(text, { account, dao, decision, ctx }) {
   let b;
@@ -160,11 +166,11 @@ export function checkSigned(text, { account, dao, decision, ctx }) {
     got.action = take(1)[0]; // 2 = FunctionCall
     got.method = str();
     got.args = canonicalJson(str()); // near-cli re-serialises the args with sorted keys (T7, 2026-11-08)
-    take(8); // gas
+    got.gas = take(8).readBigUInt64LE(0);
     const dep = take(16);
     got.deposit = dep.readBigUInt64LE(0) + (dep.readBigUInt64LE(8) << 64n);
     const want = { signer: account, publicKey: ctx.publicKey, nonce: ctx.nonce, receiver: dao, blockHash: ctx.blockHash,
-      actions: 1, action: 2, method: 'act_proposal', args: canonicalJson(voteJson(decision)), deposit: 0n };
+      actions: 1, action: 2, method: 'act_proposal', args: canonicalJson(voteJson(decision)), gas: VOTE_GAS_UNITS, deposit: 0n };
     const bad = Object.keys(want).filter((k) => got[k] !== want[k]);
     return bad.length ? { ok: false, why: `the signed transaction differs from the intended vote in: ${bad.map((k) => `${k} (${got[k]})`).join(', ')}` } : { ok: true };
   } catch (e) { return { ok: false, why: `the signed transaction is not decodable as TransactionV0: ${e.message}` }; }
