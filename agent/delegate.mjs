@@ -2,8 +2,9 @@
 // delegate.mjs — §17.2: a council seat that cannot vote past a flag. For each new proposal on its DAO it
 // runs @docket/guard's checkProposal and either votes VoteApprove, bound to the exact kind it checked, or
 // escalates to a human with the Docket report. The vote is signed by the delegate's own FunctionCall key
-// from the OS keychain, through near-cli (sign-with-keychain): Docket's code never sees a key (I13).
-// --dry-run prints the command instead of running it. Every decision is logged with its Docket report.
+// from the OS keychain, through near-cli: offline with --signer-public-key, then sent (signVote, below).
+// Docket's code never sees a key (I13). --dry-run reads and prints the commands, and signs nothing.
+// Every decision is logged with its Docket report.
 //
 // Enforces:
 //   I16  never votes on a proposal carrying any critical or high flag, any unknown (I2/I7/I8), or a kind
@@ -16,9 +17,11 @@
 //                               [--log agent/log] [--once] [--dry-run]
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { existsSync, readFileSync, renameSync } from 'node:fs';
 import { execFile } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { createRpc } from '../web/assets/rpc.js';
+import { accessKeys } from '../web/assets/resolve.js';
 import { KINDS } from '../web/assets/decode.js';
 import { numeralsInText, stripUiMarkers } from '../web/assets/lint.js';
 import { nearCli } from '../web/assets/optout.js';
@@ -78,25 +81,141 @@ export function delegateKeyOk(keys, dao) {
   return { ok: true };
 }
 
-// The vote, as a near-cli command (printed) and as the argument list near-cli runs with (no shell).
+// The vote, as a near-cli call (printed in the log). The delegate signs it offline, below.
 export function voteCommand(dao, decision, account) {
   return nearCli(dao, 'act_proposal', { id: decision.id, action: 'VoteApprove', proposal: decision.proposalKind }, '100 Tgas', '0 NEAR', account);
 }
-export function voteArgs(dao, decision, account) {
-  return ['contract', 'call-function', 'as-transaction', dao, 'act_proposal', 'json-args',
-    JSON.stringify({ id: decision.id, action: 'VoteApprove', proposal: decision.proposalKind }),
-    'prepaid-gas', '100 Tgas', 'attached-deposit', '0 NEAR', 'sign-as', account, 'network-config', 'mainnet', 'sign-with-keychain', 'send'];
+const voteJson = (decision) => JSON.stringify({ id: decision.id, action: 'VoteApprove', proposal: decision.proposalKind });
+
+// Why offline: near-cli-rs 0.31.1 sign-with-keychain, online, considers only the signer's FullAccess keys
+// (src/transaction_signature_options/sign_with_keychain/mod.rs, the access-key filter). The delegate has
+// none (I17), so it signs --offline with --signer-public-key = its one FunctionCall key, which near-cli
+// reads from the keychain by its exact entry name, and then sends the signed file. Docket never reads the key (I13).
+//
+// Step 1. Read, uncached, right before signing: the delegate's keys (I17), then that key's view_access_key,
+// whose answer carries the nonce and the final block's hash and height. nonce = the key's current nonce + 1.
+// -> { ok: true, publicKey, nonce (BigInt), blockHash, blockHeight } | { ok: false, why }
+export async function signingContext(rpc, account, dao, { minHeight = 0 } = {}) {
+  const keys = await accessKeys(rpc, account);
+  const ko = delegateKeyOk(keys, dao);
+  if (!ko.ok) return { ok: false, why: `I17: ${ko.why}` };
+  const publicKey = keys.keys[0].publicKey;
+  const r = await rpc.query({ request_type: 'view_access_key', finality: 'final', account_id: account, public_key: publicKey });
+  if (r.status !== 'ok') return { ok: false, why: `view_access_key: ${r.status} ${r.reason ?? r.detail ?? ''}`.trim() };
+  const { nonce, block_hash: blockHash, block_height: blockHeight } = r.value ?? {};
+  if (!Number.isSafeInteger(nonce) || typeof blockHash !== 'string' || !Number.isSafeInteger(blockHeight)) return { ok: false, why: 'view_access_key: unexpected shape' };
+  if (blockHeight < minHeight) return { ok: false, why: `block ${blockHeight} is older than the proposal read at ${minHeight}` };
+  return { ok: true, publicKey, nonce: BigInt(nonce) + 1n, blockHash, blockHeight };
 }
 
-// Runs near-cli; the OS keychain holds the delegate's FunctionCall key. -> { ok, txId, output }
-export function signVote(args, { bin = process.env.NEAR_CLI ?? 'near', run = execFile } = {}) {
+// Step 2. Sign offline with that exact key; near-cli writes the signed transaction to `file`.
+export function signArgs(dao, decision, account, ctx, file) {
+  return ['--offline', 'contract', 'call-function', 'as-transaction', dao, 'act_proposal', 'json-args', voteJson(decision),
+    'prepaid-gas', '100 Tgas', 'attached-deposit', '0 NEAR', 'sign-as', account, 'network-config', 'mainnet',
+    'sign-with-keychain', '--signer-public-key', ctx.publicKey, '--nonce', String(ctx.nonce),
+    '--block-hash', ctx.blockHash, '--block-height', String(ctx.blockHeight), 'save-to-file', file];
+}
+// Step 3. Send the signed file.
+export function sendArgs(file) {
+  return ['transaction', 'send-signed-transaction', 'file-with-base64-signed-transaction', file, 'network-config', 'mainnet', 'send'];
+}
+
+const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+export function base58(bytes) {
+  let n = 0n;
+  for (const b of bytes) n = n * 256n + BigInt(b);
+  let out = '';
+  while (n > 0n) { out = B58[Number(n % 58n)] + out; n /= 58n; }
+  for (const b of bytes) { if (b !== 0) break; out = '1' + out; }
+  return out;
+}
+
+// Between steps 2 and 3: decode the signed transaction near-cli wrote ({"signed_transaction_as_base64"},
+// borsh TransactionV0), and send it only if it is exactly the vote that was meant: the signer, key, nonce,
+// receiver and block hash, one FunctionCall to act_proposal with these args, and 0 deposit.
+// -> { ok: true } | { ok: false, why }
+export function checkSigned(text, { account, dao, decision, ctx }) {
+  let b;
+  try { b = Buffer.from(JSON.parse(text).signed_transaction_as_base64, 'base64'); } catch (e) { return { ok: false, why: `signed file unreadable: ${e.message}` }; }
+  let o = 0;
+  const take = (n) => { if (o + n > b.length) throw new Error('too short'); const v = b.subarray(o, o + n); o += n; return v; };
+  const u32 = () => take(4).readUInt32LE(0);
+  const str = () => take(u32()).toString('utf8');
+  try {
+    const got = {};
+    got.signer = str();
+    const keyType = take(1)[0];
+    got.publicKey = keyType === 0 ? `ed25519:${base58(take(32))}` : `key type ${keyType}`;
+    got.nonce = take(8).readBigUInt64LE(0);
+    got.receiver = str();
+    got.blockHash = base58(take(32));
+    got.actions = u32();
+    got.action = take(1)[0]; // 2 = FunctionCall
+    got.method = str();
+    got.args = str();
+    take(8); // gas
+    const dep = take(16);
+    got.deposit = dep.readBigUInt64LE(0) + (dep.readBigUInt64LE(8) << 64n);
+    const want = { signer: account, publicKey: ctx.publicKey, nonce: ctx.nonce, receiver: dao, blockHash: ctx.blockHash,
+      actions: 1, action: 2, method: 'act_proposal', args: voteJson(decision), deposit: 0n };
+    const bad = Object.keys(want).filter((k) => got[k] !== want[k]);
+    return bad.length ? { ok: false, why: `the signed transaction differs from the intended vote in: ${bad.map((k) => `${k} (${got[k]})`).join(', ')}` } : { ok: true };
+  } catch (e) { return { ok: false, why: `the signed transaction is not decodable as TransactionV0: ${e.message}` }; }
+}
+
+const quote = (a) => (/^[A-Za-z0-9_./:@=+-]+$/.test(a) ? a : `'${a.replace(/'/g, `'\\''`)}'`);
+export const shellLine = (bin, args) => [quote(bin), ...args.map(quote)].join(' ');
+
+function exec(run, bin, args) {
   return new Promise((resolve) => {
     run(bin, args, { timeout: 120_000, maxBuffer: 4 << 20 }, (err, stdout, stderr) => {
-      const output = String(stdout ?? '') + String(stderr ?? '');
-      const txId = (output.match(/Transaction ID: ([1-9A-HJ-NP-Za-km-z]{43,44})/) ?? [])[1] ?? null;
-      resolve({ ok: !err && Boolean(txId), txId, output: output.slice(-4000) });
+      resolve({ ok: !err, output: (String(stdout ?? '') + String(stderr ?? '')).slice(-4000) });
     });
   });
+}
+
+const signedPath = (signedDir, dao, id) => `${signedDir}/${dao}-${id}.signed.json`;
+
+// Steps 1 to 3. Never re-signs: if a signed file for this proposal is already there (an earlier send failed),
+// it stops, and a human sends it or deletes it. A failure at any step returns ok: false with its stage.
+// -> { ok, stage, why, txId, signedFile, commands, ctx, output }
+export async function signVote({ dao, decision, account }, { bin = process.env.NEAR_CLI ?? 'near', run = execFile,
+  freshRpc = () => createRpc(), signedDir = 'agent/signed', minHeight = 0 } = {}) {
+  const file = signedPath(signedDir, dao, decision.id);
+  const r = { ok: false, stage: null, why: null, txId: null, signedFile: null, commands: [], ctx: null, output: '' };
+  const fail = (stage, why) => ({ ...r, stage, why });
+  if (existsSync(file)) { r.signedFile = file; return fail('pending', `a signed transaction for #${decision.id} is already at ${file}; a human sends it or deletes it, and the delegate does not re-sign`); }
+  const ctx = await signingContext(freshRpc(), account, dao, { minHeight }); // read right before signing
+  if (!ctx.ok) return fail('context', ctx.why);
+  r.ctx = ctx;
+  await mkdir(signedDir, { recursive: true });
+  const sa = signArgs(dao, decision, account, ctx, file);
+  r.commands.push(shellLine(bin, sa));
+  const s = await exec(run, bin, sa);
+  r.output = s.output;
+  if (!s.ok || !existsSync(file)) return fail('sign', 'near-cli did not write a signed transaction');
+  r.signedFile = file;
+  const c = checkSigned(readFileSync(file, 'utf8'), { account, dao, decision, ctx });
+  if (!c.ok) return fail('check', `${c.why}; not sent`);
+  const ta = sendArgs(file);
+  r.commands.push(shellLine(bin, ta));
+  const t = await exec(run, bin, ta);
+  r.output = t.output;
+  r.txId = (t.output.match(/Transaction ID: ([1-9A-HJ-NP-Za-km-z]{43,44})/) ?? [])[1] ?? null;
+  if (!t.ok || !r.txId) return fail('send', `sending failed; the signed transaction is kept at ${file}`);
+  const sent = file.replace(/\.signed\.json$/, '.sent.json');
+  renameSync(file, sent);
+  r.signedFile = sent;
+  return { ...r, ok: true, stage: 'sent' };
+}
+
+// --dry-run: step 1 only (reads), then the commands that steps 2 and 3 would run. Signs nothing.
+export async function previewVote({ dao, decision, account }, { bin = process.env.NEAR_CLI ?? 'near', freshRpc = () => createRpc(),
+  signedDir = 'agent/signed', minHeight = 0 } = {}) {
+  const file = signedPath(signedDir, dao, decision.id);
+  const ctx = await signingContext(freshRpc(), account, dao, { minHeight });
+  const shown = ctx.ok ? ctx : { publicKey: '<key>', nonce: '<nonce+1>', blockHash: '<block-hash>', blockHeight: '<block-height>' };
+  return { ctx, commands: [shellLine(bin, signArgs(dao, decision, account, shown, file)), shellLine(bin, sendArgs(file))] };
 }
 
 const bigintSafe = (v) => JSON.stringify(v, (_k, x) => (typeof x === 'bigint' ? x.toString() : x), 2);
@@ -110,7 +229,7 @@ async function logDecision(logDir, dao, id, entry) {
 }
 
 // One pass over the proposals created since `state.next`. dryRun defaults to true: signing is opt-in.
-export async function runOnce({ rpc = createRpc(), policy, account, state = { next: null }, logDir, dryRun = true, sign = signVote }) {
+export async function runOnce({ rpc = createRpc(), policy, account, state = { next: null }, logDir, dryRun = true, sign = signVote, preview = previewVote, signOpts = {} }) {
   const last = await rpc.viewFunction(policy.dao, 'get_last_proposal_id');
   if (last.status !== 'ok' || typeof last.value !== 'number') return { state, events: [{ type: 'unknown', reason: `get_last_proposal_id: ${last.reason ?? last.detail}` }] };
   const events = [];
@@ -122,13 +241,20 @@ export async function runOnce({ rpc = createRpc(), policy, account, state = { ne
     const ev = { type: d.action === 'VoteApprove' ? 'approve' : d.action, id: next, reasons: d.reasons };
     if (d.action === 'VoteApprove') {
       ev.command = voteCommand(policy.dao, d, account);
-      if (dryRun) ev.signed = 'dry-run: not signed';
-      else { const s = await sign(voteArgs(policy.dao, d, account)); ev.signed = s.ok ? 'signed' : 'FAILED'; ev.txId = s.txId; ev.output = s.output; }
+      const req = { dao: policy.dao, decision: d, account };
+      const opts = { ...signOpts, minHeight: last.block_height ?? 0 };
+      if (dryRun) { const p = await preview(req, opts); ev.signed = 'dry-run: not signed'; ev.commands = p.commands; ev.signing = p.ctx; }
+      else {
+        const s = await sign(req, opts);
+        Object.assign(ev, { signed: s.ok ? 'signed' : 'FAILED', txId: s.txId, output: s.output, stage: s.stage, why: s.why,
+          signedFile: s.signedFile, commands: s.commands, signing: s.ctx });
+      }
     }
     ev.report = await logDecision(logDir, policy.dao, next, { decidedAt, account, decision: d,
-      vote: ev.command ? { command: ev.command, signed: ev.signed, txId: ev.txId ?? null, output: ev.output ?? null } : null, check });
+      vote: ev.command ? { command: ev.command, commands: ev.commands ?? [], signing: ev.signing ?? null, signed: ev.signed,
+        stage: ev.stage ?? null, why: ev.why ?? null, signedFile: ev.signedFile ?? null, txId: ev.txId ?? null, output: ev.output ?? null } : null, check });
     events.push(ev);
-    if (ev.signed === 'FAILED') { next++; break; } // stop after a failed signature: a human looks first
+    if (ev.signed === 'FAILED') break; // stop, and do not advance: the failed proposal is retried on the next run, after a human looks
   }
   return { state: { next }, events };
 }
@@ -146,7 +272,7 @@ async function main() {
   for (;;) {
     const r = await runOnce({ rpc, policy, account, state, logDir: opt('--log', 'agent/log'), dryRun });
     for (const e of r.events) {
-      if (e.type === 'approve') console.log(`#${e.id} APPROVE — ${e.signed}${e.txId ? ` · tx ${e.txId}` : ''}\n${e.command}${e.signed === 'FAILED' ? `\n${e.output}` : ''}\n  log: ${e.report}`);
+      if (e.type === 'approve') console.log(`#${e.id} APPROVE — ${e.signed}${e.txId ? ` · tx ${e.txId}` : ''}${e.signed === 'FAILED' ? ` at ${e.stage}: ${e.why}` : ''}\n  the vote: ${e.command}\n${(e.commands ?? []).map((c, i) => `  step ${i + 2}: ${c}`).join('\n')}${e.signedFile ? `\n  signed file: ${e.signedFile}` : ''}${e.signed === 'FAILED' ? `\n${e.output}` : ''}\n  log: ${e.report}`);
       else if (e.type === 'escalate') console.log(`#${e.id} ESCALATE — not voting; a human decides. log: ${e.report}\n  ${e.reasons.join('\n  ')}`);
       else console.log(`#${e.id ?? '-'} ${e.type}: ${(e.reasons ?? [e.reason]).join('; ')}`);
     }

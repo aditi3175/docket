@@ -1388,8 +1388,32 @@ tools over stdio, so any MCP-capable agent can call Docket before it acts.
 - **Loop** (`agent/delegate.mjs`). Poll `get_last_proposal_id`. For each new
   proposal, call `checkProposal`. Vote `VoteApprove` only if the kind is in
   `policy.json` and there are no critical or high flags and no unknowns (I16).
-  The vote is signed by the delegate's own function-call key, from the keychain
-  (`near ... sign-with-keychain`); `--dry-run` prints it instead. Otherwise it
+  The vote is signed by the delegate's own function-call key, from the keychain;
+  `--dry-run` reads and prints the commands instead.
+
+  **It signs offline, with the exact key.** near-cli-rs 0.31.1 `sign-with-keychain`,
+  online, signs only with the signer's FullAccess keys from the keychain. It reads
+  the account's keys from the network and keeps only `FullAccess` ones
+  (`src/transaction_signature_options/sign_with_keychain/mod.rs` at `v0.31.1`).
+  The delegate has none (I17), so the first T7 run failed before signing (§17.5).
+  So the delegate (`signVote`) does three steps:
+  1. Right before signing, it re-reads its keys (I17) and its key's
+     `view_access_key`, uncached. That answer gives the nonce and a final block's
+     hash and height. The block must be no older than the proposal read, and the
+     nonce is the key's current nonce + 1.
+  2. It signs `--offline` with `sign-with-keychain --signer-public-key <its
+     FunctionCall key>`, which near-cli looks up in the keychain by its exact
+     entry name, and writes the signed transaction to `agent/signed/`
+     (gitignored).
+  3. It decodes that file and sends it (`transaction send-signed-transaction`)
+     only if it is exactly the intended vote: signer, key, nonce, receiver, block
+     hash, one `act_proposal` call with the checked arguments, and 0 deposit.
+
+  If the send fails, the signed file is kept, its path is logged, and the run
+  stops without advancing. The delegate never re-signs a proposal that has a
+  signed file waiting; a human sends it or deletes it.
+
+  Otherwise it
   does not vote, and escalates for a human to decide. Every decision, approval
   or escalation, is written to `agent/log/<dao>-<id>.json` with its Docket
   report, and the log is linked from the README.
@@ -1452,6 +1476,8 @@ its `--pre` check printed PASS):
 | T3 delete the full-access key | `FuGVSXSs96anEW5dExCS2ARGnUyjSiFXZyanqFsyM4C9` | signed by the FullAccess key it deletes, `ed25519:2J6p9TXu…`; FINAL, `SuccessValue`; `view_access_key_list` at block 223527713: exactly 1 key, FunctionCall `ed25519:6Qzjy94h…`, `docket-demo.sputnik-dao.near`, `["act_proposal"]`, allowance 0.05 NEAR. I17 holds (`--pre T4`: PASS). docket-guard can now do nothing but call `act_proposal` on the demo DAO, and its 0.05 NEAR is locked |
 | T4 add #6 (the seat) | `G7ftru1NcybuTXiYUzPo1vjpc1nUES6KomTbUchUeY7P` | signed by `docket-aditi.near`, 0.1 NEAR bond; FINAL, returned `6`; `get_proposal(6)` at block 223528118: InProgress, proposer `docket-aditi.near`, kind `{"AddMemberToRole":{"member_id":"docket-guard.docket-aditi.near","role":"council"}}`, description as sent |
 | T5 approve #6 | `9KbSn4Ts4N5zSB5Wchk1WgWvquVrBB81M1ad5inuRPXJ` | FINAL, every receipt `SuccessValue`, including `docket-demo.sputnik-dao.near → docket-aditi.near` Transfer `100000000000000000000000` (the bond back); #6 Approved, `vote_counts` `{"council":["1","0","0"]}`. `get_policy` at block 223528504: council `Group` `["docket-guard.docket-aditi.near","docket-aditi.near"]`, no role `vote_policy`, `default_vote_policy` RoleWeight, quorum 0, threshold `[1,2]` → min(2·1/2 + 1, 2) = **2 of 2**. `get_last_proposal_id` 7 |
+| T6 add #7 (the routine Transfer) | `6nQXPhpAMaySKVYZoFmV4vCp9vfNdM3UuKiZd1meh6xu` | signed by `docket-aditi.near`, 0.1 NEAR bond; FINAL, returned `7`; `--pre T7`: #7 InProgress, kind matches, votes `{}` |
+| T7, first attempt | none: nothing was signed | the delegate decided `VoteApprove` (no flags, no unknowns). near-cli `sign-with-keychain` found no key: "no access keys found in keychain, trying legacy keychain", then no `~/.near-credentials/mainnet/docket-guard.docket-aditi.near.json`. Online it uses only FullAccess keys (§17.2). The key was in the keychain under the name near-cli looks up. The run had advanced the delegate's state past #7; it was reset to 7, and a failed signature no longer advances it. #7 still had no votes |
 
 ---
 
