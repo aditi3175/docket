@@ -924,7 +924,7 @@ i.e. by disbelieving a reading that contradicted another reading. Became §4.
 
 It returns `-429` with a deprecation notice under load and serves correctly
 otherwise. Meanwhile `1rpc.io/near` — which the first draft listed as a healthy
-fallback, carried over from Hallmark — **does not implement `query` at all**.
+fallback — **does not implement `query` at all**.
 Caught by calling all seven endpoints instead of trusting a list.
 
 ### 12.4 "Three protocols chose `auto_update: true`." **Backwards.**
@@ -1110,7 +1110,6 @@ any row slips; it is not moved later to make room.
   (§17: function-call keys and a policy engine) is entered only if §17 ships
   complete. More tracks are more chances at one prize, not more prizes.
 - Public repo, MIT `LICENSE`, AI-tooling disclosure in the README — all required.
-- README names the other project (Hallmark), per the two-project rule.
 - Demo post on X tagging `@NEARProtocol` with `#NEARHackathon`.
 - The AI pre-screen checks the repo runs and does what the README says, so the
   README's first command is `node tools/verify.mjs`, and it must print the

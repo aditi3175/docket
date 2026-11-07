@@ -110,11 +110,6 @@ the disclosure, and signed every mainnet transaction. No key was ever given to
 the agent. Every number in the spec traces to a read that `verify.mjs`, the
 crawl or a documented command can repeat.
 
-## The other project
-
-This author's other NEAR Hackathon project is **Hallmark**.
-<!-- TODO(author): one line on what Hallmark is, and its link. -->
-
 ## License
 
 MIT. See [LICENSE](LICENSE).
