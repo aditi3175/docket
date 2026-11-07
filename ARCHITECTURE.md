@@ -491,7 +491,7 @@ code or rules **without a vote**.
 | `A` uses `global_contract_account_id` | `view_account` | **no** — the publisher can swap it |
 | `A` is a Sputnik DAO with `auto_update: true` | `get_factory_info` | **no** — factory `update()` |
 | the factory's own keys | recurse on `factory_id` | **no** |
-| `A` is a Sputnik DAO, `auto_update: false` | `get_policy` | yes — a `factory_info_update` vote back to `true` under its vote policy, then `UpgradeSelf` (source-only until Nov 8, §16.2) |
+| `A` is a Sputnik DAO, `auto_update: false` | `get_policy` | yes — a `factory_info_update` vote back to `true` under its vote policy, then `UpgradeSelf` (confirmed on mainnet at v3.2, §16.2) |
 | a role that can pass a code- or rule-changing kind, where **one member's** approval meets the threshold | `get_policy` | **no** — each member of that role is a root, and the walk follows them |
 | a role that can pass it with `k > 1` of `n` approvals | `get_policy` | yes — a vote of `k` of `n`, shown as such |
 | `A.owner_id` | §6.2 resolvers | recurse |
@@ -799,7 +799,7 @@ never counted as a value** — §3.3 depends on that distinction.
 | I11 | Census buckets are `true` / `false` / `unknown`, with the denominator shown | crawl test |
 | I12 | Every code hash shown is joined to a factory version and commit where one exists | test |
 | I13 | Docket never signs. No private key exists anywhere under `web/` or `guard/` | grep test + review |
-| I14 | The opt-out screen states both things given up, above the submit button: (a) factory rescue of a bricked DAO; (b) `UpgradeSelf` — upgrading then takes a vote back to `auto_update: true`, the `UpgradeSelf`, and a vote back to `false`, with the no-vote path open in between. (b) is labelled **from the source, not yet run on mainnet** until the Nov 8 demo-DAO test (§16.2) | copy test |
+| I14 | The opt-out screen states both things given up, above the submit button: (a) factory rescue of a bricked DAO; (b) `UpgradeSelf` — upgrading then takes a vote back to `auto_update: true`, the `UpgradeSelf`, and a vote back to `false`, with the no-vote path open in between. (b) is labelled **confirmed on mainnet at v3.2** (§16.2: steps 5 and 9 of the demo-DAO test, §16.5) | copy test |
 | I15 | An opt-out is confirmed by re-reading `get_factory_info`, never by the transaction succeeding | `verify.mjs` on the demo DAO |
 | I16 | The delegate never votes on a proposal carrying any critical or high flag, any **unknown** (I2/I7/I8), or a kind outside `policy.json` | synthetic proposals, one per flag |
 | I17 | The delegate's key is `FunctionCall`, receiver = its one DAO, methods = `["act_proposal"]` | `verify.mjs` reads `view_access_key_list` |
@@ -1033,7 +1033,7 @@ that day, not the last hour.
 | Nov 6 | Authority walk (§6.1); `auto_update`; access keys | **gate:** the §3.4 chain prints from `node tools/verify.mjs`, cold. Passed 2026-11-06, then printing $199.4M; the figure was wrong and is now $126.7M (§12.10) |
 | Nov 6 | Report sent (§11), with opt-out links | sent, timestamped. **Done 2026-11-06 for 3 of 4** (UTC): NEAR security 09:07 (automated ack), Meta Pool 09:17, Stader 09:20. **LiNEAR pending**: X DMs are verified-only, so another channel is being sought. The opt-out flow isn't built yet (Nov 8), so the report carried the proposal JSON instead of a link. Send log: `REPORT.md` |
 | Nov 7 | `decode.js`, `lint.js`; the §6.1 `*:*` / self-sufficient-role edge, using `decode.js` permission matching | I7, I8, I10 hold; fires on #1741/#1743, #1742/#1744 and marmaj #1016; the walk evaluates the policy edge |
-| Nov 8 | §16 opt-out; create the demo DAO; opt it out through Docket; then attempt `UpgradeSelf` on it (§16.2) | every §16 **[verify]** removed; I15 passes; counter reads 13; the `UpgradeSelf` outcome recorded |
+| Nov 8 | §16 opt-out; create the demo DAO; opt it out through Docket; then attempt `UpgradeSelf` on it (§16.2) | every §16 **[verify]** removed; I15 passes; counter reads 13; the `UpgradeSelf` outcome recorded. **Done 2026-11-06/07 except the counter**: demo DAO created and left opted out (§16.5); I15 re-reads after steps 3, 7, 11; §16.2 [verify] removed with mainnet evidence (steps 5 and 9). §16.1 v3.0 and §16.3 [verify] stay: they are outside what this test exercises. The counter waits for `crawl.mjs` (Nov 10, I20) |
 | Nov 9 | `account.html`, `docket.html`, `optout.html` | a stranger understands §3 without reading this file |
 | Nov 10 | `crawl.mjs` census complete; `register.html`; §18 badge | I19, I20 hold |
 | Nov 11 | Each of I1–I15, I19, I20 has a test; README; clone into a clean machine and run the README cold | pre-screen would pass |
@@ -1077,10 +1077,9 @@ ships, a factory update deploys **with no vote** after its two-week delay
 the DAO's `update()` rejects the factory as caller, so the factory alone can no
 longer change the DAO's code.
 
-It also changes how the DAO upgrades itself. **From the source, not yet run on
-mainnet** (§16.2, removed by the Nov 8 demo-DAO test): `UpgradeSelf` also
-reaches `update()` through the factory, and an opted-out DAO rejects it the same
-way. Upgrading an opted-out DAO therefore takes three proposals: a vote back to
+It also changes how the DAO upgrades itself. **Confirmed on mainnet** at v3.2
+(§16.2, the demo-DAO test in §16.5): `UpgradeSelf` also reaches `update()`
+through the factory, and an opted-out DAO rejects it the same way. Upgrading an opted-out DAO therefore takes three proposals: a vote back to
 `auto_update: true`, then `UpgradeSelf`, then a vote back to `false`. While
 `true` is in force, the factory's keys can replace the code with no vote. New
 code still needs a proposal the DAO passes, which is the first of the three,
@@ -1137,10 +1136,11 @@ Until this marker is removed, that includes v3.0.
    (a) the factory can no longer rescue this DAO if a migration bricks it;
    (b) `UpgradeSelf` no longer works on its own. Upgrading takes a vote back to
    `auto_update: true`, then `UpgradeSelf`, then a vote back to `false`, and the
-   no-vote path is open in between. (b) is labelled *from the source, not yet
-   run on mainnet* until the [verify] below is removed.
+   no-vote path is open in between. (b) is labelled *confirmed on mainnet at
+   v3.2* (§16.5).
 
-   **[verify]** The source says the DAO also gives up `UpgradeSelf`. At v3.0
+   **Confirmed on mainnet at v3.2; v3.0, v3.1 and the PR #233 fix from the
+   source.** The source says the DAO also gives up `UpgradeSelf`. At v3.0
    (`86cc77a0808a`), v3.1 (`3d568f9517a8`), v3.2 (`2b0f34a38604`) and the
    PR #233 fix (`9e96c75410a9`), an approved `UpgradeSelf` runs only
    `upgrade_using_factory`: the DAO calls `factory.update(dao, hash)`, and the
@@ -1149,16 +1149,24 @@ Until this marker is removed, that includes v3.0.
    an opted-out DAO panics with `ERR_MUST_BE_SELF_OR_FACTORY`. No other proposal
    path reaches `update()`: its self-caller branch reads `promise_result(0)`,
    which nothing in the DAO chains, and the direct-deploy `upgrade_self` is dead
-   code at v3.0/v3.1 and absent at v3.2. If this holds on mainnet, upgrading an
+   code at v3.0/v3.1 and absent at v3.2. So upgrading an
    opted-out DAO takes three proposals: `FactoryInfoUpdate` to `true`, then
    `UpgradeSelf`, then `FactoryInfoUpdate` to `false`. While `true` is in force, the
    factory's keys can again replace the code with no vote.
 
-   Chain only, read 2026-11-06: none of the twelve `false` DAOs (§3.3) has an
-   `UpgradeSelf` proposal after its opt-out, so mainnet does not answer this
-   yet. Removed by the Nov 8 demo-DAO test: opt out, then propose and approve
-   `UpgradeSelf` to a factory-published hash, and record the proposal's status
-   and whether `view_account` shows the new code.
+   None of the twelve `false` DAOs (§3.3) has an `UpgradeSelf` proposal after
+   its opt-out (chain, read 2026-11-06), so the answer comes from
+   `docket-demo.sputnik-dao.near` (v3.2, §16.5), as a controlled pair: the same
+   `UpgradeSelf` to the code the DAO already runs (`DtHZA1mU…XuF`), with only
+   `auto_update` changed between the two.
+   - `auto_update: false`, step 5, `772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS`: the
+     `sputnik-dao.near → docket-demo.sputnik-dao.near update` receipt failed with
+     `Smart contract panicked: panicked at sputnikdao2/src/upgrade.rs:122:5:
+     ERR_MUST_BE_SELF_OR_FACTORY`. The proposal still reads Approved and the bond
+     was returned, which is why only the receipts count (I15).
+   - `auto_update: true`, step 9, `EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b`: the same receipt
+     succeeded, followed by `UseGlobalContract` + `migrate` on the DAO.
+   Checked with `node tools/receipts.mjs <tx> docket-aditi.near --step 5|9`.
 3. **Who must approve**: the roles whose permissions match
    `factory_info_update:AddProposal` and `factory_info_update:VoteApprove`
    (with wildcards), and the vote policy that applies, from `get_policy`.

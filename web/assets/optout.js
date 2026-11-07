@@ -2,8 +2,8 @@
 // what it costs and what is given up, and confirm it by re-reading the chain. Signs nothing (I13).
 //
 // Enforces:
-//   I14  the plan states what is given up — factory rescue, and UpgradeSelf on its own (source-only
-//        until the Nov 8 demo-DAO test) — and the page renders it above the submit control
+//   I14  the plan states what is given up — factory rescue, and UpgradeSelf on its own (confirmed on
+//        mainnet at v3.2, §16.2/§16.5) — and the page renders it above the submit control
 //   I15  an opt-out counts only when get_factory_info re-reads auto_update:false; a transaction's
 //        success is never evidence
 //   I2   any unread input makes the plan 'unknown'; nothing is drafted from a guess
@@ -24,7 +24,7 @@ export const DESCRIPTION = 'Opt out of factory auto-update (Docket). The factory
 export const GIVEN_UP = Object.freeze([
   { text: 'The factory can no longer rescue this DAO if a migration bricks it.', basis: 'source (internal_get_factory_info / update(), §3.2)' },
   { text: 'UpgradeSelf no longer works on its own. Upgrading takes three proposals: auto_update back to true, then UpgradeSelf, then auto_update back to false. While true is in force, the factory\'s keys can replace the code with no vote.',
-    basis: 'from the source, not yet run on mainnet (§16.2; the Nov 8 demo-DAO test decides)' },
+    basis: 'confirmed on mainnet at v3.2 (§16.2): with auto_update false the factory's update was rejected (tx 772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS); with true the same UpgradeSelf ran (tx EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b)' },
 ]);
 
 // Prepaid gas ceilings Docket chooses; unused gas is refunded by the protocol.

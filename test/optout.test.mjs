@@ -76,11 +76,13 @@ test('I15: confirmed only by re-reading get_factory_info — recorded true, reco
   assert.doesNotMatch(src, /transaction_outcome|SuccessValue|status\.Success/);
 });
 
-test('I14 (copy): both things given up are stated, the second labelled source-only, and rendered above submit', async () => {
+test('I14 (copy): both things given up are stated, the second labelled confirmed on mainnet with both transactions, and rendered above submit', async () => {
   assert.equal(GIVEN_UP.length, 2);
   assert.match(GIVEN_UP[0].text, /rescue/);
   assert.match(GIVEN_UP[1].text, /UpgradeSelf no longer works on its own.*three proposals.*no vote/);
-  assert.match(GIVEN_UP[1].basis, /not yet run on mainnet/);
+  assert.match(GIVEN_UP[1].basis, /confirmed on mainnet at v3.2/);
+  assert.match(GIVEN_UP[1].basis, /772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS.*EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b/);
+  assert.doesNotMatch(GIVEN_UP[1].basis, /not yet run/);
   for (const status of ['draft', 'refused', 'opted-out', 'unknown']) {
     const ids = screenModel({ status }).map((s) => s.id);
     assert.ok(ids.indexOf('givenUp') < ids.indexOf('submit'), status);
