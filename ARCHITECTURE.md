@@ -52,7 +52,7 @@ SRC=https://raw.githubusercontent.com/near-daos/sputnik-dao-contract
 
 | claim class | section | reproduce with |
 |---|---|---|
-| census: DAO count, resolved count, the `true` / `false` / unknown buckets, the implicit-account `factory_id` outlier | §3.3 | `tools/crawl.mjs` is **not in this repository yet** (Nov 10, §14), so these counts cannot be reproduced from the repo today. By hand: `viewa sputnik-dao.near get_number_daos '{}'`, `viewa sputnik-dao.near get_daos '{"from_index":0,"limit":100}'` (page on), then `viewa <dao> get_factory_info '{}'` on each |
+| census: DAO count, resolved count, the `true` / `false` / unknown buckets, the implicit-account `factory_id` outlier | §3.3 | `node tools/crawl.mjs --fresh` (about 25 minutes; writes `graph.json`). By hand: `viewa sputnik-dao.near get_number_daos '{}'`, `viewa sputnik-dao.near get_daos '{"from_index":0,"limit":100}'` (page on), then `viewa <dao> get_factory_info '{}'` on each |
 | burrow #1741–#1744 | §7.1 | the `get_proposals` command in §7.1 |
 | marmaj #1016 | §7.2 | `viewa marmaj.sputnik-dao.near get_proposal '{"id":1016}'` |
 | linear council changes | §7.3 | `viewa linear.sputnik-dao.near get_proposals '{"from_index":0,"limit":100}'` (page on), filter `AddMemberToRole` / `RemoveMemberFromRole` |
@@ -256,34 +256,41 @@ $0). `rhea-lst` ($68,799,804) is in the denominator and not the numerator: it is
 administered by a key, not a Sputnik DAO (§2). `verify.mjs` recomputes the total
 and the share live and warns if either moves more than 15%.
 
-**The population census — illustrative, not re-run.** These counts were read
-**on or before 2026-11-05**. They are in the first commit of this file
-(`4d63dee`, 2026-11-05), and the exact day of the crawl was not recorded. They
-came from a crawl that is not in this repository: `tools/crawl.mjs` lands on
-Nov 10 (§14). Until it does, nothing here re-runs them, `verify.mjs` does not
-check them (§0), and they are explanation, not a measured claim.
+**The population census — measured 2026-11-07.** `tools/crawl.mjs` read every DAO
+the factory lists, **2,086 of 2,086**, between 10:14 and 10:37 UTC, through
+`rpc.js` (§9). The first run left 20 DAOs with a field unread (13 rate limits,
+and 7 `get_policy` answers that are not a Sputnik policy, now recorded as
+such); the resume re-read them, and none is unread. The output is committed as
+`graph.json`; re-running `node tools/crawl.mjs --fresh` regenerates it.
+`verify.mjs` does not re-run the crawl (§0). The live counter on `index.html`
+re-reads every DAO's `get_factory_info` on each load (I20).
 
-The crawl resolved **1,786 of the factory's 2,065 DAOs** (279 unread,
-resumable — the crawl is paced to stay under the rate limiter rather than to
-finish fast). The factory has grown since: **2,074 DAOs on 2026-11-06**
-(`get_number_daos`).
-
-| bucket | count (illustrative, read on or before 2026-11-05, not re-run until `crawl.mjs`, Nov 10) |
+| bucket | count (`graph.json`, read 2026-11-07) |
 |---|---|
-| `auto_update: true` — factory can replace the code, no vote | **1,405** |
-| `auto_update: false` — opted out | **12** |
-| no `get_factory_info` (pre-v2 contracts) | 369 — **unknown**, never folded into `false` |
+| `auto_update: true` — factory can replace the code, no vote | **1,607** |
+| `auto_update: false` — opted out | **13** |
+| no `get_factory_info` (457 on v2.0, 9 on an unpublished global contract) | 466 — **unknown**, never folded into `false` |
+| unread | 0 |
+| **total (denominator)** | **2,086** |
 
-**99.2% of the DAOs that answer are factory-upgradeable** (illustrative, same
-crawl, same caveat).
+**99.2% of the DAOs that answer are factory-upgradeable**: 1,607 of the 1,620
+that read `true` or `false`. The 466 that have no `get_factory_info` are not
+in that ratio, and not in its complement.
 
-The twelve exceptions are the most informative number here, because eight of
+An earlier crawl, read on or before 2026-11-05 and not in this repository,
+resolved 1,786 of 2,065 (279 unread): 1,405 `true`, 12 `false`, 369 without
+`get_factory_info`. It was quoted here as illustrative until the census above
+replaced it, and it agrees with the census.
+
+The thirteen are the twelve below plus `docket-demo.sputnik-dao.near`, which
+Docket created and opted out on 2026-11-06 (§16.5). The twelve exceptions are
+the most informative number here, because eight of
 them are one organisation. Unlike the counts, each of the twelve was read
 individually on 2026-11-06: each reads `auto_update: false`, set by an approved
 `FactoryInfoUpdate` (§16.1). Since 2026-11-07 `verify.mjs` re-reads all twelve,
 plus the demo DAO (§16.5), on every run: `get_factory_info` and the opt-out
-proposal (names and ids: REPORT.md E1). That they are the *only* twelve is a
-census claim, and has the same caveat as the table.
+proposal (names and ids: REPORT.md E1). That they are the *only* twelve, apart
+from the demo DAO, is what the 2026-11-07 census measured.
 
 ```
 ref-finance · burrow · ref-labs · rhea-conversion
@@ -297,7 +304,10 @@ turns §3.2 from a default-value curiosity into a finding: the safe setting is
 reachable and almost nobody reaches it.
 
 One outlier the crawl surfaced and the tool must handle: a DAO whose
-`factory_id` is a **64-hex implicit account** rather than `sputnik-dao.near` —
+`factory_id` is a **64-hex implicit account** rather than `sputnik-dao.near`.
+On 2026-11-07 there is exactly one: `c8b26744.sputnik-dao.near`, whose
+`factory_id` is
+`0b0725e029607729bfcf336e3d9235151de4d9ba5eb7dadc7b53e36ebaa7ac43` —
 i.e. a DAO whose code can be replaced by a bare keypair with no named owner at
 all. Docket flags a non-`sputnik-dao.near` factory as its own risk class.
 
@@ -711,7 +721,7 @@ DAO. Docket itself never holds a key (I13).
    `meta-pool.near` this is the whole finding on one screen.
 2. **The docket** — a DAO's proposals with the §6.3 semantic layer and §6.5
    flags.
-3. **The register** — all 2,065 DAOs ranked by **reach**, with `auto_update`,
+3. **The register** — every DAO the factory lists (2,086 on 2026-11-07) ranked by **reach**, with `auto_update`,
    code version, and no-vote root count as columns.
 4. **Pre-flight lint** — paste a proposal id you are about to vote on, or a
    proposal you are about to submit, and get the same report before you sign.
@@ -1035,7 +1045,7 @@ that day, not the last hour.
 | Nov 6 | Authority walk (§6.1); `auto_update`; access keys | **gate:** the §3.4 chain prints from `node tools/verify.mjs`, cold. Passed 2026-11-06, then printing $199.4M; the figure was wrong and is now $126.7M (§12.10) |
 | Nov 6 | Report sent (§11), with opt-out links | sent, timestamped. **Done 2026-11-06 for 3 of 4** (UTC): NEAR security 09:07 (automated ack), Meta Pool 09:17, Stader 09:20. **LiNEAR pending**: X DMs are verified-only, so another channel is being sought. The opt-out flow isn't built yet (Nov 8), so the report carried the proposal JSON instead of a link. Send log: `REPORT.md` |
 | Nov 7 | `decode.js`, `lint.js`; the §6.1 `*:*` / self-sufficient-role edge, using `decode.js` permission matching | I7, I8, I10 hold; fires on #1741/#1743, #1742/#1744 and marmaj #1016; the walk evaluates the policy edge |
-| Nov 8 | §16 opt-out; create the demo DAO; opt it out through Docket; then attempt `UpgradeSelf` on it (§16.2) | every §16 **[verify]** removed; I15 passes; counter reads 13; the `UpgradeSelf` outcome recorded. **Done 2026-11-06/07 except the counter**: demo DAO created and left opted out (§16.5); I15 re-reads after steps 3, 7, 11; §16.2 [verify] removed with mainnet evidence (steps 5 and 9). The §16.1 v3.0 [verify] stays: this test does not exercise it. The §16.3 [verify] was removed 2026-11-07: the Wallet Selector build loads in Chrome with no bundler. The counter waits for `crawl.mjs` (Nov 10, I20) |
+| Nov 8 | §16 opt-out; create the demo DAO; opt it out through Docket; then attempt `UpgradeSelf` on it (§16.2) | every §16 **[verify]** removed; I15 passes; counter reads 13; the `UpgradeSelf` outcome recorded. **Done 2026-11-06/07**: demo DAO created and left opted out (§16.5); I15 re-reads after steps 3, 7, 11; §16.2 [verify] removed with mainnet evidence (steps 5 and 9). The §16.1 v3.0 [verify] stays: this test does not exercise it. The §16.3 [verify] was removed 2026-11-07: the Wallet Selector build loads in Chrome with no bundler. The counter reads 13 of 2,086 (census, 2026-11-07, §3.3) |
 | Nov 9 | `account.html`, `docket.html`, `optout.html` | a stranger understands §3 without reading this file |
 | Nov 10 | `crawl.mjs` census complete; `register.html`; §18 badge | I19, I20 hold |
 | Nov 11 | Each of I1–I15, I19, I20 has a test; README; clone into a clean machine and run the README cold | pre-screen would pass |
@@ -1261,15 +1271,12 @@ Final state: proposals #0–#5 read Approved, Approved, Approved, Approved,
 Rejected, Approved. `docket-aditi.near` went from 2.242418588 to 2.123279754
 NEAR: 0.1 NEAR is the demo DAO's balance, and about 0.0191 NEAR was gas.
 
-**Counter not confirmed.** The Nov 8 done-when "counter reads 13" (§14) is
-still open. I20 needs the counter recomputed from the chain with its
-denominator (2,080 DAOs, `get_number_daos` at block 223357655) and its
-unknown bucket, and that is the crawl (`tools/crawl.mjs`, Nov 10). What is
-measured: the twelve named in REPORT.md E1 and the demo DAO each read
-`auto_update: false`, set by an approved `FactoryInfoUpdate`. `verify.mjs`
-checks all thirteen on every run (§3.3). The demo DAO was created after the
-census, so it is not one of the twelve. Whether these thirteen are the *only*
-ones is the crawl's question.
+**Counter: 13.** The census of 2026-11-07 (§3.3) read every DAO the factory
+lists: 13 of 2,086 read `auto_update: false`, and they are exactly the twelve
+named in REPORT.md E1 plus the demo DAO. 1,607 read `true`, 466 have no
+`get_factory_info` (unknown), and none is unread. `verify.mjs` checks the
+thirteen by name on every run, and `index.html` recounts from the chain on
+each load (I20).
 
 **§16.2 result.** Steps 5 and 9 are the same `UpgradeSelf` to the same hash,
 with only `auto_update` different. With `false`, the factory's `update` call
