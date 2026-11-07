@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Docket — the vote three keys can skip</title>
+<style>
+  body { font: 16px/1.55 system-ui, sans-serif; max-width: 50rem; margin: 2rem auto; padding: 0 1rem; color: #1b1b1b; }
+  h1 { font-size: 1.6rem; line-height: 1.25; margin: .6rem 0; } h2 { font-size: 1.08rem; margin-top: 1.8rem; border-bottom: 1px solid #ddd; padding-bottom: .2rem; }
+  code, pre, .mono { font: 13px/1.45 ui-monospace, monospace; } pre { background: #f4f4f4; padding: .8rem; overflow-x: auto; }
+  .badge { display: inline-block; padding: .35rem .7rem; border-radius: 4px; font-weight: 600; font-size: .92rem; }
+  .not-shipped { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; } .factory-changed { background: #fffbeb; color: #92400e; border: 1px solid #fcd34d; }
+  .unknown { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+  table { border-collapse: collapse; width: 100%; font-size: .93rem; } td, th { text-align: left; padding: .35rem .5rem; border-bottom: 1px solid #eee; vertical-align: top; }
+  .basis { color: #555; font-size: .86rem; } .muted { color: #666; } nav a { margin-right: .8rem; } .big { font-size: 1.25rem; font-weight: 600; }
+</style>
+</head>
+<body>
+<nav class="basis"><a href="index.html">finding</a><a href="account.html">account</a><a href="docket.html">docket</a><a href="register.html">register</a><a href="optout.html">opt-out</a></nav>
+<p id="badge" class="badge unknown">Fix shipped? reading the factory…</p>
+<h1 id="headline">Reading NEAR mainnet and DefiLlama…</h1>
+<p class="muted">Every number on this page is read from NEAR mainnet or DefiLlama by your browser when the page loads, with no
+server in between. Docket holds no key and signs nothing.</p>
+<div id="out" aria-live="polite"></div>
+
+<script type="module">
+import { createRpc } from './assets/rpc.js';
+import { indexReport, usd, share } from './assets/index-view.js';
+import { liveCounter, census, pct } from './assets/census.js';
+
+const rpc = createRpc();
+const out = document.getElementById('out');
+const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
+const link = (href, text) => { const a = el('a', text); a.href = href; return a; };
+const section = (title) => { const s = el('section'); s.append(el('h2', title)); out.append(s); return s; };
+const para = (s, ...parts) => { const p = el('p'); for (const x of parts) p.append(typeof x === 'string' ? document.createTextNode(x) : x); s.append(p); return p; };
+
+function render(r) {
+  const b = document.getElementById('badge'); b.textContent = r.badge.text; b.className = `badge ${r.badge.state}`; b.title = r.badge.detail;
+  const exposed = r.rows.filter((x) => x.autoUpdate === true);
+  const keys = r.factoryKeys === 'unknown' ? 'unknown' : String(r.factoryKeys.full);
+  document.getElementById('headline').textContent = typeof r.exposedUsd === 'number'
+    ? `${usd(r.exposedUsd)} of NEAR liquid staking is governed by a vote that ${keys} keys can skip.`
+    : `NEAR liquid staking is governed by a vote that ${keys} keys can skip. (The dollar figure is unknown right now: ${r.llama.status !== 'ok' ? `DefiLlama: ${r.llama.reason}` : 'a read failed'}.)`;
+
+  const s1 = section('The path');
+  s1.append(el('pre', [
+    `${keys} full-access keys on ${'sputnik-dao.near'} (the Sputnik DAO factory, which owns itself)`,
+    '   └── update(code): replaces a DAO\'s code, no proposal, no vote, if the DAO reads auto_update: true',
+    `        └── ${exposed.map((x) => x.owner.replace('.sputnik-dao.near', '')).join(' / ') || 'none'} .sputnik-dao.near`,
+    `             └── owner of ${exposed.map((x) => x.contract).join(', ') || 'none'}`,
+  ].join('\n')));
+  const t = el('table'); const head = el('tr'); for (const h of ['protocol', 'administered by', 'auto_update', 'value']) head.append(el('th', h)); t.append(head);
+  for (const x of r.rows) {
+    const tr = el('tr');
+    const c = el('td'); c.append(link(`account.html?account=${encodeURIComponent(x.contract)}`, x.name)); tr.append(c);
+    tr.append(el('td', x.owner, 'mono'), el('td', String(x.autoUpdate)));
+    tr.append(el('td', x.slug ? `${usd(x.usd)} (DefiLlama)` : x.staked?.near ? `${x.staked.near.split('.')[0]} NEAR staked (chain; DefiLlama does not value it)` : `unknown${x.staked?.unknown ? `: ${x.staked.unknown}` : ''}`));
+    t.append(tr);
+  }
+  s1.append(t);
+  para(s1, `That is ${share(r.exposedUsd, r.lsTotal)} of NEAR liquid staking (${usd(r.lsTotal)}, every protocol DefiLlama categorises as Liquid Staking, NEAR-only TVL). DefiLlama read ${r.llama.readAt}; chain read ${r.readAt}.`).className = 'basis';
+
+  const s2 = section('Why the vote can be skipped');
+  para(s2, 'A Sputnik DAO changes its own code by proposal and vote. Its contract also has update(), which is not a proposal: it accepts new code from the factory whenever the DAO reads auto_update: true. True is the default for any DAO that never set it.');
+  para(s2, 'A fix exists: PR #233 makes a factory update wait two weeks for a matching proposal. The badge above says, from a live read, whether the factory has published it. Even once it ships, each DAO keeps the code it runs until it upgrades.');
+  para(s2, 'What a DAO can do today: pass one FactoryInfoUpdate proposal setting auto_update to false. ', link('optout.html?dao=stnear.sputnik-dao.near', 'Draft it for stnear'), ' · ', link('account.html?account=meta-pool.near', 'follow the whole path for meta-pool.near'));
+}
+
+async function counter() {
+  const s = section('DAOs that opted out');
+  const live = para(s, 'Recounting from the chain: reading the factory\'s DAO list…'); live.className = 'big';
+  const snap = el('p', '', 'basis'); s.append(snap);
+  fetch('../graph.json').then((r) => (r.ok ? r.json() : null)).then((g) => {
+    if (!g) return;
+    const c = census(Object.values(g.daos));
+    snap.textContent = `Last full crawl (tools/crawl.mjs, ${g.crawl?.lastRunAt?.slice(0, 10)}${g.crawl?.complete ? '' : ', incomplete'}): ${c.counts.false} opted out of ${c.denominator}; ${c.counts.true} auto_update: true; ${c.counts['no-factory-info']} with no get_factory_info and ${c.counts.unread} unread, both unknown. See the register.`;
+  }).catch(() => {});
+  const r = await liveCounter(rpc, { onProgress: ({ done, total, counts }) => {
+    live.textContent = `${counts.false} opted out so far · ${done} of ${total} DAOs read`;
+  } });
+  if (r.status !== 'ok') { live.textContent = `Unknown: ${r.reason}`; return; }
+  live.textContent = `${r.counts.false} of ${r.denominator} DAOs read auto_update: false.`;
+  para(s, `${r.counts.true} read true: the factory can replace their code without a vote (${pct(r.shareTrueOfAnswered)} of the ${r.answered} that answered). Unknown: ${r.counts['no-factory-info']} have no get_factory_info, ${r.counts.unread} could not be read. Counted from the chain just now (${r.readAt}).`).className = 'basis';
+}
+
+indexReport(rpc).then(render).catch((e) => { document.getElementById('headline').textContent = `Unknown: the page failed while reading (${e?.message ?? e}).`; }).finally(counter);
+</script>
+</body>
+</html>

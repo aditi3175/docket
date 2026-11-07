@@ -27,6 +27,7 @@ import { pathToFileURL } from 'node:url';
 import { createRpc } from '../web/assets/rpc.js';
 import { resolveOwner, codeIdentity, loadFactoryVersions, factoryInfo, accessKeys, authorityWalk, WALK_NOT_EVALUATED, ZERO_HASH } from '../web/assets/resolve.js';
 import { githubGet } from './github.mjs';
+import { badgeFrom } from '../web/assets/badge.js';
 import { fetchDefiLlama, nearTvlFrom, sumTvl, categoryNearTvl, applyCoverageRule, COVERAGE_RULE } from '../web/assets/value.js';
 
 const FACTORY = 'sputnik-dao.near';
@@ -526,6 +527,9 @@ function print(r, rpc) {
     console.log(`\n    cross-referenced against ${FACTORY} :: get_contracts_metadata:`);
     for (const [h, v] of factory.versions) console.log(`    ${pad(short(h), 14)} ${pad(v.version, 5)} commit ${v.commit?.slice(0, 12)}${h === factory.defaultHash ? '   (= get_default_code_hash)' : ''}`);
   }
+  // §18 — the same answer index.html computes in the reader's browser (badge.js, I19)
+  { const b = badgeFrom(factory, r.started.toISOString()); console.log(`
+§18 ${b.text}${b.state === 'not-shipped' ? ` (${b.detail})` : ` ${b.detail}`}`); }
 
   const st = claims.filter((c) => c.kind === 'structural');
   const gh = claims.filter((c) => c.kind === 'github');
