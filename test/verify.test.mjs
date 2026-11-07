@@ -198,3 +198,20 @@ test('§3.3 E1 (SYNTHETIC): a named DAO back on auto_update:true is a divergence
     ['unrlzd.sputnik-dao.near #1 is the approved opt-out (§3.3 E1)', 'unrlzd.sputnik-dao.near opted out: get_factory_info (§3.3 E1)']);
   assert.equal(exitCodeFor(g.claims), 2);
 });
+
+test('I1: every claim names the spec section it checks and the read behind it; every read carries its time', async () => {
+  const r = await collect({ rpc: createRpc({ fetch: replayFetch(), sleep: noSleep }), llamaFetch: llamaFixture, githubFetch: githubReplay() });
+  const ISO = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z$/;
+  assert.ok(r.claims.length > 0);
+  for (const c of r.claims) {
+    assert.match(c.section, /^§\d/, c.what);
+    assert.ok(typeof c.what === 'string' && c.what.length > 0);
+    assert.ok('expected' in c, c.what);
+    // a value is either read (actual present) or unknown with its reason, never filled in
+    if (c.status === 'unverifiable') assert.ok(c.unknownReason, c.what);
+    else assert.ok(c.actual !== undefined, c.what);
+  }
+  for (const c of r.claims.filter((x) => x.kind === 'github')) { assert.match(c.url, /^https:\/\/api\.github\.com\//); assert.match(c.readAt, ISO); }
+  assert.match(r.llama.readAt, ISO); // DefiLlama figures are dated by their read
+  assert.ok(r.started instanceof Date); // chain reads are dated by the run
+});
