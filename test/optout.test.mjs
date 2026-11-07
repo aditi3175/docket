@@ -163,3 +163,19 @@ test('demo DAO (§16.5): create args match the v3.2 field sets exactly; council-
   assert.match(p.txs[0].cmd, /^near contract call-function as-transaction sputnik-dao\.near create .* attached-deposit '0\.1 NEAR' sign-as you\.near network-config mainnet sign-with-keychain send$/);
   assert.match(p.txs[4].cmd, /act_proposal json-args '\{"id":1,"action":"VoteApprove","proposal":\{"UpgradeSelf":\{"hash":"DtHZA1mU/);
 });
+
+test('demo DAO --pre (§9): reads go through rpc.js — a rate-limited FastNear fails over to rpc.mainnet.near.org; no endpoint -> unknown, never a pass (SYNTHETIC)', async () => {
+  const { preStepCheck } = await import('../tools/demo-dao.mjs');
+  const p = demoPlan('you.near');
+  const seen = [];
+  const answer = (v) => jsonResponse({ jsonrpc: '2.0', id: 'docket', result: { result: [...Buffer.from(JSON.stringify(v))], logs: [], block_height: 7, block_hash: 'x' } });
+  // FastNear's rate-limit body, as seen on mainnet 2026-11-06: {"code":-429,"message":"Rate limits exceeded. ..."}
+  const limited = async (endpoint) => { seen.push(new URL(endpoint).host);
+    return endpoint.includes('fastnear') ? jsonResponse({ code: -429, message: 'Rate limits exceeded.' }, 429) : answer(5); };
+  const r = await preStepCheck(p.pre[10], p.dao, { rpc: createRpc({ fetch: limited, sleep: noSleep }) });
+  assert.equal(r.ok, true, r.detail);
+  assert.ok(seen.includes('free.rpc.fastnear.com') && seen.includes('rpc.mainnet.near.org'), seen.join(','));
+  const down = createRpc({ fetch: async () => { throw new TypeError('blocked'); }, sleep: noSleep });
+  assert.equal((await preStepCheck(p.pre[10], p.dao, { rpc: down })).ok, null);
+  assert.equal((await preStepCheck(p.pre[11], p.dao, { rpc: down })).ok, null);
+});

@@ -25,6 +25,7 @@
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import { nearCli, DESCRIPTION } from '../web/assets/optout.js';
+import { createRpc } from '../web/assets/rpc.js';
 
 export const FACTORY = 'sputnik-dao.near';
 export const CREATE_DEPOSIT = '0.1 NEAR';             // >= 0.01 required; becomes the DAO's balance
@@ -115,54 +116,54 @@ export function base58(bytes) {
   return s;
 }
 
-async function query(params, rpcUrl) {
-  const r = await (await fetch(rpcUrl, { method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: 'docket', method: 'query', params: { finality: 'final', ...params } }), signal: AbortSignal.timeout(30000) })).json();
-  return r;
-}
+// Reads go through rpc.js (§9): FastNear -> rpc.mainnet.near.org -> near.drpc.org, concurrency <= 6,
+// retries and backoff; a read no endpoint answers is 'unknown' (I2), never a value.
+let shared;
+const defaultRpc = () => (shared ??= createRpc({ timeoutMs: 30_000 })); // get_code returns ~444 KB
+
+const asReason = (r) => (r.status === 'unknown' ? r.reason : r.detail ?? r.what ?? r.status);
 
 // -> [{ check, ok, detail }]   ok: true | false | null (unknown — treat as not passed)
-export async function preSignChecks(member, name, { rpcUrl = 'https://free.rpc.fastnear.com' } = {}) {
+export async function preSignChecks(member, name, { rpc = defaultRpc() } = {}) {
   const c = createArgs(member, name);
   const out = [];
-  try {
-    const r = await query({ request_type: 'call_function', account_id: FACTORY, method_name: 'get_code',
-      args_base64: Buffer.from(JSON.stringify({ code_hash: V32_HASH })).toString('base64') }, rpcUrl);
-    if (r.error || r.result?.error) out.push({ check: `factory holds ${V32_HASH} in storage (get_code = update_contract's read)`, ok: false, detail: String(r.result?.error ?? JSON.stringify(r.error)).slice(0, 160) });
-    else {
-      const code = Buffer.from(r.result.result);
-      const h = base58(createHash('sha256').update(code).digest());
-      out.push({ check: `factory holds ${V32_HASH} in storage (get_code = update_contract's read)`, ok: h === V32_HASH, detail: `${code.length} bytes, sha256 ${h}, block ${r.result.block_height}` });
-    }
-  } catch (e) { out.push({ check: 'factory get_code', ok: null, detail: String(e.message ?? e) }); }
+  const checkCode = `factory holds ${V32_HASH} in storage (get_code = update_contract's read)`;
+  // get_code returns raw wasm, not JSON, so it is read with query(), not viewFunction()
+  const r = await rpc.query({ request_type: 'call_function', finality: 'final', account_id: FACTORY, method_name: 'get_code',
+    args_base64: Buffer.from(JSON.stringify({ code_hash: V32_HASH })).toString('base64') });
+  if (r.status === 'unknown') out.push({ check: checkCode, ok: null, detail: String(r.reason).slice(0, 160) });
+  else if (r.status !== 'ok') out.push({ check: checkCode, ok: false, detail: String(asReason(r)).slice(0, 160) });
+  else {
+    const code = Buffer.from(r.value.result);
+    const h = base58(createHash('sha256').update(code).digest());
+    out.push({ check: checkCode, ok: h === V32_HASH, detail: `${code.length} bytes, sha256 ${h}, block ${r.value.block_height}` });
+  }
   for (const [check, acct, wantMissing] of [[`${c.dao} is free`, c.dao, true], [`${member} exists`, member, false]]) {
-    try {
-      const r = await query({ request_type: 'view_account', account_id: acct }, rpcUrl);
-      const missing = r.error?.cause?.name === 'UNKNOWN_ACCOUNT';
-      if (!missing && r.error) out.push({ check, ok: null, detail: JSON.stringify(r.error).slice(0, 120) });
-      else out.push({ check, ok: wantMissing ? missing : !missing, detail: missing ? 'no such account' : `balance ${r.result.amount} yocto` });
-    } catch (e) { out.push({ check, ok: null, detail: String(e.message ?? e) }); }
+    const a = await rpc.viewAccount(acct);
+    const missing = a.status === 'absent' && a.what === 'account';
+    if (a.status !== 'ok' && !missing) out.push({ check, ok: null, detail: String(asReason(a)).slice(0, 120) });
+    else out.push({ check, ok: wantMissing ? missing : !missing, detail: missing ? 'no such account' : `balance ${a.value.amount} yocto` });
   }
   return out;
 }
 
-const viewJson = async (account, method, args, rpcUrl) => {
-  const r = await query({ request_type: 'call_function', account_id: account, method_name: method,
-    args_base64: Buffer.from(JSON.stringify(args)).toString('base64') }, rpcUrl);
-  if (r.error) return { status: 'unknown', reason: JSON.stringify(r.error).slice(0, 160) };
-  if (r.result?.error) return { status: 'error', reason: String(r.result.error).slice(0, 200) };
-  return { status: 'ok', value: JSON.parse(Buffer.from(r.result.result).toString()), block: r.result.block_height };
+const viewJson = async (account, method, args, rpc) => {
+  const r = await rpc.viewFunction(account, method, args);
+  if (r.status === 'ok') return { status: 'ok', value: r.value, block: r.block_height };
+  if (r.status === 'unknown') return { status: 'unknown', reason: String(r.reason).slice(0, 160) };
+  return { status: 'error', reason: String(asReason(r)).slice(0, 200) };
 };
 
 // -> { ok: true | false | null, detail }   null = unknown (treat as not passed)
-export async function preStepCheck(pre, dao, { rpcUrl = 'https://free.rpc.fastnear.com', read = viewJson } = {}) {
+export async function preStepCheck(pre, dao, { rpc, read = viewJson } = {}) {
   if (!pre) return { ok: null, detail: 'no pre-condition defined for this step' };
+  if (read === viewJson) rpc ??= defaultRpc();
   if (pre.type === 'add') {
-    const r = await read(dao, 'get_last_proposal_id', {}, rpcUrl);
+    const r = await read(dao, 'get_last_proposal_id', {}, rpc);
     if (r.status !== 'ok') return { ok: null, detail: `get_last_proposal_id unread: ${r.reason}` };
     return { ok: r.value === pre.id, detail: `get_last_proposal_id = ${r.value} (this add_proposal must create #${pre.id})${r.block ? `, block ${r.block}` : ''}` };
   }
-  const r = await read(dao, 'get_proposal', { id: pre.id }, rpcUrl);
+  const r = await read(dao, 'get_proposal', { id: pre.id }, rpc);
   if (r.status !== 'ok') return { ok: r.status === 'error' ? false : null, detail: `get_proposal(${pre.id}): ${r.reason}` };
   const sameKind = JSON.stringify(r.value.kind) === JSON.stringify(pre.kind);
   const live = r.value.status === 'InProgress';
