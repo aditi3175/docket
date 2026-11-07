@@ -263,7 +263,7 @@ and 7 `get_policy` answers that are not a Sputnik policy, now recorded as
 such); the resume re-read them, and none is unread. The output is committed as
 `graph.json`; re-running `node tools/crawl.mjs --fresh` regenerates it.
 `verify.mjs` does not re-run the crawl (§0). The live counter on `index.html`
-re-reads every DAO's `get_factory_info` on each load (I20).
+re-reads every DAO's `get_factory_info` on demand (I20).
 
 | bucket | count (`graph.json`, read 2026-11-07) |
 |---|---|
@@ -759,8 +759,12 @@ DAO. Docket itself never holds a key (I13).
 7. **Guard** (§17, *stretch*) — `@docket/guard`, the same checks as a JS library
    and an MCP server, plus a live delegate on a Docket-owned mainnet DAO. Only
    if §14's stretch row is reached.
-8. **The counter** — "DAOs that opted out: 12 → N", recomputed from the chain on
-   every page load, denominator shown (I20).
+8. **The counter**: "DAOs that opted out: 12 → N", with its denominator and
+   unknown bucket (I20). `index.html` shows the dated census from the
+   committed `graph.json` at once, and recounts from the chain only when the
+   reader clicks "Recount from the chain now", which takes about 15 minutes
+   under FastNear's rate limit. It is also recounted by `tools/crawl.mjs`, and
+   `verify.mjs` re-reads the thirteen opted-out DAOs by name.
 
 ---
 
@@ -843,7 +847,7 @@ never counted as a value** — §3.3 depends on that distinction.
 | I17 | The delegate's key is `FunctionCall`, receiver = its one DAO, methods = `["act_proposal"]` | `verify.mjs` reads `view_access_key_list` |
 | I18 | The optional LLM layer can add a flag and can never remove one; it is off by default; `verify.mjs` never calls it | test with a model stub that tries to clear |
 | I19 | The "fix shipped?" badge is derived from a live read of the factory's `get_contracts_metadata` and `get_default_code_hash`, never from a stored value or a transaction feed; an unread factory renders **unknown** | test with a synthetic new factory build, and with the factory unreadable |
-| I20 | The opted-out counter is recomputed from the chain with its denominator and unknown bucket, never stored as a number | copy + crawl test |
+| I20 | The opted-out counter is always computed from reads, with its denominator and unknown bucket, and never stored as a bare number: from `graph.json`'s per-DAO records (dated), recounted from the chain on demand on `index.html`, by `crawl.mjs`, and, for the thirteen by name, by `verify.mjs` | copy + crawl test |
 
 I7, I9 and I16 are the ones that matter. A security tool that says "safe" is worse
 than no tool.
@@ -1302,7 +1306,7 @@ lists: 13 of 2,086 read `auto_update: false`, and they are exactly the twelve
 named in REPORT.md E1 plus the demo DAO. 1,607 read `true`, 466 have no
 `get_factory_info` (unknown), and none is unread. `verify.mjs` checks the
 thirteen by name on every run, and `index.html` recounts from the chain on
-each load (I20).
+demand (I20).
 
 **§16.2 result.** Steps 5 and 9 are the same `UpgradeSelf` to the same hash,
 with only `auto_update` different. With `false`, the factory's `update` call

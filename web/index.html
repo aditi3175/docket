@@ -68,20 +68,26 @@ function render(r) {
 }
 
 async function counter() {
+  // I20: the figure shown first is the dated census from graph.json, computed from its records on load
+  // (never a stored number); a recount from the chain runs only when the reader asks for it.
   const s = section('DAOs that opted out');
-  const live = para(s, 'Recounting from the chain: reading the factory\'s DAO list…'); live.className = 'big';
+  const head = para(s, 'Reading the last census (graph.json)…'); head.className = 'big';
   const snap = el('p', '', 'basis'); s.append(snap);
-  fetch('../graph.json').then((r) => (r.ok ? r.json() : null)).then((g) => {
-    if (!g) return;
+  try {
+    const g = await fetch('../graph.json').then((r) => (r.ok ? r.json() : null));
+    if (!g) throw new Error('graph.json not found');
     const c = census(Object.values(g.daos));
-    snap.textContent = `Last full crawl (tools/crawl.mjs, ${g.crawl?.lastRunAt?.slice(0, 10)}${g.crawl?.complete ? '' : ', incomplete'}): ${c.counts.false} opted out of ${c.denominator}; ${c.counts.true} auto_update: true; ${c.counts['no-factory-info']} with no get_factory_info and ${c.counts.unread} unread, both unknown. See the register.`;
-  }).catch(() => {});
-  const r = await liveCounter(rpc, { onProgress: ({ done, total, counts }) => {
-    live.textContent = `${counts.false} opted out so far · ${done} of ${total} DAOs read`;
-  } });
-  if (r.status !== 'ok') { live.textContent = `Unknown: ${r.reason}`; return; }
-  live.textContent = `${r.counts.false} of ${r.denominator} DAOs read auto_update: false.`;
-  para(s, `${r.counts.true} read true: the factory can replace their code without a vote (${pct(r.shareTrueOfAnswered)} of the ${r.answered} that answered). Unknown: ${r.counts['no-factory-info']} have no get_factory_info, ${r.counts.unread} could not be read. Counted from the chain just now (${r.readAt}).`).className = 'basis';
+    head.textContent = `${c.counts.false} of ${c.denominator} DAOs read auto_update: false (census ${g.crawl?.lastRunAt?.slice(0, 10)}${g.crawl?.complete ? '' : ', incomplete'}).`;
+    snap.textContent = `${c.counts.true} read true: the factory can replace their code without a vote (${pct(c.shareTrueOfAnswered)} of the ${c.answered} that answered). Unknown: ${c.counts['no-factory-info']} have no get_factory_info, ${c.counts.unread} could not be read. Counted by tools/crawl.mjs; see the register.`;
+  } catch (e) { head.textContent = `Census unknown: ${e.message}. Serve the repository root so ../graph.json is reachable.`; }
+  const b = el('button', 'Recount from the chain now (about 15 minutes)'); s.append(b);
+  const live = el('p', '', 'basis'); s.append(live);
+  b.addEventListener('click', async () => {
+    b.disabled = true; live.textContent = 'reading the factory's DAO list…';
+    const r = await liveCounter(rpc, { onProgress: ({ done, total, counts }) => { live.textContent = `${counts.false} opted out so far · ${done} of ${total} DAOs read`; } });
+    if (r.status !== 'ok') { live.textContent = `Unknown: ${r.reason}`; b.disabled = false; return; }
+    live.textContent = `Recounted from the chain (${r.readAt}): ${r.counts.false} of ${r.denominator} read false, ${r.counts.true} true, ${r.counts['no-factory-info']} no get_factory_info, ${r.counts.unread} unread.`;
+  });
 }
 
 indexReport(rpc).then(render).catch((e) => { document.getElementById('headline').textContent = `Unknown: the page failed while reading (${e?.message ?? e}).`; }).finally(counter);
