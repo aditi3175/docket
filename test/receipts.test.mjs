@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { judge, outcomes } from '../tools/receipts.mjs';
 import { base58 } from '../tools/demo-dao.mjs';
+import { jsonResponse } from './helpers.mjs';
 
 const DAO = 'docket-demo.sputnik-dao.near';
 const ok = (executor) => ({ outcome: { executor_id: executor, status: { SuccessValue: '' } } });
@@ -67,4 +68,18 @@ test('base58: 32 zero bytes is the 32-"1" hash; small vectors', () => {
   assert.equal(base58(Uint8Array.from([57])), 'z');
   assert.equal(base58(Uint8Array.from([58])), '21');
   assert.equal(base58(Uint8Array.from([0, 1])), '12');
+});
+
+test('txStatus (SYNTHETIC endpoints): FastNear timing out falls over to the next §9 endpoint; none answering is unknown with every reason', async () => {
+  const { txStatus } = await import('../tools/receipts.mjs');
+  const seen = [];
+  const fetch = async (e) => { seen.push(new URL(e).host);
+    return e.includes('fastnear') ? jsonResponse({ jsonrpc: '2.0', id: 'docket', error: { name: 'HANDLER_ERROR', cause: { name: 'TIMEOUT_ERROR' } } })
+      : jsonResponse({ jsonrpc: '2.0', id: 'docket', result: { receipts_outcome: [] } }); };
+  const r = await txStatus('h', 's.near', { fetch });
+  assert.deepEqual(r.result, { receipts_outcome: [] });
+  assert.deepEqual(seen, ['free.rpc.fastnear.com', 'rpc.mainnet.near.org']);
+  const none = await txStatus('h', 's.near', { fetch: async () => { throw new TypeError('blocked'); } });
+  assert.equal(none.result, undefined);
+  assert.equal(none.error.split(' | ').length, 3);
 });

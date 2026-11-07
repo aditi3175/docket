@@ -17,8 +17,26 @@
 // failure text is searched in the whole status object, so an unexpected shape yields STOP, not a pass.
 
 import { pathToFileURL } from 'node:url';
+import { ENDPOINTS } from '../web/assets/rpc.js';
 
 export const EXPECTED_STEP5 = 'ERR_MUST_BE_SELF_OR_FACTORY';
+
+// EXPERIMENTAL_tx_status, tried on each §9 endpoint in order (rpc.js serves only 'query'). An endpoint
+// that errors or times out is skipped; if none answers, the result is unknown (I2), with every reason.
+// Seen 2026-11-07: FastNear answered a day-old transaction with TIMEOUT_ERROR / NOT_OBSERVED.
+export async function txStatus(hash, signer, { endpoints = ENDPOINTS, fetch: f = globalThis.fetch, timeoutMs = 30_000 } = {}) {
+  const reasons = [];
+  for (const e of endpoints) {
+    try {
+      const res = await f(e, { method: 'POST', headers: { 'content-type': 'application/json' }, signal: AbortSignal.timeout(timeoutMs),
+        body: JSON.stringify({ jsonrpc: '2.0', id: 'docket', method: 'EXPERIMENTAL_tx_status', params: { tx_hash: hash, sender_account_id: signer, wait_until: 'FINAL' } }) });
+      const body = await res.json();
+      if (body.result) return { result: body.result, endpoint: e };
+      reasons.push(`${new URL(e).host}: ${JSON.stringify(body.error ?? body).slice(0, 160)}`);
+    } catch (err) { reasons.push(`${new URL(e).host}: ${err?.message ?? err}`); }
+  }
+  return { error: reasons.join(' | ') };
+}
 export const FACTORY = 'sputnik-dao.near';
 
 const actionNames = (r) => (r?.receipt?.Action?.actions ?? []).map((a) => (typeof a === 'string' ? a : Object.keys(a)[0]));
@@ -80,9 +98,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const [hash, signer] = a.filter((x, i) => x !== '--step' && i !== si + 1);
   if (!hash || !signer) { console.error('usage: node tools/receipts.mjs <tx-hash> <signer-account> [--step 5|9]'); process.exit(2); }
   const dao = 'docket-demo.sputnik-dao.near';
-  const r = await (await fetch('https://free.rpc.fastnear.com', { method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: 'docket', method: 'EXPERIMENTAL_tx_status', params: { tx_hash: hash, sender_account_id: signer, wait_until: 'FINAL' } }) })).json();
-  if (r.error) { console.log('UNKNOWN —', JSON.stringify(r.error).slice(0, 300)); process.exit(2); }
+  const r = await txStatus(hash, signer);
+  if (r.error) { console.log('UNKNOWN —', r.error); process.exit(2); }
   for (const x of outcomes(r.result) ?? []) console.log(`${x.failed ? 'FAIL' : 'ok  '}  ${x.executor}${x.error ? '  ' + x.error.slice(0, 300) : ''}`);
   const j = judge(r.result, step, dao);
   console.log(`\n${j.verdict}: ${j.reason}`);

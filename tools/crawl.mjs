@@ -84,6 +84,12 @@ async function main() {
 
   const todo = list.ids.filter((id) => fresh || !graph.daos[id] || graph.daos[id].unread?.length);
   console.log(`factory lists ${list.number} DAOs; ${todo.length} to read${fresh ? ' (fresh)' : ''}`);
+  // Nothing new and nothing unread: leave graph.json exactly as it is (a no-op run must not dirty the tree).
+  if (!todo.length && Object.keys(graph.daos).length === list.number && list.ids.every((id) => graph.daos[id])) {
+    const s0 = census(Object.values(graph.daos));
+    console.log(`census of ${s0.denominator} DAOs already complete (last run ${graph.crawl?.lastRunAt}); graph.json unchanged. Use --fresh to re-read every DAO.`);
+    process.exit(0);
+  }
   const started = new Date().toISOString();
   const keep = Object.fromEntries(list.ids.filter((id) => graph.daos[id]).map((id) => [id, graph.daos[id]]));
   graph = { ...graph, daos: keep };
