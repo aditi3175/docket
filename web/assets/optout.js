@@ -24,7 +24,7 @@ export const DESCRIPTION = 'Opt out of factory auto-update (Docket). The factory
 export const GIVEN_UP = Object.freeze([
   { text: 'The factory can no longer rescue this DAO if a migration bricks it.', basis: 'source (internal_get_factory_info / update(), §3.2)' },
   { text: 'UpgradeSelf no longer works on its own. Upgrading takes three proposals: auto_update back to true, then UpgradeSelf, then auto_update back to false. While true is in force, the factory\'s keys can replace the code with no vote.',
-    basis: 'confirmed on mainnet at v3.2 (§16.2): with auto_update false the factory's update was rejected (tx 772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS); with true the same UpgradeSelf ran (tx EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b)' },
+    basis: 'confirmed on mainnet at v3.2 (§16.2): with auto_update false the factory update was rejected (tx 772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS); with true the same UpgradeSelf ran (tx EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b)' },
 ]);
 
 // Prepaid gas ceilings Docket chooses; unused gas is refunded by the protocol.
