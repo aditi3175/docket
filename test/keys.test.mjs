@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 
 const ROOT = new URL('../', import.meta.url);
 const tracked = execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8' }).split('\n').filter(Boolean);
@@ -31,8 +31,10 @@ test('I13: key stores are gitignored, and none is tracked', () => {
   assert.deepEqual(tracked.filter((f) => /(^|\/)\.near-credentials\/|\.key$|(^|\/)\.env$/.test(f)), []);
 });
 
-test('I13: nothing under web/ can sign — no key handling or signing calls', () => {
-  const web = tracked.filter((f) => f.startsWith('web/'));
+test('I13: nothing under web/ or guard/ can sign — no key handling or signing calls', () => {
+  // guard/ is listed from disk as well, so a new file is checked before it is first committed
+  const onDisk = readdirSync(new URL('guard/', ROOT)).filter((f) => /.(m?js|json)$/.test(f)).map((f) => `guard/${f}`);
+  const web = [...new Set([...tracked.filter((f) => f.startsWith('web/') || f.startsWith('guard/')), ...onDisk])];
   for (const f of web) {
     const text = readFileSync(new URL(f, ROOT), 'utf8');
     assert.doesNotMatch(text, /KeyPair|fromSecretKey|signTransaction|InMemoryKeyStore|nacl\.sign|ed25519\.sign/, f);

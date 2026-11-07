@@ -1,0 +1,11 @@
+{
+  "name": "@docket/guard",
+  "version": "0.1.0",
+  "description": "Docket's checks for agents: what a NEAR DAO proposal does, and who can change an account without a vote. Reads only.",
+  "type": "module",
+  "main": "index.mjs",
+  "exports": { ".": "./index.mjs" },
+  "bin": { "docket-guard-mcp": "./mcp.mjs" },
+  "license": "MIT",
+  "engines": { "node": ">=22" }
+}
