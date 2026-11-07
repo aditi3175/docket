@@ -15,6 +15,15 @@
   .basis { color: #555; font-size: .86rem; } .muted { color: #666; }
   .examples button { margin: 0 .3rem .3rem 0; } nav a { margin-right: .8rem; }
   .stake { font-size: 1.05rem; margin: -.4rem 0 1rem; } .stake .src { color: #555; font-size: .85rem; }
+  .dia { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem; margin: 1rem 0 .6rem; }
+  .box { border: 2px solid #9ca3af; border-radius: 6px; padding: .45rem .65rem; background: #fff; font: 13px ui-monospace, monospace; text-align: center; }
+  .box .sub { display: block; font: 11px system-ui, sans-serif; color: #555; margin-top: .15rem; }
+  .box.value { border-color: #1f2937; background: #f9fafb; font: 600 15px system-ui, sans-serif; }
+  .box.keys { border-color: #b91c1c; background: #fef2f2; color: #991b1b; font-weight: 600; }
+  .arrow { display: flex; flex-direction: column; align-items: center; min-width: 5.5rem; max-width: 10rem; font-size: 11px; color: #555; text-align: center; line-height: 1.2; }
+  .arrow .line { width: 100%; height: 0; border-top: 2px solid #9ca3af; position: relative; margin: .3rem 0; }
+  .arrow .line::after { content: ''; position: absolute; right: -2px; top: -6px; border: 5px solid transparent; border-left: 8px solid #9ca3af; }
+  .arrow.novote { color: #b91c1c; font-weight: 600; } .arrow.novote .line { border-top: 3px solid #dc2626; } .arrow.novote .line::after { border-left-color: #dc2626; top: -6.5px; }
 </style>
 </head>
 <body>
@@ -34,7 +43,7 @@ voting policy. It holds no key and signs nothing.</p>
 
 <script type="module">
 import { createRpc } from './assets/rpc.js';
-import { accountReport, explainCode, FIX, CHECKED_BUILD } from './assets/account-view.js';
+import { accountReport, explainCode, diagramOf, FIX, CHECKED_BUILD } from './assets/account-view.js';
 
 const rpc = createRpc();
 const out = document.getElementById('out');
@@ -52,7 +61,12 @@ function render(r) {
 
   for (const [i, g] of r.groups.entries()) {
     const s = section(r.groups.length > 1 ? `Path ${i + 1} of ${r.groups.length}` : 'The path');
-    s.append(el('p', g.path.join('  →  '), 'mono'));
+    const dia = el('div', undefined, 'dia'); const dm = diagramOf(g, r.value);
+    dm.nodes.forEach((n, j) => {
+      const b = el('div', n.label, `box ${n.kind}`); if (n.sub) b.append(el('span', n.sub, 'sub')); dia.append(b);
+      const e = dm.edges[j]; if (e) { const a = el('div', undefined, `arrow${e.noVote ? ' novote' : ''}`); a.append(el('span', e.text), el('div', undefined, 'line')); dia.append(a); }
+    });
+    s.append(dia);
     const ol = el('ol', undefined, 'path');
     for (const h of g.hops ?? []) ol.append(el('li', h.text));
     const last = el('li', `At the end: ${g.keys.length} key${g.keys.length > 1 ? 's' : ''}, each ${g.keys[0].text.replace(/^a /, '')}`);

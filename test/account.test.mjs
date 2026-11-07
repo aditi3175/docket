@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { createRpc } from '../web/assets/rpc.js';
 import { accountReport, explainCode, hopsOf, CHECKED_BUILD } from '../web/assets/account-view.js';
 import { replayFetch, noSleep, loadFixture, jsonResponse } from './helpers.mjs';
-import { valueAtStake } from '../web/assets/account-view.js';
+import { valueAtStake, diagramOf } from '../web/assets/account-view.js';
 
 const llamaFetch = async () => jsonResponse(loadFixture('2026-11-06.defillama.protocols.near.json').body);
 const llamaDown = async () => { throw new TypeError('blocked'); };
@@ -93,3 +93,10 @@ test('value at stake (I1, I2): a mapped contract or DAO gets its DefiLlama value
   assert.equal(valueAtStake('meta-pool.near', { status: 'unknown', reason: 'down' }).status, 'unknown');
 });
 
+test('the diagram (recorded meta-pool.near): [value] -> accounts -> [3 keys]; only the auto_update edge is the no-vote one', async () => {
+  const r = await accountReport(recorded(), 'meta-pool.near', { llamaFetch });
+  const d = diagramOf(r.groups[0], r.value);
+  assert.deepEqual(d.nodes.map((n) => [n.kind, n.label]), [['value', '$79.9M'], ['account', 'meta-pool.near'], ['account', 'stnear.sputnik-dao.near'], ['account', 'sputnik-dao.near'], ['keys', '3 keys']]);
+  assert.equal(d.edges.length, d.nodes.length - 1);
+  assert.deepEqual(d.edges.filter((e) => e.noVote).map((e) => e.text), ['auto_update: true · update(), no vote']);
+});

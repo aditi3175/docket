@@ -154,3 +154,29 @@ export function explainCode(c) {
   }
 }
 
+// §6.1 edges as diagram labels. noVote marks an edge that skips a vote the account would otherwise
+// need: the factory's update() (auto_update), a global contract its publisher can swap, a policy role in
+// which one member passes alone. An owner edge is drawn neutral: what an owner may do is the contract's.
+export function edgeLabel(type) {
+  if (type === 'auto_update') return { text: 'auto_update: true · update(), no vote', noVote: true };
+  if (type === 'global_contract_account_id') return { text: 'global contract · publisher can swap it, no vote', noVote: true };
+  if (type.startsWith('policy: ')) return { text: 'one member passes alone, no vote', noVote: true };
+  if (type.startsWith('owner via ')) return { text: `owner (${type.slice('owner via '.length)})`, noVote: false };
+  return { text: type, noVote: false };
+}
+
+// One path as boxes and arrows: [value] account → … → [N keys].
+// -> { nodes:[{ kind:'value'|'account'|'keys', label, sub }], edges:[{ text, noVote }] }  (edges[i] joins nodes[i] and nodes[i+1])
+export function diagramOf(group, value) {
+  const nodes = []; const edges = [];
+  nodes.push({ kind: 'value', label: value?.status === 'ok' ? value.label.split(': ').pop() : value?.status === 'unknown' ? 'value unknown' : 'not valued', sub: value?.status === 'ok' ? 'DefiLlama' : null });
+  edges.push({ text: 'at stake in', noVote: false });
+  group.path.forEach((acct, i) => {
+    nodes.push({ kind: 'account', label: acct, sub: null });
+    if (i < group.path.length - 1) edges.push(edgeLabel(group.hops?.[i]?.type ?? ''));
+  });
+  const full = group.keys.filter((k) => k.kind === 'FullAccess').length;
+  edges.push({ text: 'controlled by', noVote: false });
+  nodes.push({ kind: 'keys', label: `${group.keys.length} key${group.keys.length > 1 ? 's' : ''}`, sub: full === group.keys.length ? 'full access' : `${full} full access` });
+  return { nodes, edges };
+}
