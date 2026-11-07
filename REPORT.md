@@ -296,8 +296,10 @@ false. While true is in force, the factory's three keys can replace the code
 with no vote.
 
 One detail matters for anyone checking an upgrade: in the auto_update: false
-case, the proposal still reads Approved and the bond is returned. Only the
-receipts show that the upgrade did not happen. (An explorer shows the step 5 transaction itself as failed, because UpgradeSelf returns the factory’s call as its result; the proposal state alone would not tell you.)
+case, the proposal still reads Approved and the bond is returned, so the
+proposal state alone does not show that the upgrade failed. The receipts do.
+An explorer also shows that transaction itself as failed, because UpgradeSelf
+returns the factory's call as its result.
 
 The demo DAO is opted out again (7AaKHUxnCx1XdHUrrfMzHk6xUCMSYz9xm5j5Bi2gy36X).
 Its get_factory_info reads auto_update: false.
