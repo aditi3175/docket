@@ -46,7 +46,7 @@ function renderProposal(p) {
   const a = el('article');
   a.append(el('div', `#${p.id} · ${p.status} · proposed by ${p.proposer}`, 'meta'));
   a.append(el('div', 'What the members read:', 'meta'), el('div', p.description || '(empty description)', 'desc'));
-  const what = [`${p.kind.name}${p.kind.unknown ? ' (not one of the 17 known kinds)' : ''} — risk ${p.kind.risk}, reaches ${p.kind.reaches}`];
+  const what = [`${p.kind.name}${p.kind.unknown ? ' (not one of the 17 known kinds)' : ''} — risk ${p.kind.risk}`];
   if (p.receiver) what.push(`receiver ${p.receiver}`);
   if (p.amount) what.push(`amount ${p.amount}`);
   if (p.hash) what.push(`code hash ${p.hash}`);
@@ -83,6 +83,10 @@ function render(r, opts) {
   else {
     const range = r.page.count ? `#${r.page.from}–#${r.page.to}` : 'none';
     list.append(el('h2', `Proposals ${range}${r.page.last !== null ? ` of ${r.page.last}` : ''}, newest first`));
+    const lg = el('ul', undefined, 'basis');
+    for (const k of r.legend) lg.append(el('li', `${k.name} (risk ${k.risk}): reaches ${k.reaches}.`));
+    list.append(el('p', 'What each kind on this page can reach:', 'basis'), lg);
+    if (r.controlled.length) list.append(el('p', `Inside this DAO's control set (owned by ${r.dao}): ${r.controlled.join(', ')}. A receiver there lowers named-receiver and silent-reach to low; the flag stays.`, 'basis'));
     list.append(el('p', 'The same-words check compares proposals on this page only.', 'basis'));
     for (const p of r.proposals) list.append(renderProposal(p));
     if (r.page.from > 0) {

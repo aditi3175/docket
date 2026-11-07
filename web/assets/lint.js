@@ -53,7 +53,7 @@ function argsOf(d) {
 }
 
 // The accounts the action touches: its receiver, and any account named in its args.
-function touched(d) {
+export function touched(d) {
   const set = new Set();
   if (d.receiver) set.add(d.receiver);
   if (d.tokenId) set.add(d.tokenId);
@@ -82,7 +82,7 @@ function matches(n, raw, decimals) {
 }
 
 // -> { flags: [{ check, severity, detail, evidence }], unknowns: [string] }
-export async function lintProposal(rpc, d, { dao, siblings = [] } = {}) {
+export async function lintProposal(rpc, d, { dao, siblings = [], controlled = new Set() } = {}) {
   const flags = [];
   const unknowns = [...(d.unknowns ?? [])];
   const flag = (check, severity, detail, evidence = {}) => flags.push({ check, severity, detail, evidence });
@@ -98,20 +98,28 @@ export async function lintProposal(rpc, d, { dao, siblings = [] } = {}) {
     flag('authority-change', d.kind.risk, `${d.kind.name} changes who can pass what (${d.kind.reaches})`);
   }
 
+  // §6.3: is an account inside this DAO's own control set? `controlled` holds the accounts the caller
+  // resolved as owned by this DAO (§6.2), or the DAO itself. Inside lowers named-receiver and
+  // silent-reach to 'low' with a note; it never removes the flag (I9). Outside, or not resolved: 'high'.
+  const own = (a) => a === dao || controlled.has(a);
+  const ownNote = (a) => (a === dao ? 'the DAO itself' : `its own contract, owned by ${dao}`);
   const touches = touched(d);
   if (touches.size) {
     // named receiver — accounts in the description must appear in the action, and vice versa
     const notInAction = named.filter((a) => !touches.has(a));
     const receiverUnnamed = d.receiver && !named.includes(d.receiver);
     if (notInAction.length || receiverUnnamed) {
-      flag('named-receiver', 'high',
-        [receiverUnnamed && `the description does not name the receiver ${d.receiver}`,
+      const ownReceiverOnly = receiverUnnamed && !notInAction.length && own(d.receiver);
+      flag('named-receiver', ownReceiverOnly ? 'low' : 'high',
+        [receiverUnnamed && `the description does not name the receiver ${d.receiver}${own(d.receiver) ? ` (${ownNote(d.receiver)})` : ''}`,
           notInAction.length && `the description names ${notInAction.join(', ')}, which the action does not touch`].filter(Boolean).join('; '),
-        { receiver: d.receiver, named, notInAction });
+        { receiver: d.receiver, named, notInAction, ownReceiver: Boolean(d.receiver && own(d.receiver)) });
     }
     // silent reach — the action touches an account the description never mentions
     const silent = [...touches].filter((a) => !named.includes(a));
-    if (silent.length) flag('silent-reach', 'high', `the action touches ${silent.join(', ')}, which the description never mentions`, { silent });
+    const outside = silent.filter((a) => !own(a)); const inside = silent.filter(own);
+    if (outside.length) flag('silent-reach', 'high', `the action touches ${outside.join(', ')}, which the description never mentions`, { silent: outside });
+    if (inside.length) flag('silent-reach', 'low', `the action touches ${inside.map((a) => `${a} (${ownNote(a)})`).join(', ')}, which the description never mentions`, { silent: inside, own: true });
   }
 
   // cross-organisation — the action is aimed at another DAO

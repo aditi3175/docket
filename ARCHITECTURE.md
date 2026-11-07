@@ -645,6 +645,26 @@ Compares the description against the decoded action. It flags; it never clears.
 | empty assertion | description empty, or under 4 words once UI markers such as Astro's `$$$$$$$$ProposeCustomFunctionCall` are stripped | fires on marmaj #1016, whose description is 3 words: "Solving the Upgrade" |
 | authority change | the kind is one of the nine that alter who can pass what: `ChangePolicy`, `ChangePolicyUpdateDefaultVotePolicy`, `ChangePolicyUpdateParameters`, `ChangePolicyAddOrUpdateRole`, `ChangePolicyRemoveRole`, `AddMemberToRole`, `RemoveMemberFromRole`, `SetStakingContract`, `FactoryInfoUpdate` (§6.3) | fires on all nine |
 
+**Severity follows the control set (§6.3); the flag never goes away.** Before
+the checks run, `docket.html` resolves the owner (§6.2) of every account the
+page's proposals touch. An account owned by this DAO, or the DAO itself, is
+inside its control set.
+
+- **Inside:** named receiver and silent reach still fire, at **low**, with the
+  note "its own contract, owned by <dao>".
+- **Outside**, or if its owner could not be read: they stay **high**.
+- **Unchanged by the control set:** sibling collision, and every other check.
+
+On burrow, `contract.main.burrow.near` is inside (its `get_config.owner_id` is
+`burrow.sputnik-dao.near`). So #1743/#1744 carry named receiver and silent
+reach at low, while #1741/#1742, aimed at `br.private-mainnet.ref-dev-team.near`,
+keep them at high. All four keep sibling collision at high.
+
+A token named in the arguments (`token_id`) is judged the same way. It is
+usually outside the DAO's control set, so silent reach stays high for it.
+`lint.js` takes the resolved set as `controlled`, and only the severity moves
+(I9).
+
 **The empty-assertion cutoff is a chosen setting, not a measurement.** "Under 4
 words" (`EMPTY_ASSERTION_MIN_WORDS` in `web/assets/lint.js`) is Docket's choice.
 It doesn't come from the Sputnik source or from any measured set of

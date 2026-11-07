@@ -68,6 +68,8 @@ for (const [d, id] of [['ref-finance', 968], ['burrow', 1725], ['ref-labs', 285]
   if (!DAOS.includes(dao)) jobs.push([`call.${dao}.get_factory_info`, FASTNEAR, call(dao, 'get_factory_info')]);
   jobs.push([`call.${dao}.get_proposal.${id}`, FASTNEAR, call(dao, 'get_proposal', { id })]);
 }
+// §6.3 control set (Nov 10): owner getters for every account burrow #1736-#1744 touch that is not already recorded
+for (const id of ['br.private-mainnet.ref-dev-team.near', 'usdt.tether-token.near']) for (const g of OWNER_GETTERS) jobs.push([`call.${id}.${g}`, FASTNEAR, call(id, g)]);
 // Error shapes from the failover endpoints, so rpc.js classifies them from data, not guesses.
 for (const e of OTHERS) {
   const host = new URL(e).host;

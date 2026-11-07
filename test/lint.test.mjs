@@ -100,3 +100,19 @@ test('text helpers: numerals and account ids', () => {
   assert.deepEqual(numeralsInText('to 6M, then 15.5M; vote #433; 1,000 and 2.5k').map((n) => n.text), ['6M', '15.5M', '1,000', '2.5k']);
   assert.deepEqual(accountsInText('Set stNEAR(meta-pool.near) and rNEAR(lst.rhealab.near).'), ['meta-pool.near', 'lst.rhealab.near']);
 });
+
+test('§6.3 control set (SYNTHETIC decoded proposal): a receiver the DAO owns lowers named-receiver and silent-reach to low; the flags stay (I9); outside stays high', async () => {
+  const { lintProposal } = await import('../web/assets/lint.js');
+  const { kindOf, decodeArgs } = await import('../web/assets/decode.js');
+  const d = { id: 9, description: 'Set NEAR supplied_limit to 3.6M', status: 'Approved', kind: kindOf({ FunctionCall: {} }),
+    receiver: 'own.near', actions: [{ method: 'update_asset_limit', args: decodeArgs(Buffer.from('{"token_id":"wrap.near"}').toString('base64')) }], unknowns: [] };
+  const blocked = createRpc({ fetch: async () => { throw new TypeError('blocked'); }, sleep: async () => {} });
+  const inside = await lintProposal(blocked, d, { dao: 'x.sputnik-dao.near', controlled: new Set(['own.near']) });
+  const sev = (r) => r.flags.map((f) => `${f.check}:${f.severity}`).sort();
+  assert.deepEqual(sev(inside), ['named-receiver:low', 'silent-reach:high', 'silent-reach:low']);
+  assert.match(inside.flags.find((f) => f.check === 'named-receiver').detail, /its own contract, owned by x\.sputnik-dao\.near/);
+  const outside = await lintProposal(blocked, d, { dao: 'x.sputnik-dao.near' });
+  assert.deepEqual(sev(outside), ['named-receiver:high', 'silent-reach:high']);
+  // same checks fire either way: only the severity moves
+  assert.deepEqual([...new Set(inside.flags.map((f) => f.check))].sort(), [...new Set(outside.flags.map((f) => f.check))].sort());
+});

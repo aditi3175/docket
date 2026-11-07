@@ -24,6 +24,14 @@ test('recorded: burrow #1741–#1744 — §7.1 pairs flagged, newest first, head
   }
   assert.match(headerSentence(r.header, r.dao), /auto_update: false/);
   assert.deepEqual(policySentences(r.header.policy), ['3 of 5 in "council" can pass 12 of the 12 code- or rule-changing kinds.']);
+  // §6.3: #1743/#1744 call burrow's own contract -> named-receiver and silent-reach low; #1741/#1742 call
+  // an account burrow does not own -> high. sibling-collision stays high on all four (I9: severity moves, flags stay).
+  const sev = (id, check) => r.proposals.find((p) => p.id === id).flags.filter((f) => f.check === check).map((f) => f.severity);
+  assert.deepEqual(r.controlled, ['contract.main.burrow.near']);
+  for (const id of [1743, 1744]) { assert.deepEqual(sev(id, 'named-receiver'), ['low']); assert.deepEqual(sev(id, 'silent-reach'), ['low']); }
+  for (const id of [1741, 1742]) { assert.deepEqual(sev(id, 'named-receiver'), ['high']); assert.deepEqual(sev(id, 'silent-reach'), ['high']); }
+  for (const id of [1741, 1742, 1743, 1744]) assert.deepEqual(sev(id, 'sibling-collision'), ['high']);
+  assert.deepEqual(r.legend.map((k) => k.name), ['FunctionCall']); // the reach note, once per page
   // I10: the supplied limit is shown exactly as it was proposed
   assert.ok(r.proposals.find((p) => p.id === 1742).actions[0].args.includes('"15500000000000000000000000000000"'));
 });

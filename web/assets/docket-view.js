@@ -12,8 +12,8 @@
 //   I2   a failed read is 'unknown' — the header, a page of proposals, or one comparison
 
 import { decodeProposal } from './decode.js';
-import { lintProposal } from './lint.js';
-import { factoryInfo, policyEdge, codeIdentity, loadFactoryVersions, isAccountId } from './resolve.js';
+import { lintProposal, touched } from './lint.js';
+import { factoryInfo, policyEdge, codeIdentity, loadFactoryVersions, isAccountId, resolveOwner } from './resolve.js';
 
 export const PAGE = 20;
 const SEVERITY = ['critical', 'high', 'medium', 'low'];
@@ -80,12 +80,21 @@ export async function docketReport(rpc, daoId, { from = null, limit = PAGE } = {
     return { dao, status: 'unknown', header, page: { from: start, last }, proposals: [], unknowns };
   }
   const decoded = await Promise.all(ps.value.map((p) => decodeProposal(rpc, p)));
-  const linted = await Promise.all(decoded.map((d) => lintProposal(rpc, d, { dao, siblings: decoded })));
+  // §6.3 control set: every account these proposals touch, resolved through §6.2; owned by this DAO ->
+  // inside. An owner that cannot be read leaves the account outside (the flag stays high), and is listed.
+  const accounts = [...new Set(decoded.flatMap((d) => [...touched(d)]))].filter((a) => a !== dao);
+  const owners = await Promise.all(accounts.map((a) => resolveOwner(rpc, a)));
+  const controlled = new Set(accounts.filter((a, i) => owners[i].status === 'ok' && owners[i].owner === dao));
+  owners.forEach((o, i) => { if (o.status === 'unknown') unknowns.push(`owner of ${accounts[i]} (${o.at}): ${o.reason}; treated as outside this DAO`); });
+  const linted = await Promise.all(decoded.map((d) => lintProposal(rpc, d, { dao, siblings: decoded, controlled })));
   const proposals = decoded.map((d, i) => proposalView(d, linted[i])).sort((a, b) => b.id - a.id);
   const ids = ps.value.map((p) => p.id);
   return {
     dao, status: unknowns.length ? 'unknown' : 'ok', header,
     page: { from: start, to: ids.length ? Math.max(...ids) : null, last, count: ids.length }, proposals, unknowns,
+    controlled: [...controlled].sort(),
+    // what each kind on this page can reach (§6.4), shown once per page rather than on every row
+    legend: [...new Map(proposals.map((p) => [p.kind.name, p.kind])).values()].sort((a, b) => a.name.localeCompare(b.name)),
   };
 }
 
