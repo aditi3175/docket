@@ -116,10 +116,17 @@ export async function lintProposal(rpc, d, { dao, siblings = [], controlled = ne
         { receiver: d.receiver, named, notInAction, ownReceiver: Boolean(d.receiver && own(d.receiver)) });
     }
     // silent reach — the action touches an account the description never mentions
+    // Call targets: the receiver, and for a Transfer the token contract that moves the funds. An account
+    // that appears only inside the arguments (e.g. token_id in update_asset_limit) is a parameter, not
+    // a call target: a low note, whoever owns it (decided 2026-11-07).
+    const targets = new Set([d.receiver, d.kind?.name === 'Transfer' ? d.tokenId : null].filter(Boolean));
     const silent = [...touches].filter((a) => !named.includes(a));
-    const outside = silent.filter((a) => !own(a)); const inside = silent.filter(own);
+    const outside = silent.filter((a) => targets.has(a) && !own(a));
+    const inside = silent.filter((a) => targets.has(a) && own(a));
+    const params = silent.filter((a) => !targets.has(a));
     if (outside.length) flag('silent-reach', 'high', `the action touches ${outside.join(', ')}, which the description never mentions`, { silent: outside });
     if (inside.length) flag('silent-reach', 'low', `the action touches ${inside.map((a) => `${a} (${ownNote(a)})`).join(', ')}, which the description never mentions`, { silent: inside, own: true });
+    if (params.length) flag('silent-reach', 'low', `mentions ${params.join(', ')} in arguments; the description never names ${params.length > 1 ? 'them' : 'it'}`, { silent: params, parameter: true });
   }
 
   // cross-organisation — the action is aimed at another DAO

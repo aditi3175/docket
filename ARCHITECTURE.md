@@ -660,10 +660,16 @@ On burrow, `contract.main.burrow.near` is inside (its `get_config.owner_id` is
 reach at low, while #1741/#1742, aimed at `br.private-mainnet.ref-dev-team.near`,
 keep them at high. All four keep sibling collision at high.
 
-A token named in the arguments (`token_id`) is judged the same way. It is
-usually outside the DAO's control set, so silent reach stays high for it.
-`lint.js` takes the resolved set as `controlled`, and only the severity moves
-(I9).
+**A parameter is not a call target.** An account that appears only inside
+the arguments is a parameter, such as `token_id` in `update_asset_limit`.
+Silent reach notes it at low ("mentions wrap.near in arguments"), whoever owns
+it. Silent reach stays high, outside the control set, only for the call
+targets: the receiver, and for a `Transfer` the token contract that moves the
+funds. (An `ft_transfer` call's receiver *is* that token contract.)
+
+On burrow, this leaves #1737–#1740 (`supplied_limit` changes for one token
+each) with low notes only, while #1741/#1742 keep high. `lint.js` takes the
+resolved set as `controlled`, and only the severity moves (I9).
 
 **The empty-assertion cutoff is a chosen setting, not a measurement.** "Under 4
 words" (`EMPTY_ASSERTION_MIN_WORDS` in `web/assets/lint.js`) is Docket's choice.

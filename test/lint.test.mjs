@@ -109,10 +109,21 @@ test('§6.3 control set (SYNTHETIC decoded proposal): a receiver the DAO owns lo
   const blocked = createRpc({ fetch: async () => { throw new TypeError('blocked'); }, sleep: async () => {} });
   const inside = await lintProposal(blocked, d, { dao: 'x.sputnik-dao.near', controlled: new Set(['own.near']) });
   const sev = (r) => r.flags.map((f) => `${f.check}:${f.severity}`).sort();
-  assert.deepEqual(sev(inside), ['named-receiver:low', 'silent-reach:high', 'silent-reach:low']);
+  // wrap.near is only an argument (token_id): a parameter, a low note either way
+  assert.deepEqual(sev(inside), ['named-receiver:low', 'silent-reach:low', 'silent-reach:low']);
+  assert.ok(inside.flags.some((f) => f.detail === 'mentions wrap.near in arguments; the description never names it'));
   assert.match(inside.flags.find((f) => f.check === 'named-receiver').detail, /its own contract, owned by x\.sputnik-dao\.near/);
   const outside = await lintProposal(blocked, d, { dao: 'x.sputnik-dao.near' });
-  assert.deepEqual(sev(outside), ['named-receiver:high', 'silent-reach:high']);
+  assert.deepEqual(sev(outside), ['named-receiver:high', 'silent-reach:high', 'silent-reach:low']);
   // same checks fire either way: only the severity moves
   assert.deepEqual([...new Set(inside.flags.map((f) => f.check))].sort(), [...new Set(outside.flags.map((f) => f.check))].sort());
+});
+
+test('silent reach (SYNTHETIC Transfer): the token contract that moves the funds is a call target, high when outside the control set', async () => {
+  const { lintProposal } = await import('../web/assets/lint.js');
+  const { kindOf } = await import('../web/assets/decode.js');
+  const blocked = createRpc({ fetch: async () => { throw new TypeError('blocked'); }, sleep: async () => {} });
+  const d = { id: 3, description: 'Pay alice.near for the audit', status: 'InProgress', kind: kindOf({ Transfer: {} }), receiver: 'alice.near', tokenId: 'tok.near', actions: [], unknowns: [] };
+  const r = await lintProposal(blocked, d, { dao: 'x.sputnik-dao.near' });
+  assert.deepEqual(r.flags.filter((f) => f.check === 'silent-reach').map((f) => [f.severity, f.evidence.silent]), [['high', ['tok.near']]]);
 });
