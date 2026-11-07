@@ -11,8 +11,13 @@ the sender, in IST (UTC+05:30), with UTC beside them.
 | Stader | admin@staderlabs.com | 2026-11-06 14:50 | 09:20 | none yet |
 | LiNEAR | X DM to @LinearProtocol | **not reached** | — | **pending.** The X DM is blocked because the account accepts DMs from verified accounts only. Contact requested instead, with no details of the finding: a public X reply to @LinearProtocol at 2026-11-06 15:07 IST (09:37 UTC; time as reported, read as PM); and [linear-protocol/LiNEAR#215](https://github.com/linear-protocol/LiNEAR/issues/215), *"Request: private security contact for LiNEAR"*, opened 2026-11-06 15:11 IST (09:41:29 UTC, `gh issue view`). The report itself is not yet sent |
 
+**Follow-up, the `UpgradeSelf` result promised in section 5: drafted
+2026-11-07, NOT SENT.** It goes to the three recipients above (not LiNEAR,
+which has no private contact yet). The text is under "Follow-up 1" at the end
+of this file.
+
 Every response will be published verbatim at submission, including "no
-response" (§11). Everything between the two `✂` lines is the text that was
+response" (§11). Everything between the first two `✂` lines is the report text that was
 sent.
 
 ✂ ----------------------------------------------------------------------------
@@ -239,3 +244,83 @@ a contact, may only ask for a private security contact. It must carry no
 detail of the finding.
 
 Sent: see the send log at the top. LiNEAR is pending.
+
+## Follow-up 1 (drafted 2026-11-07, not sent; not part of the pasted text above)
+
+To: NEAR security (security@near.org), Meta Pool (bug-bounty form; a new
+submission if the form gave no thread to reply to), Stader
+(admin@staderlabs.com). Not LiNEAR: no private contact yet.
+
+Subject: Docket follow-up: UpgradeSelf on an opted-out Sputnik DAO, mainnet result
+
+Everything between the two `✂` lines below is the text to send. The
+reproduce command and its expected output were run against mainnet on
+2026-11-07.
+
+✂ ----------------------------------------------------------------------------
+
+Hello,
+
+In our report of 2026-11-06, section 4 said that opting out of factory
+auto-update also stops UpgradeSelf from working on its own. We said this came
+from the source and had not been run on mainnet, and that we would send you
+the transaction either way. It has now run on mainnet, and the source holds.
+
+We created docket-demo.sputnik-dao.near through sputnik-dao.near. It runs
+v3.2 (code hash DtHZA1mUmGYeScEaUoUZYQGGFHSMpnjMCvkr5U9hJXuF), and its only
+council member is our own account, docket-aditi.near. We approved the same
+UpgradeSelf twice, to the code the DAO already runs, and changed only
+auto_update between the two:
+
+- auto_update: false, 2026-11-06 17:02 UTC
+  772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS
+  The factory's call to the DAO's update() failed:
+  "panicked at sputnikdao2/src/upgrade.rs:122:5: ERR_MUST_BE_SELF_OR_FACTORY"
+
+- auto_update: true, 2026-11-06 18:08 UTC
+  EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b
+  The same call succeeded, followed by migrate.
+
+So an opted-out DAO upgrades the way section 4 describes: a proposal to set
+auto_update back to true, then UpgradeSelf, then a proposal to set it back to
+false. While true is in force, the factory's three keys can replace the code
+with no vote.
+
+One detail matters for anyone checking an upgrade: in the auto_update: false
+case, the proposal still reads Approved and the bond is returned. Only the
+receipts show that the upgrade did not happen.
+
+The demo DAO is opted out again (7AaKHUxnCx1XdHUrrfMzHk6xUCMSYz9xm5j5Bi2gy36X).
+Its get_factory_info reads auto_update: false.
+
+To reproduce (bash with curl and python3, like section 6 of the report):
+
+RPC=https://free.rpc.fastnear.com
+txr(){ curl -s -X POST $RPC -H 'Content-Type: application/json' \
+ -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"EXPERIMENTAL_tx_status\",\"params\":{\"tx_hash\":\"$1\",\"sender_account_id\":\"docket-aditi.near\",\"wait_until\":\"FINAL\"}}" \
+ | python3 -c '
+import sys,json; r=json.load(sys.stdin)["result"]; out={x["id"]:x["outcome"]["status"] for x in r["receipts_outcome"]}
+for x in r["receipts"]:
+  calls=[a["FunctionCall"]["method_name"] for a in x["receipt"].get("Action",{}).get("actions",[]) if isinstance(a,dict) and "FunctionCall" in a]
+  if calls: s=out[x["receipt_id"]]; print(x["predecessor_id"],"->",x["receiver_id"],",".join(calls),"FAILED: "+json.dumps(s["Failure"])[-90:] if "Failure" in s else "ok")'; }
+txr 772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS
+txr EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b
+
+Expected output:
+
+docket-aditi.near -> docket-demo.sputnik-dao.near act_proposal ok
+docket-demo.sputnik-dao.near -> sputnik-dao.near update ok
+sputnik-dao.near -> docket-demo.sputnik-dao.near update FAILED:  panicked: panicked at sputnikdao2/src/upgrade.rs:122:5:\nERR_MUST_BE_SELF_OR_FACTORY"}}}}
+
+docket-aditi.near -> docket-demo.sputnik-dao.near act_proposal ok
+docket-demo.sputnik-dao.near -> sputnik-dao.near update ok
+sputnik-dao.near -> docket-demo.sputnik-dao.near update ok
+docket-demo.sputnik-dao.near -> docket-demo.sputnik-dao.near migrate ok
+
+Aditi (Docket, built for the NEAR Hackathon)
+Reply to: aditigupta3175@gmail.com
+
+✂ ----------------------------------------------------------------------------
+
+Sent: **not yet.** Record the send time (IST and UTC) and each response in the
+send log at the top.
