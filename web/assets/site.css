@@ -412,3 +412,39 @@ table.register thead th { background: #141418; }
 table.register th, table.register td { border-bottom-color: var(--line); }
 .stats .stat { letter-spacing: -.02em; }
 .banner .lede2, .answer .banner .lede2 { font-size: clamp(1.2rem, 2vw, 1.6rem); letter-spacing: -.025em; line-height: 1.25; }
+
+/* ---------- final pass: the homepage's header, eyebrow and numbered sections on every tool page ---------- */
+.site-header .wrap { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1.5rem; }
+.site-header .brand { justify-self: start; }
+.site-header .site-nav { justify-self: center; }
+.chip { justify-self: end; display: inline-flex; align-items: center; gap: 8px; font: 500 12px var(--mono); color: #bdb8c6; border: 1px solid var(--line); border-radius: 99px; padding: 6px 12px; white-space: nowrap; }
+.chip i { width: 7px; height: 7px; border-radius: 50%; background: var(--violet); box-shadow: 0 0 8px var(--violet); }
+.eyebrow { font: 600 12px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--gold); margin-bottom: .9rem; }
+
+/* account.html: each prose section numbered like the homepage's (01 · …), in gold */
+.prose { counter-reset: sec; max-width: 76ch; }
+.prose > section { counter-increment: sec; padding-top: 1.2rem; border-top: 1px solid var(--line); margin-top: 3rem; }
+.prose > section > h2 { margin-top: .4rem; }
+.prose > section > h2::before { content: counter(sec, decimal-leading-zero); display: block; font: 600 12px var(--mono); letter-spacing: .14em; color: var(--gold); margin-bottom: .6rem; }
+.prose > section > h3 { font-size: var(--s17); color: var(--slate); margin-top: 1rem; }
+
+/* optout.html: the steps on two columns. "What is given up" spans the right side and stays above
+   "Submit" (I14); "Submit" and the near-cli commands run full width underneath. */
+.steps { max-width: none; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 1rem 1.2rem; align-items: start;
+  grid-template-areas: "banner banner" "now given" "who given" "cost given" "submit submit" "cli cli"; }
+.steps > * { margin-top: 0 !important; min-width: 0; }
+.steps > .banner { grid-area: banner; }
+.steps > .step:nth-child(2) { grid-area: now; }
+.steps > .step:nth-child(3) { grid-area: given; align-self: stretch; }
+.steps > .step:nth-child(4) { grid-area: who; }
+.steps > .step:nth-child(5) { grid-area: cost; }
+.steps > .step:nth-child(6) { grid-area: submit; }
+.steps > .step:nth-child(7) { grid-area: cli; }
+.steps > .loading, .steps > .lede2 { grid-column: 1 / -1; }
+
+@media (max-width: 980px) {
+  .chip { display: none; }
+  .site-header .wrap { display: flex; justify-content: flex-start; }
+  .steps { grid-template-columns: minmax(0, 1fr); grid-template-areas: "banner" "now" "given" "who" "cost" "submit" "cli"; }
+}
+.recorded-note.live::before { background: var(--violet); border-color: var(--violet); box-shadow: 0 0 8px var(--violet); } /* the live dot, as on the homepage */
