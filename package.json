@@ -6,7 +6,7 @@
     "test": "node --test \"test/*.test.mjs\"",
     "verify": "node tools/verify.mjs",
     "app:install": "npm --prefix app ci",
-    "build": "npm --prefix app ci && npm --prefix app run build",
+    "build": "npm --prefix app ci --include=dev && npm --prefix app run build",
     "dev": "npm --prefix app run dev",
     "preview": "npm --prefix app run preview"
   },
