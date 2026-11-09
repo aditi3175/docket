@@ -9,7 +9,7 @@ the sender, in IST (UTC+05:30), with UTC beside them.
 | NEAR security, asked to forward to the sputnik-dao-contract maintainers and frol | security@near.org | 2026-11-06 14:37 | 09:07 | automated acknowledgement: the inbox is monitored, and code bugs go to HackenProof |
 | Meta Pool | bug-bounty form | 2026-11-06 14:47 | 09:17 | none yet |
 | Stader | admin@staderlabs.com | 2026-11-06 14:50 | 09:20 | none yet |
-| LiNEAR | X DM to @LinearProtocol | **not reached** | — | **pending.** The X DM is blocked because the account accepts DMs from verified accounts only. Contact requested instead, with no details of the finding: a public X reply to @LinearProtocol at 2026-11-06 15:07 IST (09:37 UTC; time as reported, read as PM); and [linear-protocol/LiNEAR#215](https://github.com/linear-protocol/LiNEAR/issues/215), *"Request: private security contact for LiNEAR"*, opened 2026-11-06 15:11 IST (09:41:29 UTC, `gh issue view`). The report itself is not yet sent |
+| LiNEAR | X DM to @LinearProtocol | **not reached** | — | **pending.** The X DM is blocked because the account accepts DMs from verified accounts only. Contact requested instead, with no details of the finding: a public X reply to @LinearProtocol at 2026-11-06 15:07 IST (09:37 UTC; time as reported, read as PM); and [linear-protocol/LiNEAR#215](https://github.com/linear-protocol/LiNEAR/issues/215), *"Request: private security contact for LiNEAR"*, opened 2026-11-06 15:11 IST (09:41:29 UTC, `gh issue view`). The report itself is not yet sent. 2026-11-09 15:25 IST: NEAR security asked to forward it to LiNEAR (Follow-up 2) |
 
 **Follow-up 1: the `UpgradeSelf` mainnet result promised in section 5.** Sent
 2026-11-07 to the three recipients above. LiNEAR was not sent it, because it
@@ -22,6 +22,36 @@ this file.
 | NEAR security | security@near.org | 2026-11-07 14:44 | 09:14 | none yet |
 | Stader | admin@staderlabs.com | 2026-11-07 14:47 | 09:17 | none yet |
 | Meta Pool | bug-bounty form | 2026-11-07 14:50 | 09:20 | none yet |
+
+**Follow-up 2: asking NEAR security to forward the report to LiNEAR.** Sent
+2026-11-09 as a reply in the original security@near.org thread. LiNEAR still
+had no private channel. `linear.sputnik-dao.near`'s Council includes
+`root.near` (`get_policy`, block 223750676, 2026-11-09: `hos-root.sputnik-dao.near`,
+`root.near`, `defipapa.near`, `gcohen.near`, `aldrich.near`). The time is as
+reported by the sender. LiNEAR itself has still not been sent the report.
+
+| recipient | channel | sent (IST) | sent (UTC) | response |
+|---|---|---|---|---|
+| NEAR security, asked to forward the report and Follow-up 1 to LiNEAR | security@near.org (reply in the original thread) | 2026-11-09 15:25 | 09:55 | none yet |
+
+The text that was sent:
+
+> **Subject:** Re: Sputnik factory: PR #233's auto-update fix is undeployed — please forward to the sputnik-dao-contract maintainers and frol
+>
+> Hello,
+>
+> One more request on this thread. LiNEAR is the one affected protocol I have not been able to reach privately. `linear.sputnik-dao.near` owns `linear-protocol.near` and reads `auto_update: true`. Their X account accepts DMs only from verified accounts. I asked for a private security contact in an X reply and in linear-protocol/LiNEAR#215 on 2026-11-06, without details of the finding, and have had no answer.
+>
+> That DAO's council includes `root.near` (read from `get_policy` today), so you may have a direct line to them. Could you forward the original report and the 2026-11-07 follow-up to LiNEAR, or put me in touch with their security contact?
+>
+> As in the original report, we plan to publish on or after 2026-11-14, when the NEAR Hackathon submission closes. Everything in it is public on-chain configuration.
+>
+> Thank you,
+> Aditi
+
+This is the draft as it was shown before sending, with the closing line the
+author chose. If the sent text differs anywhere else, the sent text governs and
+this copy will be corrected.
 
 Every response will be published verbatim at submission, including "no
 response" (§11). Everything between the first two `✂` lines is the report text that was
