@@ -4,114 +4,188 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Docket — a DAO's proposals, decoded</title>
-<style>
-  body { font: 16px/1.55 system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem; color: #1b1b1b; }
-  h1 { font-size: 1.45rem; margin-bottom: .2rem; } h2 { font-size: 1.08rem; margin-top: 1.8rem; border-bottom: 1px solid #ddd; padding-bottom: .2rem; }
-  code, pre, .mono { font: 13px/1.45 ui-monospace, monospace; } pre { background: #f4f4f4; padding: .6rem; overflow-x: auto; white-space: pre-wrap; word-break: break-all; margin: .3rem 0; }
-  .headline { font-weight: 600; margin: 1.2rem 0; padding: .8rem 1rem; border-left: 5px solid #b91c1c; background: #fef2f2; }
-  .headline.gated { border-color: #15803d; background: #f0fdf4; } .headline.unknown { border-color: #b45309; background: #fffbeb; }
-  article { border: 1px solid #e5e7eb; border-radius: 6px; padding: .7rem 1rem; margin: 1rem 0; }
-  .meta { color: #555; font-size: .88rem; } .desc { white-space: pre-wrap; margin: .4rem 0; }
-  .flag { margin: .25rem 0; padding-left: .6rem; border-left: 4px solid #999; }
-  .critical { border-color: #b91c1c; } .high { border-color: #c2410c; } .medium { border-color: #b45309; } .low { border-color: #6b7280; }
-  .sev { font-weight: 600; text-transform: uppercase; font-size: .75rem; margin-right: .4rem; }
-  .basis { color: #555; font-size: .86rem; } .muted { color: #666; } nav a { margin-right: .8rem; } .examples button { margin: 0 .3rem .3rem 0; }
-</style>
+<link rel="preload" href="assets/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
-<nav class="basis"><a href="index.html">finding</a><a href="account.html">account</a><a href="docket.html">docket</a><a href="register.html">register</a><a href="optout.html">opt-out</a></nav>
-<h1>A DAO's proposals, decoded</h1>
-<p class="muted">Members of a Sputnik DAO vote on a description and an action. Docket decodes the action from the
-chain, compares it with the description, and flags where they part. It flags and never clears: a proposal with no flag
-is not thereby safe. It holds no key and signs nothing.</p>
-<form id="pick"><label>DAO <input id="dao" size="38" value="burrow.sputnik-dao.near" autocomplete="off" spellcheck="false"></label>
-<button>Read</button></form>
-<p class="examples basis">Examples:
-  <button type="button" data-d="burrow.sputnik-dao.near" data-from="1741" data-limit="4">burrow #1741–#1744 (same words, different target)</button>
-  <button type="button" data-d="stnear.sputnik-dao.near">stnear (Meta Pool's owner)</button>
-  <button type="button" data-d="docket-demo.sputnik-dao.near">docket-demo (the opt-out test)</button></p>
-<div id="out" aria-live="polite"></div>
+<a class="skip" href="#main">Skip to the proposals</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="index.html" aria-label="Docket, overview">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M8.2 12h7.6" stroke="currentColor" stroke-width="2.2"/><rect x="15.8" y="8.6" width="6.8" height="6.8" rx="1.6" fill="currentColor"/></svg>
+      Docket
+    </a>
+    <nav class="site-nav" aria-label="Pages">
+      <a href="index.html">Overview</a>
+      <a href="account.html">Account</a>
+      <a href="docket.html" aria-current="page">Proposals</a>
+      <a href="register.html">Register</a>
+      <a href="optout.html">Opt out</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+  <section class="page-head compact">
+    <h1>A DAO’s proposals, decoded</h1>
+    <p class="intro">Members vote on a description and an action. Docket decodes the action from the chain, sets it beside the description, and flags where they part. It flags and never clears: a proposal with no flag is not thereby safe.</p>
+    <div class="pickrow">
+    <form id="pick" class="pick">
+      <label>Sputnik DAO <input id="dao" value="burrow.sputnik-dao.near" autocomplete="off" spellcheck="false" autocapitalize="off"></label>
+      <button type="submit">Read</button>
+    </form>
+    <div class="chips examples">Examples:
+      <button type="button" data-d="burrow.sputnik-dao.near" data-from="1741" data-limit="4">Burrow #1741–#1744</button>
+      <button type="button" data-d="stnear.sputnik-dao.near">stnear</button>
+      <button type="button" data-d="docket-demo.sputnik-dao.near">Demo DAO</button>
+    </div>
+    </div>
+  </section>
+  <div id="out" class="answer" aria-live="polite"></div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <a href="https://github.com/aditi3175/docket">github.com/aditi3175/docket</a>
+    <span>Read-only, holds no key</span>
+    <span id="footer-census">Census: reading graph.json…</span>
+  </div>
+</footer>
 
 <script type="module">
 import { createRpc } from './assets/rpc.js';
 import { docketReport, headerSentence, policySentences, PAGE } from './assets/docket-view.js';
 import { explainCode } from './assets/account-view.js';
+import { census } from './assets/census.js';
 
 const rpc = createRpc();
 const out = document.getElementById('out');
 const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
 const link = (href, text) => { const a = el('a', text); a.href = href; return a; };
+// Text with NEAR account ids kept whole: each id is an unbroken span, clipped with an ellipsis (full id in
+// its title) only if it is wider than its column.
+const ID = /([a-z0-9][a-z0-9_-]*(?:\.[a-z0-9_-]+)*\.(?:near|tg))\b/g;
+function withIds(text, cls = '') {
+  const e = el('span', undefined, cls);
+  String(text).split(ID).forEach((t, i) => { if (!t) return; if (i % 2) { const x = el('span', t, 'id clip'); x.title = t; e.append(x); } else e.append(document.createTextNode(t)); });
+  return e;
+}
+const field = (label, value, mono) => { const d = el('div', undefined, 'field'); d.append(el('span', label, 'k'), el('span', value, mono ? 'v id' : 'v')); return d; };
 
+// One proposal: what the members read, beside what it does, with the flags in the margin. That
+// comparison is the product, so it is the layout.
 function renderProposal(p) {
-  const a = el('article');
-  a.append(el('div', `#${p.id} · ${p.status} · proposed by ${p.proposer}`, 'meta'));
-  a.append(el('div', 'What the members read:', 'meta'), el('div', p.description || '(empty description)', 'desc'));
-  const what = [`${p.kind.name}${p.kind.unknown ? ' (not one of the 17 known kinds)' : ''} — risk ${p.kind.risk}`];
-  if (p.receiver) what.push(`receiver ${p.receiver}`);
-  if (p.amount) what.push(`amount ${p.amount}`);
-  if (p.hash) what.push(`code hash ${p.hash}`);
-  if (p.member) what.push(`member ${p.member} → role "${p.role}"`);
-  a.append(el('div', 'What the action does:', 'meta'), el('div', what.join(' · ')));
+  const a = el('article', undefined, `proposal${p.flags.length ? ' flagged' : ''}`);
+  const head = el('header', undefined, 'p-head');
+  head.append(el('span', `#${p.id}`, 'p-id'), el('span', p.status, 'p-status'), el('span', p.kind.unknown ? `${p.kind.name}: not one of the 17 known kinds` : p.kind.name, 'p-kind'));
+  const by = el('span', 'proposed by ', 'p-by'); by.append(el('span', p.proposer, 'id')); head.append(by);
+  a.append(head);
+
+  const read = el('section', undefined, 'p-read');
+  read.append(el('h3', 'What members read'), el('p', p.description || '(empty description)', `desc${p.description ? '' : ' unknown-text'}`));
+
+  const does = el('section', undefined, 'p-does');
+  does.append(el('h3', 'What it does'));
+  does.append(field('Kind', `${p.kind.name}, risk ${p.kind.risk}`));
+  if (p.receiver) does.append(field('Receiver', p.receiver, true));
+  if (p.amount) does.append(field('Amount', p.amount));
+  if (p.hash) does.append(field('Code hash', p.hash, true));
+  if (p.member) does.append(field('Member', `${p.member} → role "${p.role}"`, true));
   for (const x of p.actions) {
-    a.append(el('div', `${x.method}${x.deposit && x.deposit !== '0' ? ` (deposit ${x.deposit} yocto)` : ''}`, 'mono'));
-    a.append(el('pre', x.args));
+    const act = el('div', undefined, 'action');
+    act.append(el('div', `${x.method}${x.deposit && x.deposit !== '0' ? ` · deposit ${x.deposit} yocto` : ''}`, 'id method'));
+    act.append(el('pre', x.args, x.refused ? 'refused' : ''));
+    does.append(act);
   }
-  for (const f of p.flags) { const d = el('div', undefined, `flag ${f.severity}`); d.append(el('span', f.severity, 'sev'), document.createTextNode(`${f.check}: ${f.detail}`)); a.append(d); }
-  if (p.note) a.append(el('p', p.note, 'basis'));
-  for (const u of p.unknowns) a.append(el('p', `unknown: ${u}`, 'basis'));
+
+  const margin = el('aside', undefined, 'p-flags');
+  margin.setAttribute('aria-label', `Flags on #${p.id}`);
+  if (p.flags.length) {
+    margin.append(el('h3', `${p.flags.length} flag${p.flags.length > 1 ? 's' : ''}`));
+    for (const f of p.flags) { const d = el('div', undefined, `flag sev-${f.severity}`); d.append(el('span', f.severity, 'sev'), el('span', f.check, 'check'), withIds(f.detail, 'detail')); margin.append(d); }
+  } else margin.append(el('h3', 'No flag'));
+  if (p.note) margin.append(el('p', p.note, 'note'));
+  for (const u of p.unknowns) margin.append(el('p', `unknown: ${u}`, 'note unknown-text'));
+
+  const body = el('div', undefined, 'p-body'); body.append(read, does, margin);
+  a.append(body);
   return a;
 }
 
-function render(r, opts) {
-  out.replaceChildren();
-  if (r.status === 'invalid' || r.status === 'not-a-dao') { out.append(el('p', r.headline, 'headline unknown')); return; }
-  const h = r.header;
-  out.append(el('p', headerSentence(h, r.dao), h.autoUpdate === true ? 'headline' : h.autoUpdate === false ? 'headline gated' : 'headline unknown'));
+function banner(h, dao) {
+  const b = el('div', undefined, `banner ${h.autoUpdate === true ? 'is-novote' : h.autoUpdate === false ? 'is-optedout' : 'is-unknown'}`);
+  const s = headerSentence(h, dao);
+  const p = el('p', undefined, 'lede2');
+  // colour only the claim: red for the no-vote path, green for opted out; the DAO id never breaks
+  const mark = h.autoUpdate === true ? 'with no proposal and no vote' : h.autoUpdate === false ? 'auto_update: false' : null;
+  for (const part of mark ? s.split(mark) .flatMap((t, i) => (i ? [mark, t] : [t])) : [s]) {
+    if (part === mark) { p.append(el('span', part, h.autoUpdate === true ? 'novote' : 'optedout')); continue; }
+    part.split(dao).forEach((t, k) => { if (k) p.append(el('span', dao, 'nobr')); if (t) p.append(document.createTextNode(t)); });
+  }
+  b.append(p);
   const links = el('p', undefined, 'basis');
-  links.append(link(`account.html?account=${encodeURIComponent(r.dao)}`, 'who can change this DAO without a vote'));
-  if (h.autoUpdate === true) links.append(document.createTextNode(' · '), link(`optout.html?dao=${encodeURIComponent(r.dao)}`, 'draft the opt-out'));
-  out.append(links);
+  links.append(link(`account.html?account=${encodeURIComponent(dao)}`, 'Who can change this DAO without a vote'));
+  if (h.autoUpdate === true) links.append(document.createTextNode(' · '), link(`optout.html?dao=${encodeURIComponent(dao)}`, 'Draft the opt-out'));
+  b.append(links);
+  return b;
+}
 
-  const pol = el('section'); pol.append(el('h2', 'Who can pass a code- or rule-changing proposal'));
+function render(r) {
+  out.replaceChildren();
+  if (r.status === 'invalid' || r.status === 'not-a-dao') { out.append(el('p', r.headline, 'lede2 is-unknown')); return; }
+  const h = r.header;
+  out.append(banner(h, r.dao));
+
+  const pol = el('details', undefined, 'policy');
+  pol.append(el('summary', 'Who can pass a code- or rule-changing proposal'));
   const ul = el('ul'); for (const s of policySentences(h.policy)) ul.append(el('li', s)); pol.append(ul);
   pol.append(el('p', `Code: ${explainCode(h.code)}`, 'basis'));
   out.append(pol);
 
-  const list = el('section');
-  if (!r.page) { list.append(el('h2', 'Proposals'), el('p', 'unknown: the proposal list was not read.')); }
+  const list = el('section', undefined, 'proposals');
+  if (!r.page) { list.append(el('h2', 'Proposals'), el('p', 'Unknown: the proposal list was not read.', 'unknown-text')); }
   else if (r.page.last === 0) { list.append(el('h2', 'Proposals'), el('p', `${r.dao} has never had a proposal (get_last_proposal_id = 0).`)); }
   else {
     const range = r.page.count ? `#${r.page.from}–#${r.page.to}` : 'none';
     list.append(el('h2', `Proposals ${range}${r.page.last !== null ? ` of ${r.page.last}` : ''}, newest first`));
-    const lg = el('ul', undefined, 'basis');
-    for (const k of r.legend) lg.append(el('li', `${k.name} (risk ${k.risk}): reaches ${k.reaches}.`));
-    list.append(el('p', 'What each kind on this page can reach:', 'basis'), lg);
-    if (r.controlled.length) list.append(el('p', `Inside this DAO's control set (owned by ${r.dao}): ${r.controlled.join(', ')}. A receiver there lowers named-receiver and silent-reach to low; the flag stays.`, 'basis'));
-    list.append(el('p', 'The same-words check compares proposals on this page only.', 'basis'));
+    const notes = el('div', undefined, 'basis list-notes');
+    notes.append(el('p', `What each kind here can reach: ${r.legend.map((k) => `${k.name} (risk ${k.risk}) reaches ${k.reaches}`).join('; ')}.`));
+    if (r.controlled.length) notes.append(el('p', `Inside this DAO’s control set (owned by ${r.dao}): ${r.controlled.join(', ')}. A receiver there lowers named-receiver and silent-reach to low; the flag stays.`));
+    notes.append(el('p', 'The same-words check compares proposals on this page only.'));
+    list.append(notes);
     for (const p of r.proposals) list.append(renderProposal(p));
     if (r.page.from > 0) {
       const older = Math.max(0, r.page.from - PAGE);
-      list.append(link(`docket.html?dao=${encodeURIComponent(r.dao)}&from=${older}&limit=${r.page.from - older}`, `older: #${older}–#${r.page.from - 1}`));
+      const more = link(`docket.html?dao=${encodeURIComponent(r.dao)}&from=${older}&limit=${r.page.from - older}`, `Older: #${older}–#${r.page.from - 1}`);
+      more.className = 'button older'; list.append(more);
     }
   }
   out.append(list);
-  if (r.unknowns.length) { const s = el('section'); s.append(el('h2', 'Reads that failed')); const u = el('ul'); for (const x of r.unknowns) u.append(el('li', x)); s.append(u); out.append(s); }
+  if (r.unknowns.length) { const s = el('section', undefined, 'prose'); s.append(el('h2', 'Reads that failed')); const u = el('ul'); for (const x of r.unknowns) u.append(el('li', x, 'unknown-text')); s.append(u); out.append(s); }
 }
 
 async function run(dao, from = null, limit = PAGE) {
   const qs = new URLSearchParams({ dao }); if (from !== null) { qs.set('from', from); qs.set('limit', limit); }
   history.replaceState(null, '', `?${qs}`);
-  out.replaceChildren(el('p', `reading ${dao} from mainnet…`, 'muted'));
+  out.replaceChildren(el('p', `Reading ${dao} from NEAR mainnet…`, 'loading'));
   try { render(await docketReport(rpc, dao, from === null ? {} : { from, limit })); }
-  catch (e) { out.replaceChildren(el('p', `Unknown: the page failed while reading (${e?.message ?? e}).`, 'headline unknown')); }
+  catch (e) { out.replaceChildren(el('p', `Unknown: the page failed while reading (${e?.message ?? e}).`, 'lede2 is-unknown')); }
 }
 const num = (v, d) => (v !== null && /^\d+$/.test(v) ? Number(v) : d);
 document.getElementById('pick').addEventListener('submit', (e) => { e.preventDefault(); run(document.getElementById('dao').value.trim()); });
 for (const b of document.querySelectorAll('.examples button')) b.addEventListener('click', () => {
   document.getElementById('dao').value = b.dataset.d; run(b.dataset.d, num(b.dataset.from ?? null, null), num(b.dataset.limit ?? null, PAGE));
 });
+// never blank: with no DAO in the address, open the first example (burrow #1741-#1744, real proposals)
 const q = new URLSearchParams(location.search);
 if (q.get('dao')) { document.getElementById('dao').value = q.get('dao'); run(q.get('dao'), num(q.get('from'), null), Math.min(num(q.get('limit'), PAGE), PAGE)); }
+else run('burrow.sputnik-dao.near', 1741, 4);
+
+fetch('../graph.json').then((r) => (r.ok ? r.json() : null)).then((g) => {
+  if (!g) throw new Error('unread');
+  const c = census(Object.values(g.daos));
+  document.getElementById('footer-census').textContent = `Census ${g.crawl?.lastRunAt?.slice(0, 10) ?? 'undated'}${g.crawl?.complete ? '' : ' (incomplete)'}: ${c.denominator.toLocaleString('en-US')} DAOs`;
+}).catch(() => { document.getElementById('footer-census').textContent = 'Census: unknown (graph.json unread)'; });
 </script>
 </body>
 </html>
