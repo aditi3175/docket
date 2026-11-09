@@ -22,7 +22,6 @@
       <a href="register.html">Register</a>
       <a href="optout.html">Opt out</a>
     </nav>
-    <span class="chip"><i></i>Read-only · holds no key</span>
   </div>
 </header>
 
@@ -55,7 +54,8 @@
 
 <script type="module">
 import { createRpc } from './assets/rpc.js';
-import { accountReport, explainCode, diagramOf, FIX, CHECKED_BUILD } from './assets/account-view.js';
+import { accountReport, valueAtStake, explainCode, diagramOf, FIX, CHECKED_BUILD } from './assets/account-view.js';
+import { fetchDefiLlama } from './assets/value.js';
 import { SOURCE } from './assets/source.js';
 import { createPath, keyGlyph } from './assets/path.js';
 import { census } from './assets/census.js';
@@ -186,11 +186,21 @@ function render(r) {
     s.append(el('p', 'Only on-chain authority. Docket does not know who holds a key, whether several people share one, or what a multisig agrees off-chain. An empty result is never a statement that an account is safe.', 'basis')); }
 }
 
+// DefiLlama is read once per page view (and reused across pages for 10 minutes, value.js). The chain answer
+// is drawn as soon as it lands; the value fills in when DefiLlama does, never before (I2: "reading", not a number).
+let llama = null; const llamaP = fetchDefiLlama().then((l) => (llama = l));
+let seq = 0;
 async function run(id) {
+  const me = ++seq;
   history.replaceState(null, '', `?account=${encodeURIComponent(id)}`);
   out.replaceChildren(el('p', `Reading ${id} from NEAR mainnet…`, 'loading'));
-  try { render(await accountReport(rpc, id)); }
-  catch (e) { out.replaceChildren(el('p', `Unknown: the page failed while reading (${e?.message ?? e}).`, 'lede2 is-unknown')); }
+  try {
+    const r = await accountReport(rpc, id, { llama: llama ?? { status: 'reading' } });
+    if (me !== seq) return;
+    if (llama && r.value?.status === 'reading') r.value = valueAtStake(r.account, llama);
+    render(r);
+    if (r.value?.status === 'reading') llamaP.then((l) => { if (me === seq) { r.value = valueAtStake(r.account, l); render(r); } });
+  } catch (e) { if (me === seq) out.replaceChildren(el('p', `Unknown: the page failed while reading (${e?.message ?? e}).`, 'lede2 is-unknown')); }
 }
 document.getElementById('pick').addEventListener('submit', (e) => { e.preventDefault(); run(document.getElementById('acct').value.trim()); });
 for (const b of document.querySelectorAll('.examples button')) b.addEventListener('click', () => { document.getElementById('acct').value = b.dataset.a; run(b.dataset.a); });

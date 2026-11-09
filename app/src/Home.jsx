@@ -427,7 +427,6 @@ function Fix({ badge }) {
 export default function Home() {
   const s = useFinding();
   const c = useCensus();
-  const live = !s.recorded && !s.gaps.length && !s.failed;
   const censusLine = c.status === 'ok' ? `Census ${c.when?.slice(0, 10)}${c.complete ? '' : ' (incomplete)'}: ${c.c.denominator.toLocaleString('en-US')} DAOs` : c.status === 'reading' ? 'Census: reading graph.json…' : 'Census: unknown (graph.json unread)';
   return (
     <>
@@ -435,7 +434,6 @@ export default function Home() {
       <header className="top"><div className="wrap">
         <a className="logo" href="index.html" aria-label="Docket, overview"><i />Docket</a>
         <nav aria-label="Pages">{PAGES.map(([label, href]) => <a key={href} href={href} aria-current={label === 'Overview' ? 'page' : undefined}>{label}</a>)}</nav>
-        <span className={`chip${live ? ' live' : ''}`}><i /><span>{live ? `live · NEAR mainnet · ${time(s.readAt)}` : s.gaps.length || s.failed ? 'some live reads failed' : 'recorded values · reading live…'}</span></span>
       </div></header>
 
       <main id="main">

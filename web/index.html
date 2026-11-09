@@ -20,7 +20,6 @@
     <a href="register.html">Register</a>
     <a href="optout.html">Opt out</a>
   </nav>
-  <span class="chip" id="chip"><i></i><span id="chip-text">recorded values · reading live…</span></span>
 </div></header>
 
 <main id="main">
@@ -404,12 +403,12 @@ indexReport(rpc, { onRead }).then((r) => {
     S.exposedUsd = r.exposedUsd; S.lsTotal = r.lsTotal; S.recorded = false;
     setHeadline(r); setLede(); drawChamber(); drawDeposits();
     $('prov').textContent = provenance(r); $('prov-wrap').classList.add('live');
-    $('chip').classList.add('live'); $('chip-text').textContent = `live · NEAR mainnet · ${time(r.readAt)}`;
+    
   } else {
     // I2: a failed read never becomes a value. The headline keeps the recorded values, labelled as such;
     // the vault and the cards show each read that failed as unknown.
     $('prov').textContent = `Live reads failed at ${time(r.readAt)}: ${gaps.join(', ')}. The headline shows the values recorded ${time(RECORDED.llamaReadAt)} (DefiLlama) and ${RECORDED.chainRecordedOn} (chain).`;
-    $('chip-text').textContent = 'some live reads failed';
+    
   }
 }).catch((e) => { $('prov').textContent = `Unknown: the page failed while reading (${e?.message ?? e}). The figures shown are the last recorded ones.`; });
 

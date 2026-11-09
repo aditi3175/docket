@@ -32,10 +32,13 @@ export const OWNER_GETTERS = Object.freeze([
 //
 // I2 rule: if getter k is unknown, the answer is unknown even if getter k+1 would succeed —
 // otherwise a flaky read silently changes which getter (and possibly which owner) is reported.
+// The five reads are sent together (one round trip instead of five), then judged strictly in §6.2
+// order with the same rules, so the answer is the one the sequential walk would give.
 export async function resolveOwner(rpc, accountId) {
   const tried = [];
-  for (const [method, fields] of OWNER_GETTERS) {
-    const r = await rpc.viewFunction(accountId, method);
+  const answers = await Promise.all(OWNER_GETTERS.map(([method]) => rpc.viewFunction(accountId, method)));
+  for (const [i, [method, fields]] of OWNER_GETTERS.entries()) {
+    const r = answers[i];
     if (r.status === 'unknown') return { status: 'unknown', reason: r.reason, at: method };
     if (r.status === 'absent' && r.what === 'account') return { status: 'no-account' };
     if (r.status === 'ok') {

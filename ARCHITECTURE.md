@@ -866,7 +866,9 @@ re-runs the claims §0's first table lists, and no others.
 
 Failover order: FastNear → `rpc.mainnet.near.org` → `near.drpc.org`. Concurrency
 capped at 6 (24 trips the limiter; 6 does not). Backoff, failover, 8s cache for
-identical reads. **An unreadable account is recorded as unknown and retried,
+identical reads. A 429 (HTTP, or `-429` in the body) fails over at once rather
+than backing off, and that endpoint moves to the back of the order for 5 s; all
+three are still tried before a read is unknown. **An unreadable account is recorded as unknown and retried,
 never counted as a value** — §3.3 depends on that distinction.
 
 ---

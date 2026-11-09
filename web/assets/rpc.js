@@ -34,6 +34,7 @@ const DEFAULTS = {
   attemptsPerEndpoint: 2,
   backoffBaseMs: 300,
   backoffMaxMs: 4_000,
+  cooldownMs: 5_000,     // an endpoint that rate-limits (429) is tried last for this long
 };
 
 const ANSWER_ERRORS = {
@@ -117,16 +118,29 @@ export function createRpc(opts = {}) {
     });
   }
 
+  // Rate limits: a 429 (HTTP 429, or JSON-RPC -429 from rpc.mainnet.near.org, §9) fails over at once
+  // instead of backing off on the same endpoint, and that endpoint goes to the back of the §9 order
+  // for cooldownMs. Every endpoint is still tried, in §9 order among the healthy ones; a read that
+  // none answers is unknown exactly as before (I2).
+  const cooling = new Map(); // endpoint -> time its cooldown ends
+  const isLimited = (e) => /(^|\D)-?429(\D|$)/.test(e.message);
+  const order = () => {
+    const t = now();
+    const hot = (ep) => (cooling.get(ep) ?? 0) > t;
+    return [...o.endpoints.filter((ep) => !hot(ep)), ...o.endpoints.filter(hot)];
+  };
+
   async function uncached(params) {
     const payload = { jsonrpc: '2.0', id: 'docket', method: 'query', params };
     const attempts = [];
-    for (const endpoint of o.endpoints) {
+    for (const endpoint of order()) {
       for (let i = 0; i < o.attemptsPerEndpoint; i++) {
         try {
           return await once(endpoint, payload);
         } catch (e) {
           if (!(e instanceof Transport)) throw e; // a bug, not a network condition
           attempts.push({ endpoint, reason: e.message });
+          if (isLimited(e)) { cooling.set(endpoint, now() + o.cooldownMs); stats.limited = (stats.limited ?? 0) + 1; break; }
           const isLast = i === o.attemptsPerEndpoint - 1;
           if (!isLast) {
             const base = Math.min(o.backoffMaxMs, o.backoffBaseMs * 2 ** i);

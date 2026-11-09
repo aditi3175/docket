@@ -35,6 +35,7 @@ export function valueAtStake(account, llama) {
   if (!m) return { status: 'not-valued', label: 'not valued: Docket has not mapped this account to a protocol DefiLlama values' };
   const via = m.dao === account ? `administers ${m.protocol} (${m.contract})` : m.protocol;
   if (!m.slug) return { status: 'not-valued', label: `${via}: not valued (DefiLlama does not list it)` };
+  if (llama?.status === 'reading') return { status: 'reading', label: `${via}: reading DefiLlama…` };
   if (llama?.status !== 'ok') return { status: 'unknown', label: `${via}: unknown (DefiLlama: ${llama?.reason ?? 'unread'})` };
   const t = nearTvlFrom(llama.protocols, m.slug);
   if (t.status !== 'ok') return { status: 'unknown', label: `${via}: unknown (${t.reason})` };
@@ -82,12 +83,20 @@ const autoUpdateDaos = (groups) => [...new Set(groups.flatMap((g) => g.hops.filt
 
 // -> { account, status, headline, code, groups:[{ path, hops, keys }], gates, votes, unknowns, factory, optOut, explainer }
 //    status ∈ 'invalid' | 'no-account' | 'ok' | 'unknown'
-export async function accountReport(rpc, accountId, { llamaFetch } = {}) {
+// `llama` (optional): a DefiLlama result, or { status: 'reading' } to report the chain first and the value
+// later (the page then calls valueAtStake itself when DefiLlama lands). Without it, DefiLlama is read here.
+export async function accountReport(rpc, accountId, { llamaFetch, llama: given } = {}) {
   const account = String(accountId ?? '').trim();
   if (!isAccountId(account)) return { account, status: 'invalid', headline: `"${account}" is not a NEAR account id.` };
 
-  const [factory, llama] = await Promise.all([loadFactoryVersions(rpc, FACTORY), fetchDefiLlama(llamaFetch ? { fetch: llamaFetch } : {})]);
-  const [walk, code] = await Promise.all([authorityWalk(rpc, account), codeIdentity(rpc, account, factory)]);
+  // every independent read starts at once: the walk does not wait for the factory or DefiLlama
+  const factoryP = loadFactoryVersions(rpc, FACTORY);
+  const [factory, llama, walk, code] = await Promise.all([
+    factoryP,
+    given ?? fetchDefiLlama(llamaFetch ? { fetch: llamaFetch } : {}),
+    authorityWalk(rpc, account),
+    factoryP.then((f) => codeIdentity(rpc, account, f)),
+  ]);
   if (code.form === 'no-account') return { account, status: 'no-account', headline: `${account} does not exist on NEAR mainnet.` };
 
   // Group roots by the path that reaches them: one path, its hops, the keys at its end.

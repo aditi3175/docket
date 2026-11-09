@@ -19,16 +19,44 @@ export function nearTvlFrom(protocols, slug) {
   return { status: 'ok', slug, name: p.name, category: p.category ?? null, usd: v };
 }
 
-// -> { status:'ok', readAt, protocols } | { status:'unknown', reason, readAt }
-export async function fetchDefiLlama({ fetch: f = globalThis.fetch.bind(globalThis), timeoutMs = 30_000 } = {}) {
-  const readAt = new Date().toISOString();
+// The list is ~9.5 MB, of which Docket uses four fields. slimProtocols keeps exactly those (slug, name,
+// category, chainTvls.Near), so every function in this file answers the same on the slim list.
+export const slimProtocols = (protocols) => protocols.map((p) => ({
+  slug: p.slug, name: p.name, category: p.category ?? null,
+  chainTvls: typeof p.chainTvls?.Near === 'number' ? { Near: p.chainTvls.Near } : {},
+}));
+
+// One read is shared by the pages of a visit for LLAMA_REUSE_MS: kept in sessionStorage, slimmed, with
+// the time it was actually read (I1: the page shows that time, never the time it was reused).
+// A failed read is never stored, so it is never reused (I2).
+export const LLAMA_CACHE_KEY = 'docket.defillama.v1';
+export const LLAMA_REUSE_MS = 10 * 60_000;
+function cached(storage, now) {
+  try {
+    const c = JSON.parse(storage?.getItem(LLAMA_CACHE_KEY) ?? 'null');
+    if (c && Array.isArray(c.protocols) && typeof c.readAt === 'string' && now - Date.parse(c.readAt) < LLAMA_REUSE_MS) return { status: 'ok', readAt: c.readAt, protocols: c.protocols, reused: true };
+  } catch { /* an unreadable cache is just a miss */ }
+  return null;
+}
+
+// -> { status:'ok', readAt, protocols, reused? } | { status:'unknown', reason, readAt }
+// The cache is used only by default (the browser's sessionStorage); a caller that passes its own fetch
+// gets a fresh read unless it also passes a storage.
+export async function fetchDefiLlama({ fetch: custom, timeoutMs = 30_000, storage, now = Date.now() } = {}) {
+  const f = custom ?? globalThis.fetch.bind(globalThis);
+  const store = storage ?? (custom ? null : globalThis.sessionStorage ?? null);
+  const hit = store && cached(store, now);
+  if (hit) return hit;
+  const readAt = new Date(now).toISOString();
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), timeoutMs);
   try {
     const res = await f(DEFILLAMA_PROTOCOLS, { signal: ctl.signal });
     if (!res.ok) return { status: 'unknown', reason: `HTTP ${res.status}`, readAt };
-    const protocols = await res.json();
-    if (!Array.isArray(protocols)) return { status: 'unknown', reason: 'unexpected shape', readAt };
+    const all = await res.json();
+    if (!Array.isArray(all)) return { status: 'unknown', reason: 'unexpected shape', readAt };
+    const protocols = slimProtocols(all);
+    try { store?.setItem(LLAMA_CACHE_KEY, JSON.stringify({ readAt, protocols })); } catch { /* full storage: no reuse, still correct */ }
     return { status: 'ok', readAt, protocols };
   } catch (e) {
     return { status: 'unknown', reason: ctl.signal.aborted ? `timeout ${timeoutMs}ms` : String(e?.message ?? e), readAt };

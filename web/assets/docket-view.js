@@ -51,8 +51,10 @@ export async function docketReport(rpc, daoId, { from = null, limit = PAGE } = {
   if (!isAccountId(dao)) return { dao, status: 'invalid', headline: `"${dao}" is not a NEAR account id.` };
   const unknowns = [];
 
-  const [fi, pol, factory] = await Promise.all([factoryInfo(rpc, dao), rpc.viewFunction(dao, 'get_policy'), loadFactoryVersions(rpc)]);
-  const code = await codeIdentity(rpc, dao, factory);
+  // every independent read starts at once (the last proposal id too); the answers are judged in the same order
+  const factoryP = loadFactoryVersions(rpc);
+  const [fi, pol, , code, lastRead] = await Promise.all([factoryInfo(rpc, dao), rpc.viewFunction(dao, 'get_policy'), factoryP,
+    factoryP.then((f) => codeIdentity(rpc, dao, f)), from === null ? rpc.viewFunction(dao, 'get_last_proposal_id') : null]);
   if (code.form === 'no-account') return { dao, status: 'invalid', headline: `${dao} does not exist on NEAR mainnet.` };
   if (pol.status === 'absent') return { dao, status: 'not-a-dao', headline: `${dao} is not a Sputnik DAO (it has no get_policy).` };
 
@@ -66,7 +68,7 @@ export async function docketReport(rpc, daoId, { from = null, limit = PAGE } = {
   let start = from;
   let last = null;
   if (start === null) {
-    const l = await rpc.viewFunction(dao, 'get_last_proposal_id');
+    const l = lastRead;
     if (l.status !== 'ok' || typeof l.value !== 'number') {
       unknowns.push(`get_last_proposal_id: ${l.reason ?? l.detail ?? 'unexpected shape'}`);
       return { dao, status: 'unknown', header, page: null, proposals: [], unknowns };
