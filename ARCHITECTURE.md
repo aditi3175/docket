@@ -1179,12 +1179,14 @@ proposal reads `Approved`, and each DAO now reads `{"factory_id":
 | v3.1 | `ref-finance` #968, `burrow` #1725, `ref-labs` #285, `rhea-conversion` #8, `rhea-lostfound` #2, `rhea-ccdfm` #9, `rhea-airdrop` #13 |
 | v3.2 | `rhea-lsd` #4, `neardragons` #0, `testgfdg` #0, `unrlzd` #1, `nearlytrade` #8 |
 
-**[verify]** at v3.0. None of the twelve runs v3.0, which is what
-`stader-nearx.sputnik-dao.near` runs (§5). The source shape is the same at
-`86cc77a0808a`, but reading the source is not the same as running it. No
-v3.0 DAO has been found to have run it on mainnet. The drafter picks the shape by the DAO's resolved
-version, and refuses to draft for a version it has not been tested against.
-Until this marker is removed, that includes v3.0.
+**Limitation: untested at v3.0.** `stader-nearx.sputnik-dao.near` runs v3.0
+(§5). None of the twelve DAOs above does. The source shape is the same at
+`86cc77a0808a`, but reading the source is not the same as running it. Docket
+cannot run it either: the factory creates only v3.2 DAOs, so a v3.0 test DAO
+cannot be made. The drafter picks the shape by the DAO's resolved version and
+refuses any version it has not been run against, v3.0 included
+(`TESTED_VERSIONS`, `web/assets/optout.js`). For stader-nearx, Docket shows
+the refusal and its reason, and drafts no transaction.
 
 ### 16.2 What the screen shows, in order
 

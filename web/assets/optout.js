@@ -14,7 +14,8 @@ import { whoCanPass, formatUnits } from './decode.js';
 import { SOURCE } from './source.js';
 
 // §16.1: the FactoryInfoUpdate shape has passed on mainnet at these versions (12 DAOs, 2026-11-06).
-// v3.0 is the same shape in source but has not been run; it is refused until its [verify] is removed.
+// v3.0 is the same shape in source but untested: the factory creates only v3.2 DAOs, so it cannot be run.
+// It is refused, and no transaction is drafted (the §16.1 limitation).
 export const TESTED_VERSIONS = Object.freeze(['v3.1', 'v3.2']);
 
 // No apostrophe: the near-cli command wraps the JSON in single quotes (§16.2 step 5 "the equivalent
