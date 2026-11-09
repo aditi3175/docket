@@ -250,7 +250,11 @@ function drawLocks() {
 function drawChamber() {
   $('boxes').replaceChildren(...S.rows.map((r) => { const b = el('div', null, `box${valueOf(r) === 'unknown' ? ' unknown' : ''}`); b.append(el('small', r.name), el('b', valueOf(r))); return b; }));
   $('total').textContent = typeof S.exposedUsd === 'number' ? usdShort(S.exposedUsd) : 'unknown';
+  // the log's total follows the value: the live read may land after the door opened (I1)
+  out.querySelectorAll('.logtotal').forEach((x) => { x.textContent = totalLabel(); });
 }
+// labelled recorded until the live value replaces it
+const totalLabel = () => (typeof S.exposedUsd === 'number' ? `${usdShort(S.exposedUsd)}${S.recorded ? ' (recorded)' : ''}` : 'unknown');
 
 let MODE = 't'; let timers = [];
 const at = (ms, f) => timers.push(setTimeout(f, still ? 0 : ms));
@@ -287,7 +291,7 @@ function run() {
     at(t0 + 800, () => face.classList.add('spin'));
     at(t0 + 2000, () => { face.classList.add('retract'); log('bolts retracted'); });
     at(t0 + 2600, () => frame.classList.add('open'));
-    at(t0 + 3900, () => log([`vault open · ${$('total').textContent} · nobody was asked`, 'g']));
+    at(t0 + 3900, () => log(['vault open · ', 'g'], [totalLabel(), 'g logtotal'], [' · nobody was asked', 'g']));
   } else if (MODE === 'f' || allFalse) {
     at(t0 + 500, () => { const v = $('LV'); v.classList.add('req', 'blink'); v.lastChild.textContent = 'DAO vote · required'; log('auto_update: ', ['false', 'optedout'], ' · a DAO proposal is required'); });
     at(t0 + 800, () => face.classList.add('jam'));

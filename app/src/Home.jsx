@@ -62,6 +62,10 @@ function provenance(s) {
 }
 
 // ---------------- the vault's sequence ----------------
+// The log's total is drawn at render time, not frozen when logged: the live value may land after the
+// door opens, and until it does the figure is labelled recorded (I1).
+const TOTAL = Symbol('total');
+const totalLabel = (s) => (typeof s.headlineOf.exposedUsd === 'number' ? `${usdShort(s.headlineOf.exposedUsd)}${s.recorded ? ' (recorded)' : ''}` : 'unknown');
 const IDLE = { inK: 0, turned: 0, vote: '', spin: false, jam: false, retract: false, open: false, shake: false, log: [] };
 const stamp = () => { const t = new Date(); return `${String(t.getMinutes()).padStart(2, '0')}:${String(t.getSeconds()).padStart(2, '0')}`; };
 
@@ -91,14 +95,12 @@ function useVault(s) {
     at(t0, () => log('factory → ', ['update()', 'w'], ` on ${owners.length ? owners.join(', ') : 'the owner DAOs'}`));
     const anyTrue = rows.some((r) => r.autoUpdate === true);
     const allFalse = rows.every((r) => r.autoUpdate === false);
-    // read at the moment of logging: live values may land while the doors are moving
-    const total = () => { const e = latest.current.headlineOf.exposedUsd; return typeof e === 'number' ? usdShort(e) : 'unknown'; };
     if (mode === 't' && anyTrue) {
       at(t0 + 500, () => { patch({ vote: 'bypass' }); log('auto_update: ', ['true', 'novote'], ' · proposal: ', ['none', 'novote'], ' · vote: ', ['none', 'novote']); });
       at(t0 + 800, () => patch({ spin: true }));
       at(t0 + 2000, () => { patch({ retract: true }); log('bolts retracted'); });
       at(t0 + 2600, () => patch({ open: true }));
-      at(t0 + 3900, () => log([`vault open · ${total()} · nobody was asked`, 'g']));
+      at(t0 + 3900, () => log(['vault open · ', 'g'], TOTAL, [' · nobody was asked', 'g']));
     } else if (mode === 'f' || allFalse) {
       at(t0 + 500, () => { patch({ vote: 'req' }); log('auto_update: ', ['false', 'optedout'], ' · a DAO proposal is required'); });
       at(t0 + 800, () => patch({ jam: true }));
@@ -180,7 +182,7 @@ function Vault({ s, st, frameRef }) {
         {st.log.map((row, i) => (
           <div key={`${row.t}-${i}-${st.log.length}`}>
             <span className="t">{row.t}</span>
-            {row.parts.map((p, j) => (typeof p === 'string' ? <span key={j}>{p}</span> : <span key={j} className={p[1]}>{p[0]}</span>))}
+            {row.parts.map((p, j) => (p === TOTAL ? <span key={j} className="g">{totalLabel(s)}</span> : typeof p === 'string' ? <span key={j}>{p}</span> : <span key={j} className={p[1]}>{p[0]}</span>))}
           </div>
         ))}
       </div>
