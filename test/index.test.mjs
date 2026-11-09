@@ -51,3 +51,44 @@ test('index.html: static, textContent only, the counter from the dated census wi
   assert.match(html, /from '\.\/assets\/index-view\.js'/);
   assert.doesNotMatch(html, /\b1[0-9]\b opted out|\b12 opted/); // no stored counter
 });
+
+test('RECORDED (I1): the values shown before the live reads are exactly indexReport over the recorded fixtures, rounded; no recorded badge (I19)', async () => {
+  const { RECORDED } = await import('../web/assets/index-view.js');
+  const r = await indexReport(recorded(), { llamaFetch: llamaFixture });
+  assert.deepEqual(RECORDED.factoryKeys, r.factoryKeys);
+  assert.equal(RECORDED.exposedUsd, r.exposedUsd);
+  assert.equal(RECORDED.lsTotal, r.lsTotal);
+  assert.deepEqual(RECORDED.rows.map((x) => [x.name, x.contract, x.slug, x.owner, x.autoUpdate, x.usd, x.staked?.near ?? null]),
+    r.rows.map((x) => [x.name, x.contract, x.slug, x.owner, x.autoUpdate, typeof x.usd === 'number' ? Math.round(x.usd) : x.usd, x.staked?.near ?? null]));
+  assert.equal(RECORDED.llamaReadAt, loadFixture('2026-11-06.defillama.protocols.near.json').captured_at.replace(/\.\d+Z$/, 'Z'));
+  assert.equal('badge' in RECORDED, false);
+});
+
+test('onRead: every read reports as it resolves (keys, badge, llama, each owner and factory info, NearX); a throwing callback changes nothing', async () => {
+  const seen = [];
+  const r = await indexReport(recorded(), { llamaFetch: llamaFixture, onRead: (e) => { seen.push(e.type + (e.i ?? '')); throw new Error('drawing failed'); } });
+  for (const t of ['keys', 'badge', 'llama', 'owner0', 'owner1', 'owner2', 'factory-info0', 'factory-info1', 'factory-info2', 'staked2']) assert.ok(seen.includes(t), t);
+  assert.equal(usd(r.exposedUsd), '$126,665,546');
+});
+
+test('headline (I2, I9): live numbers in plain words; unknown inputs say so; never "safe"', async () => {
+  const { headline, RECORDED } = await import('../web/assets/index-view.js');
+  assert.equal(headline(RECORDED), '$126.7M of NEAR liquid staking can be rewritten by three keys, without a vote.');
+  assert.match(headline({ ...RECORDED, exposedUsd: 'unknown' }), /dollar figure is unknown/);
+  assert.match(headline({ ...RECORDED, factoryKeys: 'unknown' }), /how many is unknown/);
+  assert.equal(headline({ ...RECORDED, factoryKeys: { full: 1, total: 1 } }), '$126.7M of NEAR liquid staking can be rewritten by one key, without a vote.');
+  for (const h of [headline(RECORDED), headline({ ...RECORDED, exposedUsd: 'unknown', factoryKeys: 'unknown' })]) assert.doesNotMatch(h, /\bsafe\b/i);
+});
+
+test('site: the stylesheet and the font are local; no page loads a remote stylesheet or font; red means no vote only', () => {
+  const css = readFileSync(new URL('../web/assets/site.css', import.meta.url), 'utf8');
+  assert.doesNotMatch(css, /url\(\s*["']?(https?:)?\/\//);
+  assert.doesNotMatch(css, /@import/);
+  assert.match(css, /url\("fonts\/schibsted-grotesk-latin\.woff2"\)/);
+  for (const f of ['schibsted-grotesk-latin.woff2', 'schibsted-grotesk-latin-italic.woff2', 'OFL.txt']) assert.ok(readFileSync(new URL(`../web/assets/fonts/${f}`, import.meta.url)).length > 1000, f);
+  const html = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8');
+  assert.doesNotMatch(html, /<link[^>]+href=["']https?:/);
+  // the red token is used only by the no-vote classes
+  const redRules = css.split('}').filter((rule) => /var\(--red\)/.test(rule)).map((rule) => rule.split('{')[0].trim());
+  for (const sel of redRules) assert.match(sel, /novote|edge-label$/, sel);
+});
