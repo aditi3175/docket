@@ -4,14 +4,14 @@
 // Styling is shared with web/index.html: both use web/assets/home.css.
 // Carried over: I2 (a failed read is shown as unknown, never a value), I9 (no reassuring words),
 // I20 (the census from graph.json's records; the chain recount on click only).
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import '../../web/assets/home.css';
 import { createRpc } from '../../web/assets/rpc.js';
 import { liveCounter, pct } from '../../web/assets/census.js';
 import { FACTORY } from '../../web/assets/index-view.js';
 import { SOURCE } from '../../web/assets/source.js';
 import { useFinding, useCensus, headline, usd, usdShort, time, nearShort, pct0, RECORDED } from './lib/finding.js';
-import { REPO } from './components/Chrome.jsx';
+const REPO = 'https://github.com/aditi3175/docket';
 
 const TX = (h) => `https://nearblocks.io/txns/${h}`;
 const PAGES = [['Overview', 'index.html'], ['Account', 'account.html'], ['Proposals', 'docket.html'], ['Register', 'register.html'], ['Opt out', 'optout.html']];
@@ -192,7 +192,7 @@ function Hero({ s }) {
   const frameRef = useRef(null);
   useEffect(() => {
     const f = frameRef.current; if (!f || typeof IntersectionObserver !== 'function') { run('t'); return undefined; }
-    const o = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { run('t'); o.disconnect(); } }, { threshold: 0.4 });
+    const o = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { run('t'); o.disconnect(); } }, { threshold: 0.25 });
     o.observe(f);
     return () => o.disconnect();
   }, [run]);
@@ -200,7 +200,7 @@ function Hero({ s }) {
   const live = !s.recorded && !s.gaps.length && !s.failed;
   return (
     <div className="hero"><div className="wrap">
-      <div>
+      <div className="hero-text">
         <div className="eyebrow">Docket · read from the chain alone</div>
         <h1><Headline of={s.headlineOf} /></h1>
         <Lede s={s} />
@@ -211,7 +211,7 @@ function Hero({ s }) {
         </div>
         <div className="cta">
           <button type="button" className="btn gold" onClick={() => run(mode)}>Turn the keys ↻</button>
-          <a className="btn" href="#fix">Add the fourth lock →</a>
+          <a className="btn" href="optout.html?dao=stnear.sputnik-dao.near">Add the fourth lock →</a>
         </div>
       </div>
       <Vault s={s} st={st} frameRef={frameRef} />
@@ -251,7 +251,8 @@ function Deposits({ s }) {
         })}
       </div>
       <div className="share" aria-hidden="true">
-        {ok && valued.map((x, i) => <i key={x.contract} style={{ width: `${(100 * x.usd) / r.lsTotal}%`, background: i % 2 ? 'linear-gradient(90deg,#c58f2a,#e0a93a)' : 'linear-gradient(90deg,#e0a93a,#ffd77a)' }} />)}
+        {ok && valued.map((x) => <i key={x.contract} style={{ width: `${(100 * x.usd) / r.lsTotal}%` }}><span>{x.name} · {usdShort(x.usd)}</span></i>)}
+        {ok && <b className="rest"><span>rest of NEAR liquid staking</span></b>}
       </div>
       <div className="share-l">
         <span>{ok ? `${valued.map((x) => x.name).join(' + ')} = ${pct0(r.exposedUsd, r.lsTotal)} of ${usdShort(r.lsTotal)} NEAR liquid staking (DefiLlama, NEAR-only TVL)` : 'Share of NEAR liquid staking: unknown'}</span>
@@ -281,6 +282,7 @@ function Keys({ s }) {
       </div></div>
       <div className="keys">
         <div className="keyring">
+          <div className="ring"><i /><span>keyring of <Id>{FACTORY}</Id></span></div>
           {n === null
             ? <div className="krow missing"><KeySvg w={22} h={48} /><div><b>Factory keys</b><small>the read failed</small></div><span className="st">UNKNOWN</span></div>
             : Array.from({ length: n }, (_, i) => (
@@ -299,7 +301,9 @@ function Keys({ s }) {
 // ---------------- 03 every door: the census ----------------
 const kindOf = (a) => (a === 'true' ? 't' : a === 'false' ? 'f' : 'u');
 
-function Field({ records }) {
+const BUCKET_ORDER = { true: 0, false: 1, 'no-factory-info': 2, unread: 3 };
+function Field({ records: raw }) {
+  const records = useMemo(() => raw.map((r, i) => ({ ...r, i })).sort((a, b) => (BUCKET_ORDER[a.autoUpdate] ?? 4) - (BUCKET_ORDER[b.autoUpdate] ?? 4) || a.i - b.i), [raw]);
   const ref = useRef(null);
   const geo = useRef({ cells: [], hover: -1, CW: 0, CH: 0, SZ: 14 });
   const [tip, setTip] = useState(null);
@@ -398,6 +402,7 @@ function Fix({ badge }) {
           <div className="ev"><a href="https://github.com/near-daos/sputnik-dao-contract/pull/233">PR #233, merged 2026-03-24</a><span className="muted">{badge ? (badge.state === 'unknown' ? `Factory read failed: ${badge.detail}` : `Factory read ${time(badge.readAt)}`) : 'Factory read: pending'}</span></div>
         </article>
         <article className="card lock"><div className="tag">Fit it yourself</div>
+          <svg className="padlock" viewBox="0 0 64 72" aria-hidden="true"><path d="M18 32V22a14 14 0 0 1 28 0v10" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" /><rect x="8" y="30" width="48" height="38" rx="10" fill="currentColor" /><circle cx="32" cy="46" r="5" fill="#120e1c" /><rect x="29.5" y="48" width="5" height="10" rx="2" fill="#120e1c" /></svg>
           <h3>1 proposal</h3>
           <p>A DAO passes one <Id>FactoryInfoUpdate</Id> setting <Id>auto_update</Id> to false. Tested on mainnet: with it, the factory's update was rejected; without it, the same update ran.</p>
           <div className="ev">

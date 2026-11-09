@@ -756,14 +756,22 @@ deploy. The two things that write — the opt-out (§16) and the delegate (§17)
 are signed by the user's own wallet or by a key scoped to one method on one
 DAO. Docket itself never holds a key (I13).
 
-**Presentation, decided 2026-11-09.** The site is a Vite + React + Tailwind app
-in `app/`, built to static files in `dist/`. It is the presentation layer only:
-every read, rule and figure comes from the dependency-free modules in
-`web/assets/`, imported unchanged. The app adds no logic of its own, holds no key
-and has no server. It shows the recorded values (`RECORDED`, tested equal to the
-fixtures) at once, then draws the authority path edge by edge as each live read
-lands. The original static pages in `web/*.html` stay until each one is replaced
-in `app/`. The commit before the switch is tagged `static-site-backup`.
+**Presentation, decided 2026-11-09.** The homepage is a React app in `app/`,
+built with Vite to static files in `dist/`. The four tool pages are the plain
+`web/*.html` pages, which the build copies in, so every link resolves. Both are
+presentation only: every read, rule and figure comes from the dependency-free
+modules in `web/assets/`, imported unchanged. No page adds logic of its own,
+holds a key or needs a server.
+
+The homepage is a vault. It has one keyhole per full-access key on
+`sputnik-dao.near`, counted from the live key read. When the keys turn, the
+"DAO vote" light reads bypassed and the door opens on the value at stake. An
+`auto_update: false` replay shows the mainnet opt-out test: the update is
+rejected and the door stays shut. Below the vault, the census is drawn as one dot
+per DAO. Recorded values (`RECORDED`, tested equal to the fixtures) show at once,
+labelled as recorded, and live reads replace them as they land. The page's
+styles are `web/assets/home.css`, shared with the static `web/index.html`. The
+commit before the React switch is tagged `static-site-backup`.
 
 1. **Account report** — any NEAR account: the authority graph, the ownership
    graph, the no-vote root set, and which code it runs (§4/§5). For
@@ -795,12 +803,11 @@ in `app/`. The commit before the switch is tagged `static-site-backup`.
 
 ```
 docket/
-  app/                    the site: Vite + React + Tailwind, presentation only, its own pinned
+  app/                    the homepage: React + Vite, presentation only, its own pinned
                           package.json + package-lock.json (the root stays dependency-free)
     src/lib/finding.js    turns web/assets results and onRead events into React state; computes nothing
-    src/components/       AuthorityPath (the hero path), header/footer
-    src/Home.jsx          the homepage
-    vite.config.js        builds to ../dist, copies graph.json in; serves ../web/assets in dev
+    src/Home.jsx          the homepage: the vault, the deposits, the keys, the census field, the fix
+    vite.config.js        builds to ../dist; copies graph.json and web/'s tool pages and assets in
   dist/                   build output (npm run build), static, ready for Vercel/Netlify; not committed
   web/                    the logic, plain ES modules with no dependencies; and the original static
                           pages, kept until each is replaced in app/
@@ -832,7 +839,7 @@ docket/
 **Two layers, two rules.** The logic (`web/assets/`, `tools/`, `guard/`,
 `agent/`) has no dependencies and runs in Node 22 or a browser as-is. `node
 tools/verify.mjs` and `npm test` need no install. The presentation (`app/`) may
-use pinned npm packages, but it only renders: it imports the logic and never
+use pinned npm packages (today: React, React DOM, Vite and its React plugin), but it only renders: it imports the logic and never
 reimplements a read, a figure or a rule. `test/app.test.mjs` checks four things:
 the pins, that the app imports its logic from `web/assets/`, that it renders no
 raw HTML and loads no remote fonts or styles, and the copy rules (never "safe";

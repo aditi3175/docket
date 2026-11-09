@@ -1,4 +1,4 @@
-// Vite config for Docket's presentation layer. The app imports the dependency-free read logic from
+// Vite config for Docket's presentation layer (React, no CSS framework). The app imports the dependency-free read logic from
 // ../web/assets unchanged, so the dev server may read one level up. The census (../graph.json, written by
 // tools/crawl.mjs) is served in dev and copied into the build, so the static output is self-contained.
 // The tool pages (web/account.html, docket.html, register.html, optout.html) are plain HTML + ES modules with
@@ -6,7 +6,6 @@
 // The homepage is the React app (index.html); web/index.html is not copied over it.
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import tailwind from '@tailwindcss/vite';
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, extname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -59,7 +58,7 @@ function toolPages() {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwind(), census(), toolPages()],
+  plugins: [react(), census(), toolPages()],
   server: { fs: { allow: ['..'] } },
   build: { outDir: '../dist', emptyOutDir: true },
 });

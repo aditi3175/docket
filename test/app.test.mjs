@@ -1,4 +1,4 @@
-// app/ — the Vite + React + Tailwind presentation layer. It may present, never compute: every read and
+// app/ — the React + Vite presentation layer. It may present, never compute: every read and
 // rule is imported from web/assets (dependency-free, tested elsewhere). These tests hold the app to the
 // rules the static pages kept: textContent-equivalent rendering (no raw HTML), no remote fonts or
 // styles, red-equivalent coral only for no-vote, never "safe" (I9), the census counter computed from

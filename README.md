@@ -56,11 +56,14 @@ Runs the test suite offline, against mainnet responses recorded in
 
 ## The site
 
-The site is a Vite + React + Tailwind app in `app/`. It reads NEAR mainnet and
-DefiLlama from your browser, with no server in between. It is presentation
-only: every read, rule and figure comes from the dependency-free modules in
-`web/assets/`, the same ones `verify.mjs` and the tests use. Its packages are
-pinned in `app/package-lock.json`; the root project has none.
+The homepage is a small React app in `app/`, built with Vite. The four tool
+pages (`account`, `docket`, `register`, `optout`) are plain HTML and ES modules
+in `web/`, and the build copies them in, so every link works from `dist/`. Both
+read NEAR mainnet and DefiLlama from your browser, with no server in between.
+Neither computes anything of its own: every read, rule and figure comes from the
+dependency-free modules in `web/assets/`, the same ones `verify.mjs` and the
+tests use. The app's packages are pinned in `app/package-lock.json`; the root
+project has none.
 
 **Try it (Node 22.12 or later):**
 
@@ -72,26 +75,26 @@ npm run preview                    # serves dist/ at http://localhost:4173
 | do | see |
 |---|---|
 | Open http://localhost:4173 | The finding in one sentence: "$… of NEAR liquid staking can be rewritten by three keys, without a vote." It starts from values recorded on 2026-11-06, labelled as recorded, then switches to live figures with their read times. |
-| Watch the path under the headline | Each edge draws as its mainnet read lands: value → protocol contract → owner DAO → coral "no vote" edge → `sputnik-dao.near` → its 3 full-access keys. |
-| Read card 01 | "Not shipped": the factory's default build, read live, does not contain the fix (PR #233). |
-| Read card 02, then click "Recount from the chain now" | 1,607 of 2,086 DAOs read `auto_update: true`, from the committed census. The button recounts every DAO from the chain (about 15 minutes). |
-| Turn off the network and reload | The headline keeps the recorded values and names each read that failed. Those edges are drawn dashed, never as zero. |
+| Watch the vault beside it (or under the headline on a phone) | One keyhole per full-access key on `sputnik-dao.near`, counted from a live read. The keys turn, the "DAO vote" light reads "bypassed", the bolts retract and the door opens on the value at stake. The log under the vault narrates each step. |
+| Click "auto_update: false", then "Turn the keys" | The same keys turn, but the update is rejected and the door stays shut. This replays the mainnet opt-out test (transaction `772n4Z…`), not any DAO's current state. |
+| Scroll to "01 · Inside the vault" | Meta Pool, LiNEAR and NearX, each with its contract, its owner DAO and that DAO's `auto_update`, read live. The gold bars show their share of NEAR liquid staking. |
+| Scroll to "03 · Every door like this one" and hover a dot | One dot per DAO in the committed census: coral for `auto_update: true` (1,607), violet for false (13), dashed for unknown (466). Hovering shows the DAO's id; clicking opens its proposals. "Recount from the chain now" re-reads every DAO (about 15 minutes). |
+| Scroll to "04 · The fourth lock" | "Not shipped": the factory's default build, read live, does not contain the fix (PR #233). Next to it, the one proposal a DAO can pass today, and the delegate's approve and refuse transactions. |
+| Turn off the network and reload | The headline keeps the recorded values and names each read that failed. Unread values show as "unknown", never as zero. |
 
-`dist/` is static (HTML, JS, CSS, fonts and `graph.json`) and ready for Vercel
-or Netlify: the build command is `npm run build`, the output directory `dist`.
-For development, run `npm run app:install` once, then `npm run dev`.
+`dist/` is static (HTML, JS, CSS, fonts, the tool pages and `graph.json`) and
+ready for Vercel or Netlify: the build command is `npm run build`, the output
+directory `dist`. For development, run `npm run app:install` once, then
+`npm run dev`.
 
 **Libraries in the site (Q-005), all pinned:** React 19.3.1 and React DOM
-19.3.1; Vite 8.3.7 with @vitejs/plugin-react 6.3.0; Tailwind CSS 4.3.5 with
-@tailwindcss/vite 4.3.5; Motion 14.11.0 for the path animation; and the fonts
-Bricolage Grotesque, Inter and JetBrains Mono through @fontsource-variable 5.3.0
-(SIL OFL). All MIT except the fonts. None of them are used by `verify.mjs`, the
-tests, `guard/` or `agent/`.
+19.3.1, built with Vite 8.3.7 and @vitejs/plugin-react 6.3.0, all MIT. The font
+is Schibsted Grotesk, self-hosted in `web/assets/fonts` (SIL OFL). None of these
+are used by `verify.mjs`, the tests, `guard/` or `agent/`.
 
-### The original static pages
+### Without building
 
-Until each page is rebuilt in `app/`, the original pages still work. They are
-static HTML and ES modules with no build step. Serve the **repository root**,
+The pages also work with no build at all. Serve the **repository root**,
 because the census loads `graph.json` from there:
 
 ```bash
@@ -102,7 +105,7 @@ Then open:
 
 | page | what it shows |
 |---|---|
-| http://localhost:8000/web/index.html | the finding on one screen, live, with the "fix shipped?" badge and the opted-out counter |
+| http://localhost:8000/web/index.html | the static version of the homepage: the same vault, reads and figures |
 | http://localhost:8000/web/account.html?account=meta-pool.near | who can change any account without a vote, drawn as a path |
 | http://localhost:8000/web/docket.html?dao=burrow.sputnik-dao.near | a DAO's proposals, decoded and checked against their descriptions |
 | http://localhost:8000/web/register.html | every Sputnik DAO the factory lists, by reach |

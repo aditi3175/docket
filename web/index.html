@@ -26,7 +26,7 @@
 <main id="main">
 <!-- ================= the finding, as a vault ================= -->
 <div class="hero"><div class="wrap">
-  <div>
+  <div class="hero-text">
     <div class="eyebrow">Docket · read from the chain alone</div>
     <h1 id="headline">NEAR liquid staking can be rewritten by three keys, without a vote.</h1>
     <p class="lede" id="lede">Reading NEAR mainnet and DefiLlama from your browser.</p>
@@ -37,7 +37,7 @@
     </div>
     <div class="cta">
       <button type="button" class="btn gold" id="run">Turn the keys ↻</button>
-      <a class="btn" href="#fix">Add the fourth lock →</a>
+      <a class="btn" href="optout.html?dao=stnear.sputnik-dao.near">Add the fourth lock →</a>
     </div>
   </div>
 
@@ -414,7 +414,7 @@ indexReport(rpc, { onRead }).then((r) => {
 }).catch((e) => { $('prov').textContent = `Unknown: the page failed while reading (${e?.message ?? e}). The figures shown are the last recorded ones.`; });
 
 // play the vault once it is on screen
-new IntersectionObserver((es, o) => es.forEach((x) => { if (x.isIntersecting) { run(); o.disconnect(); } }), { threshold: 0.4 }).observe(frame);
+new IntersectionObserver((es, o) => es.forEach((x) => { if (x.isIntersecting) { run(); o.disconnect(); } }), { threshold: 0.25 }).observe(frame);
 
 // ---------------- 03 census: I20, from graph.json records; a chain recount only on the reader's click ----------------
 const cv = $('field'); const cx = cv.getContext('2d'); const tip = $('tip');
