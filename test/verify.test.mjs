@@ -71,6 +71,24 @@ test('§17 I17 (recorded, then SYNTHETIC second key): a full-access key added to
   assert.equal(exitCodeFor(u.claims), 2);
 });
 
+test('§17 #8 (recorded, then SYNTHETIC statuses): InProgress and Expired (after Finalize) confirm; any other status, a delegate vote or another receiver diverges', async () => {
+  const rec = loadFixture('2026-11-07.call.docket-demo.sputnik-dao.near.get_proposal.8.json').body;
+  const p8 = JSON.parse(Buffer.from(rec.result.result).toString());
+  const as = (over) => ({ ...rec, result: { ...rec.result, result: [...Buffer.from(JSON.stringify({ ...p8, ...over }))] } });
+  const run = async (over) => {
+    const f = replayFetch({ override: (p) => (over && p.request_type === 'call_function' && p.account_id === 'docket-demo.sputnik-dao.near' && p.method_name === 'get_proposal'
+      && JSON.parse(Buffer.from(p.args_base64, 'base64').toString()).id === 8 ? jsonResponse(as(over)) : undefined) });
+    const r = await collect({ rpc: createRpc({ fetch: f, sleep: noSleep }), llamaFetch: llamaFixture, githubFetch: githubReplay() });
+    return r.claims.find((c) => c.section === '§17' && /#8/.test(c.what)).status;
+  };
+  assert.equal(p8.status, 'InProgress');
+  assert.equal(await run(null), 'confirmed');                       // recorded: InProgress
+  assert.equal(await run({ status: 'Expired' }), 'confirmed');      // Finalize after the period: Expired
+  for (const status of ['Approved', 'Rejected', 'Removed', 'Moved', 'Failed']) assert.equal(await run({ status }), 'diverged', status);
+  assert.equal(await run({ status: 'Expired', votes: { 'docket-guard.docket-aditi.near': 'Approve' } }), 'diverged');
+  assert.equal(await run({ kind: { Transfer: { ...p8.kind.Transfer, receiver_id: 'docket-aditi.near' } } }), 'diverged');
+});
+
 test('coverage: a protocol the rule selects but Docket has no contract for is named — 4 of 6', async () => {
   // SYNTHETIC DefiLlama entry added to the recorded snapshot
   const body = [...loadFixture('2026-11-06.defillama.protocols.near.json').body,

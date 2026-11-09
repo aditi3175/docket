@@ -89,6 +89,7 @@ const GUARD = 'docket-guard.docket-aditi.near';
 const DEMO = 'docket-demo.sputnik-dao.near';
 const GUARD_KEYS = [['FunctionCall', 'ed25519:6Qzjy94hpju5qHvLkth44zbFzCTKjNp5WcUT71DyQALQ', DEMO, ['act_proposal']]];
 const DEMO_COUNCIL = ['docket-aditi.near', GUARD];
+const PLANTED_OPEN_OR_EXPIRED = ['InProgress', 'Expired'];
 const SPEC_TVL_DATE = '2026-11-06';
 const SPEC_HEADLINE = 126_665_546; // §3.3 — sum of the auto_update:true protocols DefiLlama values
 // TVL moves daily. Beyond this relative move from the spec figure verify.mjs warns; it never fails.
@@ -239,7 +240,13 @@ export async function collect({ rpc = createRpc(), llamaFetch, githubFetch } = {
     claim('§17', whatC, DEMO_COUNCIL, demoPolicy.status === 'ok' ? (Array.isArray(council) ? [...council].sort() : null) : [demoPolicy.status], unread(demoPolicy));
     const vote = (p) => (p.status === 'ok' ? [p.value?.status, p.value?.kind?.Transfer?.receiver_id, p.value?.votes?.[GUARD] ?? null] : [p.status]);
     claim('§17', `${DEMO} #7: Approved, receiver docket-aditi.near, the delegate voted Approve`, ['Approved', 'docket-aditi.near', 'Approve'], vote(demo7), unread(demo7));
-    claim('§17', `${DEMO} #8 (planted, receiver ${GUARD}): the delegate did not vote`, ['InProgress', GUARD, null], vote(demo8), unread(demo8));
+    // #8 expires about 2026-11-15 and anyone may then Finalize it. In v3.2 (proposals.rs, Action::Finalize) an
+    // expired proposal becomes Expired, and until then it reads InProgress. Both are accepted, and only those:
+    // the claim is that the delegate never voted on it and that it pays docket-guard.
+    const planted = (p) => (p.status === 'ok'
+      ? [p.value?.kind?.Transfer?.receiver_id, p.value?.votes?.[GUARD] ?? null, PLANTED_OPEN_OR_EXPIRED.includes(p.value?.status) ? 'InProgress or Expired' : p.value?.status]
+      : [p.status]);
+    claim('§17', `${DEMO} #8 (planted): receiver ${GUARD}, the delegate never voted, InProgress or Expired`, [GUARD, null, 'InProgress or Expired'], planted(demo8), unread(demo8));
   }
 
   // §2 — owners that are keys: no contract, and exactly these access keys
