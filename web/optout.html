@@ -53,6 +53,8 @@ import { createRpc } from './assets/rpc.js';
 import { planOptOut, confirmOptOut, screenModel } from './assets/optout.js';
 import { loadWalletSelector, submitWithWallet, addProposalTransaction, WALLET_SELECTOR_VERSION } from './assets/wallet.js';
 import { census } from './assets/census.js';
+import { startMotion } from './assets/motion.js';
+startMotion();
 
 const rpc = createRpc();
 const out = document.getElementById('out');
@@ -62,12 +64,33 @@ let n = 0;
 function section(title, cls = '') { const s = el('section', undefined, `step ${cls}`.trim()); n++; const h = el('h2'); h.append(el('span', String(n), 'stepno'), document.createTextNode(title)); s.append(h); out.append(s); return s; }
 const stat = (k, v, cls) => { const d = el('div', undefined, 'stat-cell'); d.append(el('span', k, 'k'), el('span', v, `v ${cls ?? ''}`.trim())); return d; };
 
+function stepper(plan) {
+  const passers = plan.approve?.passers ?? [];
+  const vote = passers.length ? passers.map((x) => `${x.k} of ${x.n} in "${x.role}"`).join(' or ') : 'what its policy requires';
+  const steps = [
+    ['Read the DAO', plan.current ? `auto_update: ${plan.current.autoUpdate}` : 'unknown'],
+    ['Draft the proposal', 'FactoryInfoUpdate'],
+    ['Members vote', vote],
+    ['Re-read the chain', 'auto_update: false'],
+  ];
+  const at = plan.status === 'opted-out' ? steps.length : plan.status === 'draft' ? 1 : 0;
+  const ol = el('ol', undefined, `stepper${plan.status === 'opted-out' ? ' complete' : ''}`);
+  steps.forEach(([t, sub], i) => {
+    const li = el('li', undefined, i < at ? 'done' : i === at ? 'here' : '');
+    li.append(el('b', t), el('span', sub));
+    if (i === at && plan.status === 'draft') li.append(el('em', 'you are here'));
+    ol.append(li);
+  });
+  return ol;
+}
+
 function render(plan) {
   out.replaceChildren(); n = 0;
   const status = { draft: 'Ready to draft', 'opted-out': 'Already opted out', refused: 'Docket will not draft this', unknown: 'Unknown: a read failed' }[plan.status];
   const banner = el('div', undefined, `banner ${plan.status === 'opted-out' ? 'is-optedout' : plan.status === 'unknown' ? 'is-unknown' : plan.status === 'draft' ? 'is-novote' : 'is-plain'}`);
   const p = el('p', undefined, 'lede2'); p.append(el('span', plan.dao, 'nobr'), document.createTextNode(`: ${status}`)); banner.append(p);
   if (plan.reason) banner.append(el('p', plan.reason, 'basis'));
+  banner.append(stepper(plan));
   out.append(banner);
   for (const { id, title } of screenModel(plan)) {
     if (id === 'current') {
@@ -143,7 +166,7 @@ function render(plan) {
 
 async function run(dao) {
   history.replaceState(null, '', `?dao=${encodeURIComponent(dao)}`);
-  out.replaceChildren(el('p', `Reading ${dao} from NEAR mainnet…`, 'loading'));
+  out.replaceChildren(el('p', `Reading ${dao} from NEAR mainnet…`, 'loading'), el('div', undefined, 'skeleton'));
   try { render(await planOptOut(rpc, dao)); }
   catch (e) { out.replaceChildren(el('p', `Unknown: the page failed while reading (${e?.message ?? e}).`, 'lede2 is-unknown')); }
 }

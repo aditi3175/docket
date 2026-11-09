@@ -64,8 +64,8 @@
           <div class="thk" style="transform:translateZ(-20px)"></div><div class="thk" style="transform:translateZ(-24px)"></div>
           <div class="face" id="face">
             <div class="wheel"><svg viewBox="-100 -100 200 200" aria-hidden="true">
-              <defs><linearGradient id="st" gradientUnits="userSpaceOnUse" x1="-100" y1="-100" x2="100" y2="100"><stop offset="0" stop-color="#F2F0EB"/><stop offset=".5" stop-color="#9A958C"/><stop offset="1" stop-color="#4A4742"/></linearGradient>
-              <radialGradient id="hub" cx=".35" cy=".3"><stop offset="0" stop-color="#F5F3EE"/><stop offset=".6" stop-color="#8E8980"/><stop offset="1" stop-color="#3A3834"/></radialGradient></defs>
+              <defs><linearGradient id="st" gradientUnits="userSpaceOnUse" x1="-100" y1="-100" x2="100" y2="100"><stop offset="0" stop-color="#F6F0F4"/><stop offset=".5" stop-color="#9E8E99"/><stop offset="1" stop-color="#4C3D48"/></linearGradient>
+              <radialGradient id="hub" cx=".35" cy=".3"><stop offset="0" stop-color="#F8F2F6"/><stop offset=".6" stop-color="#928290"/><stop offset="1" stop-color="#3B2F38"/></radialGradient></defs>
               <circle r="78" fill="none" stroke="url(#st)" stroke-width="9"/>
               <g stroke="url(#st)" stroke-width="10" stroke-linecap="round"><line x1="0" y1="0" x2="0" y2="-96"/><line x1="0" y1="0" x2="83" y2="48"/><line x1="0" y1="0" x2="-83" y2="48"/></g>
               <circle cx="0" cy="-98" r="11" fill="url(#hub)"/><circle cx="85" cy="49" r="11" fill="url(#hub)"/><circle cx="-85" cy="49" r="11" fill="url(#hub)"/>
@@ -170,7 +170,7 @@
 </div></footer>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
-  <linearGradient id="kg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8F8A81"/><stop offset=".5" stop-color="#5E5A53"/><stop offset="1" stop-color="#2E2C29"/></linearGradient>
+  <linearGradient id="kg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9A8994"/><stop offset=".5" stop-color="#5F4D5A"/><stop offset="1" stop-color="#2F232C"/></linearGradient>
   <g id="keyshape"><circle cx="17" cy="14" r="12" fill="none" stroke="url(#kg)" stroke-width="6"/><rect x="14" y="25" width="6" height="52" rx="2" fill="url(#kg)"/><rect x="20" y="58" width="9" height="5" fill="url(#kg)"/><rect x="20" y="68" width="6" height="5" fill="url(#kg)"/></g>
 </defs></svg>
 
@@ -183,6 +183,8 @@ import { indexReport, usd, usdShort, headline, RECORDED, LIQUID_STAKING, FACTORY
 import { liveCounter, census, pct } from './assets/census.js';
 import { nearTvlFrom } from './assets/value.js';
 import { SOURCE } from './assets/source.js';
+import { startMotion } from './assets/motion.js';
+startMotion();
 
 const rpc = createRpc();
 const $ = (id) => document.getElementById(id);
@@ -429,9 +431,9 @@ function paint(t) {
   cx.clearRect(0, 0, CW, CH);
   for (let i = 0; i < cells.length; i++) {
     const c = cells[i]; const r = SZ * 0.34;
-    if (c.k === 't') { cx.fillStyle = i === hover ? '#161514' : `rgba(194,39,27,${still ? 0.75 : 0.55 + 0.25 * Math.sin(t / 900 + i)})`; cx.beginPath(); cx.arc(c.x, c.y, r, 0, 7); cx.fill(); }
-    else if (c.k === 'f') { cx.fillStyle = i === hover ? '#161514' : '#6A3FB5'; cx.beginPath(); cx.arc(c.x, c.y, r + 1, 0, 7); cx.fill(); }
-    else { cx.strokeStyle = i === hover ? '#161514' : '#A6A39D'; cx.setLineDash([2, 2]); cx.beginPath(); cx.arc(c.x, c.y, r, 0, 7); cx.stroke(); cx.setLineDash([]); }
+    if (c.k === 't') { cx.fillStyle = i === hover ? '#241722' : `rgba(179,38,30,${still ? 0.75 : 0.55 + 0.25 * Math.sin(t / 900 + i)})`; cx.beginPath(); cx.arc(c.x, c.y, r, 0, 7); cx.fill(); }
+    else if (c.k === 'f') { cx.fillStyle = i === hover ? '#241722' : '#6A3FB5'; cx.beginPath(); cx.arc(c.x, c.y, r + 1, 0, 7); cx.fill(); }
+    else { cx.strokeStyle = i === hover ? '#241722' : '#B3A4AE'; cx.setLineDash([2, 2]); cx.beginPath(); cx.arc(c.x, c.y, r, 0, 7); cx.stroke(); cx.setLineDash([]); }
   }
   if (!still) requestAnimationFrame(paint);
 }

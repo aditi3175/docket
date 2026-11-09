@@ -55,6 +55,8 @@ import { accessKeys } from './assets/resolve.js';
 import { fetchDefiLlama } from './assets/value.js';
 import { census } from './assets/census.js';
 import { registerRows, FLOOR } from './assets/register-view.js';
+import { startMotion } from './assets/motion.js';
+startMotion();
 
 const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
 const out = document.getElementById('out');
@@ -132,6 +134,11 @@ if (!graph) {
   const stats = document.getElementById('stats'); stats.replaceChildren();
   stats.append(el('span', `${c.denominator.toLocaleString('en-US')} DAOs`, 'stat'), el('span', `${c.counts.true.toLocaleString('en-US')} read auto_update: true`, 'stat novote'),
     el('span', `${c.counts.false} read false`, 'stat optedout'), el('span', `${(c.counts['no-factory-info'] + c.counts.unread).toLocaleString('en-US')} unknown`, 'stat muted'));
+  const unk = c.counts['no-factory-info'] + c.counts.unread;
+  const bar = el('div', undefined, 'census-bar'); bar.setAttribute('role', 'img');
+  bar.setAttribute('aria-label', `${c.counts.true} of ${c.denominator} read auto_update: true, ${c.counts.false} false, ${unk} unknown`);
+  for (const [n, cls] of [[c.counts.true, 'novote'], [c.counts.false, 'f'], [unk, 'u']]) { const i = el('i', undefined, cls); i.style.flexGrow = String(n); bar.append(i); }
+  stats.after(bar);
   document.getElementById('footer-census').textContent = `Census ${when?.slice(0, 10) ?? 'undated'}${graph.crawl?.complete ? '' : ' (incomplete)'}: ${c.denominator.toLocaleString('en-US')} DAOs`;
   const prov = document.getElementById('prov');
   const setProv = (llama) => { prov.textContent = `Rows: census by tools/crawl.mjs, ${time(when)}${graph.crawl?.complete ? '' : ', incomplete'} (the factory listed ${graph.numberDaos}) · Values: DefiLlama ${llama ? (llama.status === 'ok' ? `read ${time(llama.readAt)}` : `unknown (${llama.reason})`) : 'reading now…'}`; };

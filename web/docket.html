@@ -58,6 +58,8 @@ import { createRpc } from './assets/rpc.js';
 import { docketReport, headerSentence, policySentences, PAGE } from './assets/docket-view.js';
 import { explainCode } from './assets/account-view.js';
 import { census } from './assets/census.js';
+import { startMotion } from './assets/motion.js';
+startMotion();
 
 const rpc = createRpc();
 const out = document.getElementById('out');
@@ -113,6 +115,23 @@ function renderProposal(p) {
   return a;
 }
 
+function gate(h, dao) {
+  const g = el('div', undefined, 'gate');
+  const route = (cls, from, fromSub, label) => {
+    const r = el('div', undefined, `route ${cls}`);
+    const a = el('span', undefined, 'g-node'); a.append(el('b', from)); if (fromSub) a.append(el('small', fromSub));
+    const line = el('span', undefined, 'g-line'); line.append(el('i'), el('em', label));
+    const b = el('span', undefined, 'g-node g-dao'); b.append(withIds(dao));
+    r.append(a, line, b); return r;
+  };
+  g.append(route('vote', 'Members', 'a proposal, then a vote', 'vote required'));
+  const f = h.factoryId ?? 'the factory';
+  if (h.autoUpdate === true) g.append(route('novote', f, 'update(), not a proposal', 'no vote'));
+  else if (h.autoUpdate === false) g.append(route('optedout', f, 'update(), not a proposal', 'closed: auto_update false'));
+  else g.append(route('unknown', 'The factory', 'get_factory_info unread', 'unknown'));
+  return g;
+}
+
 function banner(h, dao) {
   const b = el('div', undefined, `banner ${h.autoUpdate === true ? 'is-novote' : h.autoUpdate === false ? 'is-optedout' : 'is-unknown'}`);
   const s = headerSentence(h, dao);
@@ -123,7 +142,7 @@ function banner(h, dao) {
     if (part === mark) { p.append(el('span', part, h.autoUpdate === true ? 'novote' : 'optedout')); continue; }
     part.split(dao).forEach((t, k) => { if (k) p.append(el('span', dao, 'nobr')); if (t) p.append(document.createTextNode(t)); });
   }
-  b.append(p);
+  b.append(p, gate(h, dao));
   const links = el('p', undefined, 'basis');
   links.append(link(`account.html?account=${encodeURIComponent(dao)}`, 'Who can change this DAO without a vote'));
   if (h.autoUpdate === true) links.append(document.createTextNode(' · '), link(`optout.html?dao=${encodeURIComponent(dao)}`, 'Draft the opt-out'));
@@ -168,7 +187,7 @@ function render(r) {
 async function run(dao, from = null, limit = PAGE) {
   const qs = new URLSearchParams({ dao }); if (from !== null) { qs.set('from', from); qs.set('limit', limit); }
   history.replaceState(null, '', `?${qs}`);
-  out.replaceChildren(el('p', `Reading ${dao} from NEAR mainnet…`, 'loading'));
+  out.replaceChildren(el('p', `Reading ${dao} from NEAR mainnet…`, 'loading'), el('div', undefined, 'skeleton'));
   try { render(await docketReport(rpc, dao, from === null ? {} : { from, limit })); }
   catch (e) { out.replaceChildren(el('p', `Unknown: the page failed while reading (${e?.message ?? e}).`, 'lede2 is-unknown')); }
 }

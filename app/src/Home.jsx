@@ -10,6 +10,7 @@ import { createRpc } from '../../web/assets/rpc.js';
 import { liveCounter, pct } from '../../web/assets/census.js';
 import { FACTORY } from '../../web/assets/index-view.js';
 import { SOURCE } from '../../web/assets/source.js';
+import { startMotion } from '../../web/assets/motion.js';
 import { useFinding, useCensus, headline, usd, usdShort, time, nearShort, pct0, RECORDED } from './lib/finding.js';
 const REPO = 'https://github.com/aditi3175/docket';
 
@@ -149,8 +150,8 @@ function Vault({ s, st, frameRef }) {
               <div className="wheel">
                 <svg viewBox="-100 -100 200 200" aria-hidden="true">
                   <defs>
-                    <linearGradient id="st" gradientUnits="userSpaceOnUse" x1="-100" y1="-100" x2="100" y2="100"><stop offset="0" stopColor="#F2F0EB" /><stop offset=".5" stopColor="#9A958C" /><stop offset="1" stopColor="#4A4742" /></linearGradient>
-                    <radialGradient id="hub" cx=".35" cy=".3"><stop offset="0" stopColor="#F5F3EE" /><stop offset=".6" stopColor="#8E8980" /><stop offset="1" stopColor="#3A3834" /></radialGradient>
+                    <linearGradient id="st" gradientUnits="userSpaceOnUse" x1="-100" y1="-100" x2="100" y2="100"><stop offset="0" stopColor="#F6F0F4" /><stop offset=".5" stopColor="#9E8E99" /><stop offset="1" stopColor="#4C3D48" /></linearGradient>
+                    <radialGradient id="hub" cx=".35" cy=".3"><stop offset="0" stopColor="#F8F2F6" /><stop offset=".6" stopColor="#928290" /><stop offset="1" stopColor="#3B2F38" /></radialGradient>
                   </defs>
                   <circle r="78" fill="none" stroke="url(#st)" strokeWidth="9" />
                   <g stroke="url(#st)" strokeWidth="10" strokeLinecap="round"><line x1="0" y1="0" x2="0" y2="-96" /><line x1="0" y1="0" x2="83" y2="48" /><line x1="0" y1="0" x2="-83" y2="48" /></g>
@@ -321,9 +322,9 @@ function Field({ records: raw }) {
       cx.clearRect(0, 0, g.CW, g.CH);
       g.cells.forEach((c, i) => {
         const r = g.SZ * 0.34; const hot = i === g.hover;
-        if (c.k === 't') { cx.fillStyle = hot ? '#161514' : `rgba(194,39,27,${calm ? 0.75 : 0.55 + 0.25 * Math.sin(t / 900 + i)})`; cx.beginPath(); cx.arc(c.x, c.y, r, 0, 7); cx.fill(); }
-        else if (c.k === 'f') { cx.fillStyle = hot ? '#161514' : '#6A3FB5'; cx.beginPath(); cx.arc(c.x, c.y, r + 1, 0, 7); cx.fill(); }
-        else { cx.strokeStyle = hot ? '#161514' : '#A6A39D'; cx.setLineDash([2, 2]); cx.beginPath(); cx.arc(c.x, c.y, r, 0, 7); cx.stroke(); cx.setLineDash([]); }
+        if (c.k === 't') { cx.fillStyle = hot ? '#241722' : `rgba(179,38,30,${calm ? 0.75 : 0.55 + 0.25 * Math.sin(t / 900 + i)})`; cx.beginPath(); cx.arc(c.x, c.y, r, 0, 7); cx.fill(); }
+        else if (c.k === 'f') { cx.fillStyle = hot ? '#241722' : '#6A3FB5'; cx.beginPath(); cx.arc(c.x, c.y, r + 1, 0, 7); cx.fill(); }
+        else { cx.strokeStyle = hot ? '#241722' : '#B3A4AE'; cx.setLineDash([2, 2]); cx.beginPath(); cx.arc(c.x, c.y, r, 0, 7); cx.stroke(); cx.setLineDash([]); }
       });
       if (!calm) raf = requestAnimationFrame(paint);
     };
@@ -427,6 +428,7 @@ function Fix({ badge }) {
 export default function Home() {
   const s = useFinding();
   const c = useCensus();
+  useEffect(() => startMotion(), []); // sections rise into view (presentation only; off for reduced motion)
   const censusLine = c.status === 'ok' ? `Census ${c.when?.slice(0, 10)}${c.complete ? '' : ' (incomplete)'}: ${c.c.denominator.toLocaleString('en-US')} DAOs` : c.status === 'reading' ? 'Census: reading graph.json…' : 'Census: unknown (graph.json unread)';
   return (
     <>
@@ -463,7 +465,7 @@ export default function Home() {
       </div></footer>
 
       <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true"><defs>
-        <linearGradient id="kg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#8F8A81" /><stop offset=".5" stopColor="#5E5A53" /><stop offset="1" stopColor="#2E2C29" /></linearGradient>
+        <linearGradient id="kg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#9A8994" /><stop offset=".5" stopColor="#5F4D5A" /><stop offset="1" stopColor="#2F232C" /></linearGradient>
         <g id="keyshape"><circle cx="17" cy="14" r="12" fill="none" stroke="url(#kg)" strokeWidth="6" /><rect x="14" y="25" width="6" height="52" rx="2" fill="url(#kg)" /><rect x="20" y="58" width="9" height="5" fill="url(#kg)" /><rect x="20" y="68" width="6" height="5" fill="url(#kg)" /></g>
       </defs></svg>
     </>

@@ -9,6 +9,7 @@
 
 const SVG = 'http://www.w3.org/2000/svg';
 const MOBILE = '(max-width: 860px)';
+let edgeSeq = 0; // edge ids unique across every path on a page (the signal dots point at them)
 
 export function keyGlyph(doc = document) {
   const s = doc.createElementNS(SVG, 'svg');
@@ -41,6 +42,7 @@ export function createPath(host, { reducedMotion, columns } = {}) {
     n.style.setProperty('--col', opts.col); n.style.setProperty('--row', opts.row);
     if (opts.span) n.style.setProperty('--span', opts.span);
     n.style.setProperty('--mrow', opts.mrow ?? opts.row);
+    n.style.setProperty('--i', String(nodes.size)); // entrance order (site.css staggers .path.enter .node)
     nodes.set(id, { el: n, opts });
     setNode(id, opts);
     grid.append(n);
@@ -76,10 +78,19 @@ export function createPath(host, { reducedMotion, columns } = {}) {
     const p = doc.createElementNS(SVG, 'path');
     const t = doc.createElementNS(SVG, 'text');
     svg.append(p, t);
+    p.id = `docket-edge-${++edgeSeq}`;
     edges.set(id, { from, to, p, t, opts: { kind: 'plain', state: 'hidden', m: 'down', lane: 0, ...opts } });
+    // opts.drawIn (ms): an edge whose read has already resolved is drawn in after this delay, in step with
+    // the nodes' entrance, instead of appearing whole. Reduced motion: whole, at once.
+    if (opts.drawIn !== undefined && opts.state === 'live' && !still) {
+      e0(id).opts.state = 'hidden'; paint(id, false); queue();
+      win.setTimeout(() => setEdge(id, { state: 'live' }), opts.drawIn);
+      return;
+    }
     paint(id, false);
     queue();
   }
+  const e0 = (id) => edges.get(id);
 
   function setEdge(id, next) {
     const e = edges.get(id); if (!e) return;
@@ -97,6 +108,7 @@ export function createPath(host, { reducedMotion, columns } = {}) {
     e.t.textContent = label && state === 'live' ? label : '';
     e.p.style.strokeDasharray = ''; e.p.style.strokeDashoffset = ''; e.p.classList.remove('drawing');
     route(e);
+    signal(e, kind === 'novote' && state === 'live' && !still);
     if (animate && kind !== 'unknown' && typeof e.p.getTotalLength === 'function') {
       const len = e.p.getTotalLength();
       if (len > 0) {
@@ -106,6 +118,18 @@ export function createPath(host, { reducedMotion, columns } = {}) {
         e.p.addEventListener('transitionend', () => { e.p.style.strokeDasharray = ''; e.p.style.strokeDashoffset = ''; e.p.classList.remove('drawing'); }, { once: true });
       }
     }
+  }
+
+  // A dot that travels a live no-vote edge against its drawn direction: authority flows from the keys
+  // to the account. Decoration of an edge already drawn; it carries no value.
+  function signal(e, on) {
+    if (!on) { e.dot?.remove(); e.dot = null; return; }
+    if (e.dot) return;
+    const c = doc.createElementNS(SVG, 'circle'); c.setAttribute('r', '4'); c.setAttribute('class', 'signal novote');
+    const m = doc.createElementNS(SVG, 'animateMotion');
+    m.setAttribute('dur', '2.6s'); m.setAttribute('repeatCount', 'indefinite'); m.setAttribute('keyPoints', '1;0'); m.setAttribute('keyTimes', '0;1'); m.setAttribute('calcMode', 'linear');
+    const mp = doc.createElementNS(SVG, 'mpath'); mp.setAttribute('href', `#${e.p.id}`);
+    m.append(mp); c.append(m); svg.append(c); e.dot = c;
   }
 
   const box = (id) => {
