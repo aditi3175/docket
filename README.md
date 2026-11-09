@@ -54,11 +54,45 @@ npm test
 Runs the test suite offline, against mainnet responses recorded in
 `test/fixtures/`. Tests name the invariants (§10 of the spec) they check.
 
-## The pages
+## The site
 
-The pages are static HTML and ES modules: no bundler, no framework, no build
-step. They read mainnet from your browser. Serve the **repository root**, not
-`web/`, because the census page loads `graph.json` from the root:
+The site is a Vite + React + Tailwind app in `app/`. It reads NEAR mainnet and
+DefiLlama from your browser, with no server in between. It is presentation
+only: every read, rule and figure comes from the dependency-free modules in
+`web/assets/`, the same ones `verify.mjs` and the tests use. Its packages are
+pinned in `app/package-lock.json`; the root project has none.
+
+**Try it (Node 22.12 or later):**
+
+```bash
+npm run build                      # installs app/ from its lockfile, builds to dist/
+npm run preview                    # serves dist/ at http://localhost:4173
+```
+
+| do | see |
+|---|---|
+| Open http://localhost:4173 | The finding in one sentence: "$… of NEAR liquid staking can be rewritten by three keys, without a vote." It starts from values recorded on 2026-11-06, labelled as recorded, then switches to live figures with their read times. |
+| Watch the path under the headline | Each edge draws as its mainnet read lands: value → protocol contract → owner DAO → coral "no vote" edge → `sputnik-dao.near` → its 3 full-access keys. |
+| Read card 01 | "Not shipped": the factory's default build, read live, does not contain the fix (PR #233). |
+| Read card 02, then click "Recount from the chain now" | 1,607 of 2,086 DAOs read `auto_update: true`, from the committed census. The button recounts every DAO from the chain (about 15 minutes). |
+| Turn off the network and reload | The headline keeps the recorded values and names each read that failed. Those edges are drawn dashed, never as zero. |
+
+`dist/` is static (HTML, JS, CSS, fonts and `graph.json`) and ready for Vercel
+or Netlify: the build command is `npm run build`, the output directory `dist`.
+For development, run `npm run app:install` once, then `npm run dev`.
+
+**Libraries in the site (Q-005), all pinned:** React 19.3.1 and React DOM
+19.3.1; Vite 8.3.7 with @vitejs/plugin-react 6.3.0; Tailwind CSS 4.3.5 with
+@tailwindcss/vite 4.3.5; Motion 14.11.0 for the path animation; and the fonts
+Bricolage Grotesque, Inter and JetBrains Mono through @fontsource-variable 5.3.0
+(SIL OFL). All MIT except the fonts. None of them are used by `verify.mjs`, the
+tests, `guard/` or `agent/`.
+
+### The original static pages
+
+Until each page is rebuilt in `app/`, the original pages still work. They are
+static HTML and ES modules with no build step. Serve the **repository root**,
+because the census loads `graph.json` from there:
 
 ```bash
 python -m http.server 8000

@@ -4,7 +4,11 @@
   "description": "Who can change a NEAR account without asking, read from the chain alone",
   "scripts": {
     "test": "node --test \"test/*.test.mjs\"",
-    "verify": "node tools/verify.mjs"
+    "verify": "node tools/verify.mjs",
+    "app:install": "npm --prefix app ci",
+    "build": "npm --prefix app ci && npm --prefix app run build",
+    "dev": "npm --prefix app run dev",
+    "preview": "npm --prefix app run preview"
   },
   "keywords": [],
   "author": "",

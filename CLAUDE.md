@@ -5,7 +5,7 @@ ARCHITECTURE.md is the spec. Read the relevant sections before any task. If the 
 ## Hard rules
 - Never invent a number, account id, method name or payload shape. If unsure, call mainnet and show me the output. Unknown stays "unknown" (I2).
 - Invariants I1–I20 in §10 are requirements. Every new module names which ones it enforces and has a test for them.
-- web/ is static: plain HTML + ES modules, no bundler, no framework, no build step.
+- Two layers. The logic (web/assets/, tools/, guard/, agent/) is plain ES modules with no dependencies, no bundler and no build step; `node tools/verify.mjs` and `npm test` must keep needing no install. The presentation is app/ (Vite + React + Tailwind, decided 2026-11-09). It only renders: it imports the logic from web/assets/ and never reimplements a read, a figure or a rule. Its dependencies are pinned to exact versions in app/package-lock.json; the root package.json has none.
 - No private key ever goes in this repo, in code, or in chat. Keys live in ~/.near-credentials or .env (gitignored).
 - Use BigInt for every base-unit amount. Number never touches one (I10).
 - RPC: FastNear → rpc.mainnet.near.org → near.drpc.org, concurrency ≤ 6 (§9).

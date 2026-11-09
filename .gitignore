@@ -4,3 +4,4 @@ node_modules/
 .near-credentials/
 agent/state.json
 agent/signed/
+dist/

@@ -1,0 +1,5 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "echo root has no dependencies; app/ installs from its lockfile in the build"
+}
