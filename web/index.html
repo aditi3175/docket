@@ -6,255 +6,470 @@
 <title>Docket — who can change a NEAR account without a vote</title>
 <meta name="description" content="Three keys can replace the code of the DAOs that run NEAR liquid staking, without a vote. Read live from NEAR mainnet.">
 <link rel="preload" href="assets/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="assets/home.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to the finding</a>
-<header class="site-header">
-  <div class="wrap">
-    <a class="brand" href="index.html" aria-label="Docket, overview">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M8.2 12h7.6" stroke="currentColor" stroke-width="2.2"/><rect x="15.8" y="8.6" width="6.8" height="6.8" rx="1.6" fill="currentColor"/></svg>
-      Docket
-    </a>
-    <nav class="site-nav" aria-label="Pages">
-      <a href="index.html" aria-current="page">Overview</a>
-      <a href="account.html">Account</a>
-      <a href="docket.html">Proposals</a>
-      <a href="register.html">Register</a>
-      <a href="optout.html">Opt out</a>
-    </nav>
+
+<header class="top"><div class="wrap">
+  <a class="logo" href="index.html" aria-label="Docket, overview"><i></i>Docket</a>
+  <nav aria-label="Pages">
+    <a href="index.html" aria-current="page">Overview</a>
+    <a href="account.html">Account</a>
+    <a href="docket.html">Proposals</a>
+    <a href="register.html">Register</a>
+    <a href="optout.html">Opt out</a>
+  </nav>
+  <span class="chip" id="chip"><i></i><span id="chip-text">recorded values · reading live…</span></span>
+</div></header>
+
+<main id="main">
+<!-- ================= the finding, as a vault ================= -->
+<div class="hero"><div class="wrap">
+  <div>
+    <div class="eyebrow">Docket · read from the chain alone</div>
+    <h1 id="headline">NEAR liquid staking can be rewritten by three keys, without a vote.</h1>
+    <p class="lede" id="lede">Reading NEAR mainnet and DefiLlama from your browser.</p>
+    <p class="prov" id="prov-wrap" aria-live="polite"><i></i><span id="prov">Showing the last recorded values while the live reads arrive.</span></p>
+    <div class="modes" role="group" aria-label="Replay the vault">
+      <button type="button" class="t" id="mode-t" aria-pressed="true"><span>auto_update: true</span><small>how it reads today</small></button>
+      <button type="button" class="f" id="mode-f" aria-pressed="false"><span>auto_update: false</span><small>after one proposal</small></button>
+    </div>
+    <div class="cta">
+      <button type="button" class="btn gold" id="run">Turn the keys ↻</button>
+      <a class="btn" href="#fix">Add the fourth lock →</a>
+    </div>
   </div>
-</header>
 
-<main id="main" class="wrap">
-  <section class="hero" aria-labelledby="headline">
-    <div class="hero-grid">
-      <h1 id="headline" class="lede">NEAR liquid staking can be rewritten by three keys, without a vote.</h1>
-      <div class="hero-side">
-        <p id="basis" class="summary">Reading NEAR mainnet and DefiLlama from your browser.</p>
-        <p id="readnote" class="recorded-note provenance" aria-live="polite">Showing the last recorded values while the live reads arrive.</p>
+  <div class="stage" role="figure" aria-label="The vault: the value at stake, locked only by the factory's keys">
+    <div class="panel" id="leds"></div>
+    <div class="frame" id="frame">
+      <div class="flash"></div>
+      <div class="mouth">
+        <div class="chamber">
+          <div class="boxes" id="boxes"></div>
+          <div class="shelf" style="top:36%"></div>
+          <div class="total"><b id="total">$126.7M</b><small>OPEN · NO PROPOSAL · NO VOTE</small></div>
+          <div class="bars" aria-hidden="true">
+            <div><span class="bar"></span></div>
+            <div><span class="bar"></span><span class="bar"></span></div>
+            <div><span class="bar"></span><span class="bar"></span><span class="bar"></span></div>
+            <div><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></div>
+          </div>
+          <div class="shelf" style="bottom:13%"></div>
+        </div>
+        <div id="recv"></div>
+        <div class="door">
+          <div class="thk" style="transform:translateZ(-4px)"></div><div class="thk" style="transform:translateZ(-8px)"></div>
+          <div class="thk" style="transform:translateZ(-12px)"></div><div class="thk" style="transform:translateZ(-16px)"></div>
+          <div class="thk" style="transform:translateZ(-20px)"></div><div class="thk" style="transform:translateZ(-24px)"></div>
+          <div class="face" id="face">
+            <div class="wheel"><svg viewBox="-100 -100 200 200" aria-hidden="true">
+              <defs><linearGradient id="st" gradientUnits="userSpaceOnUse" x1="-100" y1="-100" x2="100" y2="100"><stop offset="0" stop-color="#eceef4"/><stop offset=".5" stop-color="#8b8d96"/><stop offset="1" stop-color="#3f4047"/></linearGradient>
+              <radialGradient id="hub" cx=".35" cy=".3"><stop offset="0" stop-color="#f2f3f7"/><stop offset=".6" stop-color="#7d7f88"/><stop offset="1" stop-color="#34353b"/></radialGradient></defs>
+              <circle r="78" fill="none" stroke="url(#st)" stroke-width="9"/>
+              <g stroke="url(#st)" stroke-width="10" stroke-linecap="round"><line x1="0" y1="0" x2="0" y2="-96"/><line x1="0" y1="0" x2="83" y2="48"/><line x1="0" y1="0" x2="-83" y2="48"/></g>
+              <circle cx="0" cy="-98" r="11" fill="url(#hub)"/><circle cx="85" cy="49" r="11" fill="url(#hub)"/><circle cx="-85" cy="49" r="11" fill="url(#hub)"/>
+              <circle r="26" fill="url(#hub)"/><circle r="9" fill="#2a2b30"/>
+            </svg></div>
+          </div>
+        </div>
+      </div>
+      <div class="hinge" style="top:24%"></div><div class="hinge" style="bottom:24%"></div>
+    </div>
+    <div class="readout" id="out" aria-live="polite"></div>
+  </div>
+</div></div>
+
+<!-- ================= 01 inside ================= -->
+<section class="s" id="inside"><div class="wrap">
+  <div class="sh"><div class="n">01 · Inside the vault</div><div>
+    <h2>Each deposit is owned by a DAO the factory can upgrade <span class="novote">without a vote</span>.</h2>
+    <p>Each protocol's contract is owned by a Sputnik DAO. Each card shows that DAO's <span class="id">auto_update</span>, read from the chain.</p>
+  </div></div>
+  <div class="deposits" id="deposits"></div>
+  <div class="share" id="share" aria-hidden="true"></div>
+  <div class="share-l"><span id="share-l"></span><span id="share-r"></span></div>
+</div></section>
+
+<!-- ================= 02 keys ================= -->
+<section class="s" id="keys"><div class="wrap">
+  <div class="sh"><div class="n">02 · Who holds the keys</div><div>
+    <h2>The factory's full-access keys open every one. <span class="novote">The DAO's vote is not a lock.</span></h2>
+    <p>With <span class="id">auto_update: true</span>, the factory's <span class="id">update()</span> replaces a DAO's code. No proposal is created, so there is nothing for members to vote on.</p>
+  </div></div>
+  <div class="keys">
+    <div class="keyring" id="keyring"></div>
+    <div class="flow" id="flow"></div>
+  </div>
+</div></section>
+
+<!-- ================= 03 every door ================= -->
+<section class="s" id="doors"><div class="wrap">
+  <div class="sh"><div class="n">03 · Every door like this one</div><div>
+    <h2 id="doors-h">Most DAOs on the factory have the same lock.</h2>
+    <p id="doors-p">One dot per DAO created by <span class="id">sputnik-dao.near</span>, from the dated census in graph.json. Hover a dot for its account id; click it to read its proposals.</p>
+  </div></div>
+  <div class="doors">
+    <div class="field-wrap"><canvas id="field" aria-label="Every DAO on the factory, by auto_update"></canvas><div id="tip"></div></div>
+    <div class="legend">
+      <div class="lg"><b class="novote" id="n-true">…</b><span><i style="background:var(--coral)"></i>auto_update: true. The factory can replace the code without a vote.</span></div>
+      <div class="lg"><b class="optedout" id="n-false">…</b><span><i style="background:var(--violet-2);box-shadow:0 0 10px var(--violet-2)"></i>auto_update: false. Opted out.</span></div>
+      <div class="lg"><b id="n-unknown">…</b><span><i style="border:1.5px dashed #8b8794"></i><span id="unknown-text">Unknown.</span></span></div>
+      <div class="lg recount">
+        <span id="census-note">Reading the census…</span>
+        <a href="register.html">Every DAO in the register →</a>
+        <button type="button" class="btn" id="recount">Recount from the chain now (about 15 minutes)</button>
+        <span id="recount-out" aria-live="polite"></span>
       </div>
     </div>
-    <div id="path" role="figure" aria-label="The authority path, from the value at stake to the factory's keys"></div>
-    <div class="legend" aria-hidden="true">
-      <span><i class="novote"></i>No vote: the factory can replace this DAO's code (update(), auto_update: true)</span>
-      <span><i></i>Owns or controls</span>
-      <span><i class="optedout"></i>Opted out</span>
-      <span><i class="unknown"></i>Unknown: a read failed</span>
-    </div>
-  </section>
+  </div>
+</div></section>
 
-  <section class="facts" aria-label="What else is true">
-    <article class="fact" id="fact-fix">
-      <h2>The fix exists. It is not deployed.</h2>
-      <p id="badge" class="badge-state unknown">Reading the factory…</p>
+<!-- ================= 04 the fourth lock ================= -->
+<section class="s" id="fix"><div class="wrap">
+  <div class="sh"><div class="n">04 · The fourth lock</div><div>
+    <h2>A fix exists and is not deployed. <span class="optedout">One proposal</span> fits the lock today.</h2>
+  </div></div>
+  <div class="cards">
+    <article class="card" id="fact-fix"><div class="tag">The factory fix</div>
+      <h3 id="badge" class="unknown-text"><i></i><span id="badge-word">Reading the factory…</span></h3>
       <p id="badge-text">A change to the Sputnik contract makes a factory update wait for a matching proposal. Whether the factory publishes it is read live.</p>
-      <div class="evidence">
-        <a href="https://github.com/near-daos/sputnik-dao-contract/pull/233">PR #233, merged 2026-03-24</a>
-        <span id="badge-read" class="muted">Factory read: pending</span>
-      </div>
+      <div class="ev"><a href="https://github.com/near-daos/sputnik-dao-contract/pull/233">PR #233, merged 2026-03-24</a><span id="badge-read" class="muted">Factory read: pending</span></div>
     </article>
-    <article class="fact" id="fact-census">
-      <h2>Most DAOs are exposed</h2>
-      <p id="census-figure" class="figure">Reading the census…</p>
-      <p id="census-text"></p>
-      <div class="evidence">
-        <a href="register.html">Every DAO in the register</a>
-        <button id="recount" type="button">Recount from the chain now (about 15 minutes)</button>
-        <span id="recount-out" class="muted" aria-live="polite"></span>
-      </div>
+    <article class="card lock"><div class="tag">Fit it yourself</div>
+      <h3>1 proposal</h3>
+      <p>A DAO passes one <span class="id">FactoryInfoUpdate</span> setting <span class="id">auto_update</span> to false. Tested on mainnet: with it, the factory's update was rejected; without it, the same update ran.</p>
+      <div class="ev"><a href="optout.html?dao=stnear.sputnik-dao.near">Draft it for <span class="id">stnear.sputnik-dao.near</span> →</a><a href="https://nearblocks.io/txns/772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS">Rejected, opted out</a><a href="https://nearblocks.io/txns/EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b">Ran, not opted out</a></div>
     </article>
-    <article class="fact" id="fact-optout">
-      <h2>One proposal turns it off</h2>
-      <p class="figure">1 proposal</p>
-      <p>A DAO passes one FactoryInfoUpdate setting auto_update to false. Tested on mainnet: with it, the factory’s update was rejected; without it, the same update ran.</p>
-      <div class="evidence">
-        <a href="optout.html?dao=stnear.sputnik-dao.near">Draft it for <span class="id">stnear.sputnik-dao.near</span></a>
-        <a href="https://nearblocks.io/txns/772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS">Rejected, opted out</a>
-        <a href="https://nearblocks.io/txns/EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b">Ran, not opted out</a>
-      </div>
-    </article>
-    <article class="fact" id="fact-delegate">
-      <h2>A delegate that can’t overreach</h2>
-      <p class="figure">Approved 1, refused 1</p>
+    <article class="card"><div class="tag">A delegate that can’t overreach</div>
+      <h3>Approved 1, refused 1</h3>
       <p>A council member whose only key can call act_proposal on one DAO. It approved a routine transfer, then refused one with the same words and a different receiver, and handed it to a human. Any AI agent can run the same checks before it acts, through Docket’s MCP server.</p>
-      <div class="evidence">
-        <a href="https://nearblocks.io/txns/HnMopqHKJaJ7jJNY4sWkHoYJH6TLwZnVFmNzPh9ur6wZ">Its approval of #7</a>
-        <a href="../agent/log/docket-demo.sputnik-dao.near-8.json">Its refusal of #8, with the report</a>
-      </div>
+      <div class="ev"><a href="https://nearblocks.io/txns/HnMopqHKJaJ7jJNY4sWkHoYJH6TLwZnVFmNzPh9ur6wZ">Its approval of #7</a><a href="../agent/log/docket-demo.sputnik-dao.near-8.json">Its refusal of #8, with the report</a></div>
     </article>
-  </section>
+  </div>
+</div></section>
 
-  <section class="why" aria-label="Why">
-    <div>
-      <h2>Why the vote can be skipped</h2>
-      <p>A Sputnik DAO changes its own code by proposal and vote. Its contract also has update(), which is not a proposal. It accepts new code from the factory whenever the DAO reads auto_update: true, and true is the default for a DAO that never set it.</p>
-      <p class="basis" id="src"></p>
-    </div>
-    <div>
-      <h2>What these numbers are</h2>
-      <p>Every figure on this page is read by your browser from NEAR mainnet or DefiLlama, with no server in between. Until the live reads arrive, the page shows the last recorded values and says so. A read that fails is shown as unknown, never as zero. Docket holds no key and signs nothing.</p>
-      <p class="basis"><a href="account.html?account=meta-pool.near">Follow the whole path for meta-pool.near</a></p>
-    </div>
-  </section>
+<section class="s"><div class="wrap why">
+  <div>
+    <h2>Why the vote can be skipped</h2>
+    <p>A Sputnik DAO changes its own code by proposal and vote. Its contract also has update(), which is not a proposal. It accepts new code from the factory whenever the DAO reads auto_update: true, and true is the default for a DAO that never set it.</p>
+    <p class="basis" id="src"></p>
+  </div>
+  <div>
+    <h2>What these numbers are</h2>
+    <p>Every figure on this page is read by your browser from NEAR mainnet or DefiLlama, with no server in between. Until the live reads arrive, the page shows the last recorded values and says so. A read that fails is shown as unknown, never as zero. Docket holds no key and signs nothing. The auto_update: false replay above shows the mainnet test, not this DAO's current state.</p>
+    <p class="basis"><a href="account.html?account=meta-pool.near">Follow the whole path for meta-pool.near</a></p>
+  </div>
+</div></section>
 </main>
 
-<footer class="site-footer">
-  <div class="wrap">
-    <a href="https://github.com/aditi3175/docket">github.com/aditi3175/docket</a>
-    <span>Read-only, holds no key</span>
-    <span id="footer-census">Census: reading graph.json…</span>
-  </div>
-</footer>
+<footer><div class="wrap">
+  <a href="https://github.com/aditi3175/docket">github.com/aditi3175/docket</a>
+  <span>Read-only, holds no key</span>
+  <span id="footer-census">Census: reading graph.json…</span>
+</div></footer>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="kg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffb3ad"/><stop offset=".5" stop-color="#ff786f"/><stop offset="1" stop-color="#b8322a"/></linearGradient>
+  <g id="keyshape"><circle cx="17" cy="14" r="12" fill="none" stroke="url(#kg)" stroke-width="6"/><rect x="14" y="25" width="6" height="52" rx="2" fill="url(#kg)"/><rect x="20" y="58" width="9" height="5" fill="url(#kg)"/><rect x="20" y="68" width="6" height="5" fill="url(#kg)"/></g>
+</defs></svg>
 
 <script type="module">
+// The homepage as a vault. Every figure comes from ./assets (RECORDED first, labelled, then live reads as they
+// land). Enforces: I2 (a failed read shows "unknown", never a value), I9 (no reassuring words), I10 (amounts stay
+// strings/BigInt in ./assets; this page only formats), I20 (census from graph.json records; recount on click only).
 import { createRpc } from './assets/rpc.js';
-import { indexReport, usd, usdShort, share, headline, RECORDED, LIQUID_STAKING, FACTORY } from './assets/index-view.js';
+import { indexReport, usd, usdShort, headline, RECORDED, LIQUID_STAKING, FACTORY } from './assets/index-view.js';
 import { liveCounter, census, pct } from './assets/census.js';
 import { nearTvlFrom } from './assets/value.js';
 import { SOURCE } from './assets/source.js';
-import { createPath, keyGlyph } from './assets/path.js';
 
 const rpc = createRpc();
 const $ = (id) => document.getElementById(id);
-const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
-const NBH = '‑'; const NBSP = ' '; // non-breaking hyphen and space: a date never breaks across lines
+const SVGNS = 'http://www.w3.org/2000/svg';
+const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined && text !== null) e.textContent = text; if (cls) e.className = cls; return e; };
+const put = (node, ...kids) => { node.replaceChildren(...kids.map((k) => (typeof k === 'string' ? document.createTextNode(k) : k))); return node; };
+const NBH = '‑'; const NBSP = ' ';
 const time = (iso) => (iso ? `${iso.slice(0, 10).replace(/-/g, NBH)}${NBSP}${iso.slice(11, 16)}${NBSP}UTC` : 'unknown');
-const nearWhole = (s) => `${String(s).split('.')[0]} NEAR`;
-const short = (id) => id.replace('.sputnik-dao.near', '');
+const pct0 = (a, b) => (typeof a === 'number' && typeof b === 'number' && b > 0 ? `${Math.round(100 * a / b)}%` : 'unknown');
+const nearShort = (v) => { const whole = String(v).split('.')[0]; const n = Number(whole.replace(/,/g, '')); return n >= 1e6 ? `${(n / 1e6).toFixed(2)}M NEAR` : `${whole} NEAR`; };
+const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// ---- the hero path: drawn from the recorded values at once, then edge by edge as each live read lands
-const path = createPath($('path'));
-const lanes = LIQUID_STAKING.length;
-LIQUID_STAKING.forEach((p, i) => {
-  const r = RECORDED.rows[i];
-  const row = i + 1; const mrow = 3 * i + 1;
-  path.addNode(`v${i}`, { col: 1, row, mrow, cls: 'value', title: r.usd ? usdShort(r.usd) : nearWhole(r.staked.near), titleCls: r.usd ? '' : 'near', sub: `${p.name} · ${r.usd ? 'DefiLlama' : 'staked, read on chain'}`, state: 'recorded' });
-  path.addNode(`c${i}`, { col: 2, row, mrow: mrow + 1, cls: 'box', title: p.contract, mono: true, sub: 'protocol contract', href: `account.html?account=${encodeURIComponent(p.contract)}`, state: 'recorded' });
-  path.addNode(`o${i}`, { col: 3, row, mrow: mrow + 2, cls: `box${i < lanes - 1 ? ' lane-gap' : ''}`, title: r.owner, mono: true, sub: 'owner, a Sputnik DAO', note: 'auto_update: true, so no vote', noteCls: 'novote', href: `docket.html?dao=${encodeURIComponent(r.owner)}`, state: 'recorded' });
-});
-path.addNode('f', { col: 5, row: 1, span: 3, mrow: 3 * lanes + 1, cls: 'box factory', title: FACTORY, mono: true, sub: 'the Sputnik factory, which owns itself', href: `account.html?account=${FACTORY}`, state: 'recorded' });
-const keysNode = path.addNode('k', { col: 6, row: 1, span: 3, mrow: 3 * lanes + 2, cls: 'keys', state: 'recorded' });
-function drawKeys(n, state) {
-  const glyphs = el('div', undefined, 'glyphs');
-  for (let j = 0; j < Math.max(n, 1); j++) { const g = keyGlyph(); g.id = `key${j}`; glyphs.append(g); }
-  const label = n === null ? 'keys: unknown' : `${n} full-access key${n === 1 ? '' : 's'}`;
-  path.setNode('k', { title: undefined, sub: label, state, children: [glyphs] });
+// ---------------- state: recorded first ----------------
+const S = {
+  rows: RECORDED.rows.map((r) => ({ name: r.name, contract: r.contract, slug: r.slug, owner: r.owner, autoUpdate: r.autoUpdate, usd: r.usd, near: r.staked?.near ?? null, why: null })),
+  keys: RECORDED.factoryKeys.full, keysState: 'recorded',
+  exposedUsd: RECORDED.exposedUsd, lsTotal: RECORDED.lsTotal, recorded: true,
+};
+const valueOf = (r) => (r.slug ? (typeof r.usd === 'number' ? usdShort(r.usd) : 'unknown') : (r.near ? nearShort(r.near) : 'unknown'));
+const auKind = (a) => (a === true ? 'novote' : a === false ? 'optedout' : 'unknown');
+
+// ---------------- headline, lede, provenance ----------------
+function setHeadline(r) {
+  const h = $('headline'); const text = headline(r); const cut = text.indexOf(', without a vote.');
+  if (cut > 0) put(h, text.slice(0, cut) + ', ', el('span', 'without a vote', 'novote'), text.slice(cut + ', without a vote'.length));
+  else h.textContent = text;
 }
-drawKeys(RECORDED.factoryKeys.full, 'recorded');
-const KEY_EDGES = 9;
-for (let j = 0; j < KEY_EDGES; j++) path.addEdge(`k${j}`, 'f', `key${j}`, { m: 'drop', state: j < RECORDED.factoryKeys.full ? 'recorded' : 'hidden' });
-LIQUID_STAKING.forEach((_, i) => {
-  path.addEdge(`ev${i}`, `v${i}`, `c${i}`, { state: 'recorded' });
-  path.addEdge(`eo${i}`, `c${i}`, `o${i}`, { state: 'recorded' });
-  path.addEdge(`ef${i}`, `o${i}`, 'f', { kind: RECORDED.rows[i].autoUpdate === true ? 'novote' : 'optedout', m: 'gutter', lane: i, state: 'recorded', label: 'no vote' });
-});
+function setLede() {
+  const valued = S.rows.filter((x) => x.slug && x.autoUpdate === true).map((x) => x.name).join(' and ');
+  const nearx = S.rows.find((x) => !x.slug && x.autoUpdate === true && x.near);
+  const lead = typeof S.exposedUsd === 'number' ? `The vault holds ${valued || 'none of them'}, ${pct0(S.exposedUsd, S.lsTotal)} of NEAR liquid staking${nearx ? `, plus ${nearShort(nearx.near)} in NearX` : ''}. ` : 'The dollar figure is unknown right now. ';
+  const keys = S.keys === null ? ['How many keys open it is unknown right now.'] : [`Its locks are the ${S.keys} full-access key${S.keys === 1 ? '' : 's'} of `, el('span', FACTORY, 'id'), '. The DAO’s own vote is not one of them.'];
+  put($('lede'), lead, ...keys);
+}
 
+// ---------------- the vault ----------------
+const frame = $('frame'); const face = $('face'); const out = $('out');
+(function hardware() {
+  const F = frame.getBoundingClientRect().width || 540;
+  for (const [x, y] of [[22, 22], [F - 22, 22], [22, F - 22], [F - 22, F - 22], [F / 2, 16], [F / 2, F - 16], [16, F / 2]]) { const r = el('i', null, 'rivet'); r.style.left = `${x}px`; r.style.top = `${y}px`; frame.append(r); }
+  for (let i = 0; i < 20; i++) { const a = (i / 20) * Math.PI * 2; const d = el('i', null, 'drivet'); d.style.left = `${50 + Math.cos(a) * 44}%`; d.style.top = `${50 + Math.sin(a) * 44}%`; face.append(d); }
+  for (let i = 0; i < 8; i++) {
+    const deg = i * 45 + 22.5;
+    const b = el('div', null, 'bolt'); b.style.transform = `rotate(${deg}deg)`; b.append(el('i')); face.append(b);
+    const r = el('div', null, 'recv'); r.style.transform = `rotate(${deg}deg)`; r.append(el('i')); $('recv').append(r);
+  }
+})();
+const keySvg = (w, h) => { const s = document.createElementNS(SVGNS, 'svg'); s.setAttribute('viewBox', '0 0 34 80'); if (w) { s.setAttribute('width', w); s.setAttribute('height', h); } s.setAttribute('aria-hidden', 'true'); const u = document.createElementNS(SVGNS, 'use'); u.setAttribute('href', '#keyshape'); s.append(u); return s; };
+
+function drawLocks() {
+  face.querySelectorAll('.kh').forEach((k) => k.remove());
+  const leds = [];
+  if (S.keys === null) {
+    const k = el('div', null, 'kh unknown'); k.style.left = '50%'; k.style.top = '16%';
+    k.append(el('div', null, 'plate'), el('div', 'keys: unknown', 'lbl')); face.append(k);
+    const l = el('div', null, 'led unknown'); l.append(el('i'), el('span', 'Keys: unknown')); leds.push(l);
+  } else {
+    for (let i = 0; i < S.keys; i++) {
+      const deg = -30 + (i * 360) / S.keys; const a = (deg * Math.PI) / 180;
+      const k = el('div', null, 'kh'); k.style.left = `${50 + Math.cos(a) * 34}%`; k.style.top = `${50 + Math.sin(a) * 34}%`;
+      const key = el('div', null, 'key'); key.id = `K${i}`; key.append(keySvg());
+      k.append(el('div', null, 'plate'), el('div', null, 'slot'), el('div', `key ${i + 1}`, 'lbl'), key); face.append(k);
+      const l = el('div', null, 'led'); l.id = `L${i}`; l.append(el('i'), el('span', `Key ${i + 1}`)); leds.push(l);
+    }
+  }
+  const v = el('div', null, 'led vote'); v.id = 'LV'; v.append(el('i'), el('span', 'DAO vote')); leds.push(v);
+  $('leds').replaceChildren(...leds);
+}
+function drawChamber() {
+  $('boxes').replaceChildren(...S.rows.map((r) => { const b = el('div', null, `box${valueOf(r) === 'unknown' ? ' unknown' : ''}`); b.append(el('small', r.name), el('b', valueOf(r))); return b; }));
+  $('total').textContent = typeof S.exposedUsd === 'number' ? usdShort(S.exposedUsd) : 'unknown';
+}
+
+let MODE = 't'; let timers = [];
+const at = (ms, f) => timers.push(setTimeout(f, still ? 0 : ms));
+function log(...parts) {
+  const d = el('div'); const t = new Date();
+  d.append(el('span', `${String(t.getMinutes()).padStart(2, '0')}:${String(t.getSeconds()).padStart(2, '0')}`, 't'));
+  for (const p of parts) d.append(typeof p === 'string' ? document.createTextNode(p) : el('span', p[0], p[1]));
+  out.append(d); while (out.children.length > 7) out.firstChild.remove();
+}
+function reset() {
+  timers.forEach(clearTimeout); timers = [];
+  frame.classList.remove('open', 'shake'); face.classList.remove('spin', 'jam', 'retract');
+  face.querySelectorAll('.key').forEach((k) => k.classList.remove('in', 'turn'));
+  $('leds').querySelectorAll('.led').forEach((l) => l.classList.remove('on', 'req', 'blink'));
+  const v = $('LV'); if (v) v.lastChild.textContent = 'DAO vote';
+  out.replaceChildren();
+}
+function run() {
+  reset();
+  if (S.keys === null) { log('factory keys: ', ['unknown', 'unknown-text'], ' · the read failed, so the vault is not animated'); return; }
+  log([FACTORY, 'w'], ' · signing with its full-access keys');
+  const step = 650; const n = S.keys;
+  for (let i = 0; i < n; i++) {
+    at(500 + i * step, () => $(`K${i}`)?.classList.add('in'));
+    at(1050 + i * step, () => { $(`K${i}`)?.classList.add('turn'); $(`L${i}`)?.classList.add('on'); log(['key ' + (i + 1), 'novote'], ' turned'); });
+  }
+  const t0 = 1050 + n * step;
+  const owners = S.rows.map((r) => r.owner).filter((o) => o && o !== 'unknown' && o !== 'none');
+  at(t0, () => log('factory → ', ['update()', 'w'], ` on ${owners.length ? owners.join(', ') : 'the owner DAOs'}`));
+  const anyTrue = S.rows.some((r) => r.autoUpdate === true);
+  const allFalse = S.rows.every((r) => r.autoUpdate === false);
+  if (MODE === 't' && anyTrue) {
+    at(t0 + 500, () => { $('LV').lastChild.textContent = 'DAO vote · bypassed'; log('auto_update: ', ['true', 'novote'], ' · proposal: ', ['none', 'novote'], ' · vote: ', ['none', 'novote']); });
+    at(t0 + 800, () => face.classList.add('spin'));
+    at(t0 + 2000, () => { face.classList.add('retract'); log('bolts retracted'); });
+    at(t0 + 2600, () => frame.classList.add('open'));
+    at(t0 + 3900, () => log([`vault open · ${$('total').textContent} · nobody was asked`, 'g']));
+  } else if (MODE === 'f' || allFalse) {
+    at(t0 + 500, () => { const v = $('LV'); v.classList.add('req', 'blink'); v.lastChild.textContent = 'DAO vote · required'; log('auto_update: ', ['false', 'optedout'], ' · a DAO proposal is required'); });
+    at(t0 + 800, () => face.classList.add('jam'));
+    at(t0 + 1400, () => { frame.classList.add('shake'); log(['update rejected', 'optedout'], MODE === 'f' ? ' · as in the mainnet test, tx 772n4Z…' : ''); });
+    at(t0 + 2400, () => log(['vault stays shut', 'w'], ' · the members decide'));
+  } else {
+    at(t0 + 500, () => log('auto_update: ', ['unknown', 'unknown-text'], ' · the read failed; the vault is shown shut'));
+  }
+}
+function setMode(m) { MODE = m; $('mode-t').setAttribute('aria-pressed', String(m === 't')); $('mode-f').setAttribute('aria-pressed', String(m === 'f')); run(); }
+$('mode-t').addEventListener('click', () => setMode('t'));
+$('mode-f').addEventListener('click', () => setMode('f'));
+$('run').addEventListener('click', run);
+
+// ---------------- 01 deposits ----------------
+function drawDeposits() {
+  $('deposits').replaceChildren(...S.rows.map((r, i) => {
+    const v = valueOf(r); const k = auKind(r.autoUpdate);
+    const d = el('article', null, 'dep');
+    const dl = el('dl');
+    const link = (href, text) => { const a = el('a', text, 'id'); a.href = href; return a; };
+    const dd = (x) => { const e = el('dd'); e.append(x); return e; };
+    dl.append(el('dt', 'contract'), dd(link(`account.html?account=${encodeURIComponent(r.contract)}`, r.contract)),
+      el('dt', 'owner'), dd(r.owner && r.owner !== 'unknown' && r.owner !== 'none' ? link(`docket.html?dao=${encodeURIComponent(r.owner)}`, r.owner) : el('span', `owner ${r.owner ?? 'unknown'}`, 'unknown-text')),
+      el('dt', 'auto_update'), dd(el('span', String(r.autoUpdate), `id ${k === 'unknown' ? 'unknown-text' : k}`)));
+    const src = r.slug ? (typeof r.usd === 'number' ? 'NEAR-only TVL, DefiLlama' : (r.why ?? 'DefiLlama value unread')) : (r.near ? 'staked NEAR, read on chain' : (r.why ?? 'staked balance unread'));
+    d.append(el('div', `Deposit 0${i + 1} · ${r.name}`, 'tag'), el('div', v, `amt${v === 'unknown' ? ' unknown-text' : ''}`), el('div', src, 'src'), dl,
+      el('span', k === 'novote' ? '● no vote needed' : k === 'optedout' ? '● opted out' : '● auto_update unknown', `pill ${k === 'unknown' ? 'unknown-text' : k}`));
+    return d;
+  }));
+  const valued = S.rows.filter((r) => r.slug && r.autoUpdate === true && typeof r.usd === 'number');
+  const ok = typeof S.lsTotal === 'number' && typeof S.exposedUsd === 'number';
+  $('share').replaceChildren(...(ok ? valued.map((r, i) => { const s = el('i'); s.style.width = `${(100 * r.usd) / S.lsTotal}%`; s.style.background = i % 2 ? 'linear-gradient(90deg,#c58f2a,#e0a93a)' : 'linear-gradient(90deg,#e0a93a,#ffd77a)'; return s; }) : []));
+  $('share-l').textContent = ok ? `${valued.map((r) => r.name).join(' + ')} = ${pct0(S.exposedUsd, S.lsTotal)} of ${usdShort(S.lsTotal)} NEAR liquid staking (DefiLlama, NEAR-only TVL)` : 'Share of NEAR liquid staking: unknown';
+  const nx = S.rows.find((r) => !r.slug);
+  $('share-r').textContent = nx ? `${nx.name}: staked NEAR, no USD figure` : '';
+}
+
+// ---------------- 02 keys + flow ----------------
+function drawKeys() {
+  const rows = [];
+  if (S.keys === null) {
+    const r = el('div', null, 'krow missing'); const d = el('div'); d.append(el('b', 'Factory keys'), el('small', 'the read failed'));
+    r.append(keySvg(22, 48), d, el('span', 'UNKNOWN', 'st')); rows.push(r);
+  } else {
+    for (let i = 0; i < S.keys; i++) {
+      const r = el('div', null, 'krow'); const d = el('div'); const sm = el('small', 'full access · '); sm.append(el('span', FACTORY, 'id'));
+      d.append(el('b', `Key ${i + 1}`), sm); r.append(keySvg(22, 48), d, el('span', S.keysState === 'live' ? 'READ LIVE' : 'RECORDED', 'st novote')); rows.push(r);
+    }
+  }
+  const m = el('div', null, 'krow missing'); const md = el('div'); md.append(el('b', 'DAO vote'), el('small', 'a proposal the members approve'));
+  const ks = keySvg(22, 48); ks.style.opacity = '0.3'; m.append(ks, md, el('span', 'NOT A LOCK', 'st')); rows.push(m);
+  $('keyring').replaceChildren(...rows);
+
+  const r0 = S.rows[0]; const owner = r0.owner && r0.owner !== 'unknown' && r0.owner !== 'none' ? r0.owner : null;
+  const step = (n, ...kids) => { const s = el('div', null, 'step'); const body = el('div'); put(body, ...kids); s.append(el('span', String(n)), body); return s; };
+  const b = (t) => el('b', t, 'id');
+  $('flow').replaceChildren(
+    step(1, 'A key signs for ', b(FACTORY), '.'),
+    step(2, 'The factory calls ', el('b', 'update()'), ' on ', owner ? el('span', owner, 'id') : el('span', 'the owner (unknown)', 'unknown-text'), '.'),
+    step(3, 'The DAO checks ', el('b', 'auto_update'), '. It reads ', el('span', String(r0.autoUpdate), auKind(r0.autoUpdate) === 'unknown' ? 'unknown-text' : auKind(r0.autoUpdate)), '.'),
+    step(4, ...(r0.autoUpdate === true ? ['The DAO’s code is replaced. ', el('span', 'Proposal: none. Vote: none.', 'novote')] : r0.autoUpdate === false ? ['The update is rejected. ', el('span', 'A proposal is required.', 'optedout')] : ['Whether a vote is needed is ', el('span', 'unknown', 'unknown-text'), '.'])),
+    step(5, 'The DAO owns ', b(r0.contract), ` and its ${valueOf(r0)}.`),
+  );
+}
+
+function drawAll() { setHeadline(RECORDED); setLede(); drawLocks(); drawChamber(); drawDeposits(); drawKeys(); }
+
+// ---------------- live reads ----------------
 function onRead(e) {
-  if (e.type === 'keys') {
-    const n = e.factoryKeys === 'unknown' ? null : e.factoryKeys.full;
-    drawKeys(n, n === null ? 'unknown' : 'live');
-    path.setNode('f', { state: 'live' });
-    for (let j = 0; j < KEY_EDGES; j++) path.setEdge(`k${j}`, { state: j < Math.max(n ?? 1, 1) ? 'live' : 'hidden', kind: n === null ? 'unknown' : 'plain' });
-  } else if (e.type === 'owner') {
-    const known = e.owner !== 'unknown' && e.owner !== 'none';
-    path.setNode(`o${e.i}`, { title: known ? e.owner : `owner ${e.owner}`, mono: known, href: known ? `docket.html?dao=${encodeURIComponent(e.owner)}` : '', state: known ? 'live' : 'unknown', sub: known ? 'owner, a Sputnik DAO' : (e.reason ? `read failed: ${e.reason}` : 'no owner found') });
-    path.setNode(`c${e.i}`, { state: 'live' });
-    path.setEdge(`eo${e.i}`, { state: 'live', kind: known ? 'plain' : 'unknown' });
-  } else if (e.type === 'factory-info') {
-    const k = e.autoUpdate === true ? 'novote' : e.autoUpdate === false ? 'optedout' : 'unknown';
-    const note = k === 'novote' ? 'auto_update: true, so no vote' : k === 'optedout' ? 'auto_update: false, opted out' : 'auto_update: unknown';
-    path.setNode(`o${e.i}`, { note, noteCls: k === 'unknown' ? 'unknown-text' : k });
-    path.setEdge(`ef${e.i}`, { state: 'live', kind: k, label: k === 'novote' ? 'no vote' : k === 'optedout' ? 'opted out' : 'unknown' });
-  } else if (e.type === 'staked') {
-    const ok = !e.staked?.unknown;
-    path.setNode(`v${e.i}`, { title: ok ? nearWhole(e.staked.near) : 'unknown', sub: ok ? `${LIQUID_STAKING[e.i].name} · staked, read on chain` : `${LIQUID_STAKING[e.i].name} · ${e.staked.unknown}`, state: ok ? 'live' : 'unknown' });
-    path.setEdge(`ev${e.i}`, { state: 'live', kind: ok ? 'plain' : 'unknown' });
-  } else if (e.type === 'llama') {
+  if (e.type === 'keys') { S.keys = e.factoryKeys === 'unknown' ? null : e.factoryKeys.full; S.keysState = S.keys === null ? 'unknown' : 'live'; drawLocks(); drawKeys(); setLede(); }
+  else if (e.type === 'owner') { S.rows[e.i].owner = e.owner; drawDeposits(); drawKeys(); }
+  else if (e.type === 'factory-info') { S.rows[e.i].autoUpdate = e.autoUpdate; drawDeposits(); drawKeys(); }
+  else if (e.type === 'staked') { const ok = !e.staked?.unknown; S.rows[e.i].near = ok ? e.staked.near : null; S.rows[e.i].why = ok ? null : `staked balance unknown: ${e.staked.unknown}`; drawChamber(); drawDeposits(); }
+  else if (e.type === 'llama') {
     LIQUID_STAKING.forEach((p, i) => {
       if (!p.slug) return;
       const t = e.status === 'ok' && e.protocols ? nearTvlFrom(e.protocols, p.slug) : { status: 'unknown', reason: e.reason ?? 'DefiLlama unread' };
-      path.setNode(`v${i}`, { title: t.status === 'ok' ? usdShort(t.usd) : 'unknown', sub: t.status === 'ok' ? `${p.name} · DefiLlama` : `${p.name} · value unknown`, state: t.status === 'ok' ? 'live' : 'unknown' });
-      path.setEdge(`ev${i}`, { state: 'live', kind: t.status === 'ok' ? 'plain' : 'unknown' });
+      S.rows[i].usd = t.status === 'ok' ? t.usd : 'unknown'; S.rows[i].why = t.status === 'ok' ? null : `value unknown: ${t.reason ?? 'DefiLlama unread'}`;
     });
-  } else if (e.type === 'badge') {
-    const b = e.badge;
-    const word = { 'not-shipped': 'Not shipped', 'factory-changed': 'The factory has changed', unknown: 'Unknown' }[b.state] ?? 'Unknown';
-    $('badge').textContent = word; $('badge').className = `badge-state ${b.state === 'unknown' ? 'unknown' : ''}`.trim();
-    $('badge-text').textContent = b.text.replace(/^Fix shipped\? (No\. )?/, '');
-    $('badge-read').textContent = b.state === 'unknown' ? `Factory read failed: ${b.detail}` : `Factory read ${time(b.readAt)}`;
-    $('fact-fix').classList.toggle('is-unknown', b.state === 'unknown');
-  }
+    drawChamber(); drawDeposits();
+  } else if (e.type === 'badge') setBadge(e.badge);
 }
-
-// One short line of what the figure is, then one provenance line: both sources, the exact figures, the times.
-const pct0 = (a, b) => (typeof a === 'number' && typeof b === 'number' && b > 0 ? `${Math.round(100 * a / b)}%` : 'unknown');
-const nearShort = (v) => { const whole = String(v).split('.')[0]; const n = Number(whole.replace(/,/g, '')); return n >= 1e6 ? `${(n / 1e6).toFixed(2)}M NEAR` : `${whole} NEAR`; };
-function basisText(r) {
-  const valued = r.rows.filter((x) => x.slug && x.autoUpdate === true).map((x) => x.name).join(' and ');
-  const nearx = r.rows.find((x) => !x.slug && x.autoUpdate === true && x.staked?.near);
-  const lead = typeof r.exposedUsd === 'number' ? `${valued || 'None'}, ${pct0(r.exposedUsd, r.lsTotal)} of NEAR liquid staking` : 'The dollar figure is unknown right now';
-  return `${lead}${nearx ? `, plus ${nearShort(nearx.staked.near)} in NearX` : ''}.`;
+function setBadge(b) {
+  const word = { 'not-shipped': 'Not shipped', 'factory-changed': 'The factory has changed', unknown: 'Unknown' }[b.state] ?? 'Unknown';
+  $('badge-word').textContent = word; $('badge').className = b.state === 'unknown' ? 'unknown-text' : '';
+  $('badge-text').textContent = b.text.replace(/^Fix shipped\? (No\. )?/, '');
+  $('badge-read').textContent = b.state === 'unknown' ? `Factory read failed: ${b.detail}` : `Factory read ${time(b.readAt)}`;
 }
-function provenance(r, recorded) {
+function provenance(r) {
   const money = typeof r.exposedUsd === 'number' ? `${usd(r.exposedUsd)} of ${usd(r.lsTotal)}, NEAR-only TVL` : 'value unknown';
-  return recorded
+  return r === RECORDED
     ? `Recorded values: DefiLlama ${money}, ${time(RECORDED.llamaReadAt)} · NEAR mainnet, ${RECORDED.chainRecordedOn}. Reading live now…`
     : `DefiLlama ${money}, read ${time(r.llama.readAt)} · NEAR mainnet, read ${time(r.readAt)}`;
 }
 
-function setHeadline(r, recorded) {
-  const h = $('headline'); h.replaceChildren();
-  const text = headline(r);
-  const cut = text.indexOf(', without a vote.');
-  if (cut > 0) h.append(document.createTextNode(text.slice(0, cut) + ', '), el('span', 'without a vote', 'novote'), document.createTextNode(text.slice(cut + ', without a vote'.length)));
-  else h.textContent = text;
-  $('basis').textContent = basisText(r);
-  $('readnote').textContent = provenance(r, recorded);
-}
-
-setHeadline(RECORDED, true);
-$('src').append(document.createTextNode('Source: '));
-const a = el('a', SOURCE.updateAssert.text); a.href = SOURCE.updateAssert.href; $('src').append(a);
+drawAll();
+$('prov').textContent = provenance(RECORDED);
+put($('src'), 'Source: ', Object.assign(el('a', SOURCE.updateAssert.text), { href: SOURCE.updateAssert.href }));
 
 indexReport(rpc, { onRead }).then((r) => {
+  setBadge(r.badge);
   const gaps = [];
   if (r.factoryKeys === 'unknown') gaps.push('the factory keys');
-  r.rows.forEach((x) => { if (x.autoUpdate === 'unknown') gaps.push(`${x.owner === 'unknown' ? x.contract + ' owner' : x.owner}`); });
+  r.rows.forEach((x) => { if (x.autoUpdate === 'unknown') gaps.push(x.owner === 'unknown' ? `${x.contract} owner` : x.owner); });
   if (r.llama.status !== 'ok') gaps.push(`DefiLlama (${r.llama.reason})`);
   else if (r.exposedUsd === 'unknown') gaps.push('a DefiLlama value');
-  const note = $('readnote');
   if (!gaps.length) {
-    setHeadline(r, false);
-    note.classList.add('live');
+    S.exposedUsd = r.exposedUsd; S.lsTotal = r.lsTotal; S.recorded = false;
+    setHeadline(r); setLede(); drawChamber(); drawDeposits();
+    $('prov').textContent = provenance(r); $('prov-wrap').classList.add('live');
+    $('chip').classList.add('live'); $('chip-text').textContent = `live · NEAR mainnet · ${time(r.readAt)}`;
   } else {
     // I2: a failed read never becomes a value. The headline keeps the recorded values, labelled as such;
-    // the path above shows each read that failed, dashed.
-    note.textContent = `Live reads failed at ${time(r.readAt)}: ${gaps.join(', ')}. Shown above: the values recorded ${time(RECORDED.llamaReadAt)} (DefiLlama) and ${RECORDED.chainRecordedOn} (chain). The path shows what could not be read now.`;
+    // the vault and the cards show each read that failed as unknown.
+    $('prov').textContent = `Live reads failed at ${time(r.readAt)}: ${gaps.join(', ')}. The headline shows the values recorded ${time(RECORDED.llamaReadAt)} (DefiLlama) and ${RECORDED.chainRecordedOn} (chain).`;
+    $('chip-text').textContent = 'some live reads failed';
   }
-}).catch((e) => {
-  $('readnote').textContent = `Unknown: the page failed while reading (${e?.message ?? e}). The figures shown are the last recorded ones.`;
-});
+}).catch((e) => { $('prov').textContent = `Unknown: the page failed while reading (${e?.message ?? e}). The figures shown are the last recorded ones.`; });
 
-// ---- the census: I20, computed from graph.json records on load; a chain recount only on the reader's click
+// play the vault once it is on screen
+new IntersectionObserver((es, o) => es.forEach((x) => { if (x.isIntersecting) { run(); o.disconnect(); } }), { threshold: 0.4 }).observe(frame);
+
+// ---------------- 03 census: I20, from graph.json records; a chain recount only on the reader's click ----------------
+const cv = $('field'); const cx = cv.getContext('2d'); const tip = $('tip');
+let cells = []; let hover = -1; let CW = 0; let CH = 0; let SZ = 14; let recs = [];
+const kindOf = (a) => (a === 'true' ? 't' : a === 'false' ? 'f' : 'u');
+function layout() {
+  const dpr = devicePixelRatio || 1; CW = cv.clientWidth; if (!CW) return;
+  const cols = Math.max(10, Math.floor((CW - 40) / 14)); SZ = (CW - 40) / cols; CH = Math.ceil(recs.length / cols) * SZ + 40;
+  cv.style.height = `${CH}px`; cv.width = CW * dpr; cv.height = CH * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  cells = recs.map((r, i) => ({ id: r.id, a: r.autoUpdate, k: kindOf(r.autoUpdate), x: 20 + (i % cols) * SZ + SZ / 2, y: 20 + Math.floor(i / cols) * SZ + SZ / 2 }));
+}
+function paint(t) {
+  cx.clearRect(0, 0, CW, CH);
+  for (let i = 0; i < cells.length; i++) {
+    const c = cells[i]; const r = SZ * 0.34;
+    if (c.k === 't') { cx.fillStyle = i === hover ? '#fff' : `rgba(255,120,111,${still ? 0.75 : 0.55 + 0.25 * Math.sin(t / 900 + i)})`; cx.beginPath(); cx.arc(c.x, c.y, r, 0, 7); cx.fill(); }
+    else if (c.k === 'f') { cx.shadowColor = '#b48cf2'; cx.shadowBlur = 12; cx.fillStyle = i === hover ? '#fff' : '#b48cf2'; cx.beginPath(); cx.arc(c.x, c.y, r + 1, 0, 7); cx.fill(); cx.shadowBlur = 0; }
+    else { cx.strokeStyle = i === hover ? '#fff' : '#5a5763'; cx.setLineDash([2, 2]); cx.beginPath(); cx.arc(c.x, c.y, r, 0, 7); cx.stroke(); cx.setLineDash([]); }
+  }
+  if (!still) requestAnimationFrame(paint);
+}
+cv.addEventListener('mousemove', (e) => {
+  const b = cv.getBoundingClientRect(); const x = e.clientX - b.left; const y = e.clientY - b.top;
+  hover = cells.findIndex((c) => Math.abs(c.x - x) < SZ / 2 && Math.abs(c.y - y) < SZ / 2);
+  if (hover < 0) { tip.style.display = 'none'; return; }
+  const c = cells[hover];
+  tip.textContent = `${c.id} · ${c.a === 'true' || c.a === 'false' ? `auto_update: ${c.a}` : c.a === 'no-factory-info' ? 'no get_factory_info' : 'unread'}`;
+  tip.style.display = 'block'; tip.style.left = `${Math.min(c.x + 12, CW - tip.offsetWidth - 6)}px`; tip.style.top = `${Math.max(c.y - 34, 4)}px`;
+  if (still) paint(0);
+});
+cv.addEventListener('mouseleave', () => { hover = -1; tip.style.display = 'none'; if (still) paint(0); });
+cv.addEventListener('click', () => { if (hover >= 0) location.href = `docket.html?dao=${encodeURIComponent(cells[hover].id)}`; });
+addEventListener('resize', () => { layout(); if (still) paint(0); });
+
 async function counter() {
-  const fig = $('census-figure'); const txt = $('census-text');
   try {
     const g = await fetch('../graph.json').then((r) => (r.ok ? r.json() : null));
     if (!g) throw new Error('graph.json not found');
+    recs = Object.values(g.daos);
     const c = census(Object.values(g.daos));
     const when = g.crawl?.lastRunAt?.slice(0, 10) ?? 'undated';
-    fig.replaceChildren(el('span', c.counts.true.toLocaleString('en-US'), 'novote'), el('small', ` of ${c.denominator.toLocaleString('en-US')} DAOs`));
-    txt.replaceChildren(
-      document.createTextNode(`read auto_update: true, so the factory can replace their code without a vote (${pct(c.shareTrueOfAnswered)} of the ${c.answered.toLocaleString('en-US')} that answered). `),
-      el('span', `${c.counts.false} read false`, 'optedout'),
-      document.createTextNode(`. Unknown: ${c.counts['no-factory-info']} have no get_factory_info, ${c.counts.unread} could not be read. Census ${when}${g.crawl?.complete ? '' : ', incomplete'}.`));
+    const k = c.counts; const unknown = k['no-factory-info'] + k.unread;
+    $('n-true').textContent = k.true.toLocaleString('en-US');
+    $('n-false').textContent = k.false.toLocaleString('en-US');
+    $('n-unknown').textContent = unknown.toLocaleString('en-US');
+    $('unknown-text').textContent = `Unknown: ${k['no-factory-info']} have no get_factory_info, ${k.unread} could not be read.`;
+    put($('doors-h'), 'This is not one vault. ', el('span', `${k.true.toLocaleString('en-US')} of ${c.denominator.toLocaleString('en-US')}`, 'novote'), ' DAOs have the same lock.');
+    $('census-note').textContent = `${pct(c.shareTrueOfAnswered)} of the ${c.answered.toLocaleString('en-US')} that answered read auto_update: true. Census ${when}${g.crawl?.complete ? '' : ', incomplete'}.`;
     $('footer-census').textContent = `Census ${when}${g.crawl?.complete ? '' : ' (incomplete)'}: ${c.denominator.toLocaleString('en-US')} DAOs`;
+    layout(); requestAnimationFrame(paint);
   } catch (e) {
-    fig.textContent = 'Census unknown'; fig.classList.add('unknown-text');
-    txt.textContent = `${e.message}. Serve the repository root so ../graph.json is reachable.`;
-    $('fact-census').classList.add('is-unknown');
+    for (const id of ['n-true', 'n-false', 'n-unknown']) { $(id).textContent = 'unknown'; $(id).className = 'unknown-text'; }
+    $('census-note').textContent = `Census unknown: ${e.message}. Serve the repository root so ../graph.json is reachable.`;
     $('footer-census').textContent = 'Census: unknown (graph.json unread)';
+    cv.style.display = 'none';
   }
   const b = $('recount'); const live = $('recount-out');
   b.addEventListener('click', async () => {
