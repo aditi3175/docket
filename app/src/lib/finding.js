@@ -71,7 +71,12 @@ export function useCensus() {
   useEffect(() => {
     let alive = true;
     fetch(`${import.meta.env.BASE_URL}graph.json`).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`graph.json: HTTP ${r.status}`))))
-      .then((g) => { if (alive) set({ status: 'ok', c: census(Object.values(g.daos)), when: g.crawl?.lastRunAt ?? null, complete: g.crawl?.complete === true }); })
+      .then((g) => {
+        if (!alive) return;
+        // records: each DAO's id and its read auto_update bucket, as graph.json stores them (drawn one dot each)
+        const records = Object.values(g.daos).map((d) => ({ id: d.id, autoUpdate: d.autoUpdate }));
+        set({ status: 'ok', c: census(Object.values(g.daos)), records, when: g.crawl?.lastRunAt ?? null, complete: g.crawl?.complete === true });
+      })
       .catch((e) => { if (alive) set({ status: 'unknown', reason: String(e?.message ?? e) }); });
     return () => { alive = false; };
   }, []);
