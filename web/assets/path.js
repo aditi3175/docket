@@ -20,13 +20,14 @@ export function keyGlyph(doc = document) {
   return s;
 }
 
-export function createPath(host, { reducedMotion } = {}) {
+export function createPath(host, { reducedMotion, columns } = {}) {
   const doc = host.ownerDocument;
   const win = doc.defaultView;
   const still = reducedMotion ?? win.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const mobile = () => win.matchMedia(MOBILE).matches;
   host.classList.add('path');
   const grid = doc.createElement('div'); grid.className = 'path-grid';
+  if (columns) grid.style.setProperty('--cols', columns); // desktop columns; the mobile layout is the stylesheet's
   const svg = doc.createElementNS(SVG, 'svg'); svg.setAttribute('class', 'edges'); svg.setAttribute('aria-hidden', 'true');
   host.append(svg, grid);
   const nodes = new Map();

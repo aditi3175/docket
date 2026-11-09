@@ -39,7 +39,7 @@ a { color: var(--navy); text-decoration-thickness: 1px; text-underline-offset: .
 a:hover { text-decoration-thickness: 2px; }
 :focus-visible { outline: 3px solid var(--navy); outline-offset: 3px; border-radius: 4px; }
 .id, code, kbd, samp, pre { font-family: var(--mono); font-size: .88em; letter-spacing: -.01em; }
-.id { white-space: nowrap; }
+.id, .nobr { white-space: nowrap; }
 pre { background: var(--frost); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem; overflow-x: auto; line-height: 1.5; }
 h1, h2, h3 { line-height: 1.12; letter-spacing: -.015em; margin: 0; font-weight: 700; }
 p { margin: 0 0 .8em; }
@@ -88,7 +88,7 @@ table, .num { font-variant-numeric: tabular-nums; }
 /* the authority path: nodes are HTML in a grid, edges one SVG overlay drawn from their boxes */
 .path { position: relative; margin: 1.4rem 0 1rem; background: var(--frost); border: 1px solid var(--line); border-radius: 16px; padding: clamp(1rem, 3vw, 2.2rem); }
 .path-grid { position: relative; z-index: 1; display: grid; align-items: center;
-  grid-template-columns: minmax(6.5rem, .65fr) minmax(13.25rem, 1fr) minmax(16.75rem, 1.3fr) minmax(2.5rem, 1fr) minmax(10.5rem, 1fr) minmax(6.25rem, .45fr);
+  grid-template-columns: var(--cols, minmax(6.5rem, .65fr) minmax(13.25rem, 1fr) minmax(16.75rem, 1.3fr) minmax(2.5rem, 1fr) minmax(10.5rem, 1fr) minmax(6.25rem, .45fr));
   column-gap: clamp(1rem, 1.8vw, 2rem); row-gap: 1.25rem; }
 .path svg.edges { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; overflow: visible; pointer-events: none; }
 .node { grid-column: var(--col); grid-row: var(--row) / span var(--span, 1); background: var(--frost); position: relative; min-width: 0; }
@@ -157,6 +157,36 @@ button[disabled] { opacity: .55; cursor: progress; }
 .why h2 { font-size: var(--s28); margin-bottom: .8rem; }
 .why p { max-width: 62ch; }
 
+/* account.html and the other tool pages */
+.page-head { padding: clamp(1.4rem, 3vw, 2.4rem) 0 .4rem; }
+.page-head h1 { font-size: clamp(var(--s28), 3vw, 2.5rem); letter-spacing: -.025em; }
+.page-head .intro { color: var(--slate); max-width: 70ch; margin-top: .6rem; }
+.pick { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; margin-top: 1.2rem; }
+.pick label { display: flex; flex-direction: column; gap: .3rem; font-size: var(--s15); color: var(--slate); flex: 1 1 22rem; max-width: 34rem; }
+.pick input { font: 500 1rem var(--mono); color: var(--navy); background: var(--frost); border: 1.5px solid var(--line-strong); border-radius: 8px; padding: .62rem .8rem; width: 100%; }
+.pick input:focus-visible { outline: 3px solid var(--navy); outline-offset: 1px; border-color: var(--navy); }
+.pick button[type="submit"] { align-self: flex-end; background: var(--navy); color: var(--frost); padding: .66rem 1.2rem; }
+.pick button[type="submit"]:hover { background: #1b2c4d; }
+.chips { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .8rem; align-items: center; font-size: var(--s15); color: var(--slate); }
+.chips button { font-weight: 500; border-color: var(--line-strong); padding: .32rem .7rem; border-radius: 999px; }
+.answer { margin-top: 2rem; }
+.answer .lede2 { font-size: clamp(var(--s21), 2.4vw, 2rem); font-weight: 700; line-height: 1.18; letter-spacing: -.02em; max-width: 46ch; text-wrap: balance; }
+.answer .lede2.is-unknown { color: var(--slate); font-style: italic; }
+.stake { margin-top: .7rem; display: flex; flex-wrap: wrap; gap: .3rem 1rem; align-items: baseline; }
+.stake strong { font-size: var(--s21); }
+.loading { color: var(--slate); font-style: italic; }
+.path-title { font-size: var(--s21); margin: 2.2rem 0 0; }
+.path-scroll { overflow-x: auto; }
+.path-scroll > .path { min-width: min-content; }
+.keylist { list-style: none; padding: 0; margin: .4rem 0 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: .1rem; }
+.keylist li { overflow-x: auto; white-space: nowrap; font-size: var(--s15); min-width: 0; margin: 0; }
+.prose { max-width: 70ch; }
+.prose p, .prose li { overflow-wrap: anywhere; } /* only a word longer than a whole line breaks: a 44-character hash, never an account id */
+.prose h2 { font-size: var(--s28); margin: 3rem 0 .8rem; }
+.prose ol, .prose ul { padding-left: 1.3rem; }
+.prose li { margin: .35rem 0; }
+.prose pre { font-size: .875rem; }
+
 @media (max-width: 1080px) {
   .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -177,3 +207,13 @@ button[disabled] { opacity: .55; cursor: progress; }
   .site-header .wrap { gap: 1rem; }
   .site-nav { gap: 1rem; }
 }
+
+/* the path at full size (account.html) */
+.path.large { padding: clamp(1.2rem, 3vw, 2.4rem) clamp(1rem, 2.4vw, 2rem); }
+.path.large .path-grid { column-gap: clamp(.9rem, 1.4vw, 1.4rem); }
+.path.large .node.box { padding: .85rem 1rem; }
+.path.large .node .t.id { font-size: .9rem; }
+.path.large .node .s { font-size: .875rem; }
+.path.large .node.value .t { font-size: 2rem; }
+.path.large .keyglyph { width: 3.1rem; height: 1.55rem; }
+.path.large .edge-label { font-size: 13.5px; }
