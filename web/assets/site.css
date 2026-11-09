@@ -307,3 +307,30 @@ table.register td.dao .sub { line-height: 1.25; }
 table.register td.roots { white-space: normal; min-width: 12.5rem; }
 table.register td.num.wrap { white-space: normal; min-width: 8rem; }
 @media (max-width: 560px) { .stats { font-size: var(--s17); gap: .2rem 1rem; } }
+
+/* optout.html: numbered steps in screenModel order */
+.steps { max-width: 62rem; }
+.banner.is-plain { border-left-color: var(--navy); }
+.step { background: var(--frost); border: 1px solid var(--line); border-radius: 14px; padding: 1rem 1.3rem 1.1rem; margin-top: 1rem; }
+.step h2 { font-size: var(--s21); display: flex; align-items: center; gap: .7rem; margin-bottom: .7rem; }
+.stepno { display: inline-grid; place-items: center; width: 1.7rem; height: 1.7rem; border-radius: 50%; border: 1.5px solid var(--navy); font-size: .875rem; font-weight: 700; flex: none; }
+.step p { margin: .3rem 0; }
+.stat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, max-content)); gap: .4rem 2.4rem; }
+.stat-cell { display: flex; flex-direction: column; }
+.stat-cell .k { font-size: .8125rem; color: var(--slate); }
+.stat-cell .v { font-size: var(--s21); font-weight: 650; }
+.stat-cell .v.id { font-size: 1rem; font-weight: 500; }
+.given-up { border-left: 5px solid var(--navy); }
+.given-up ul { margin: 0; padding-left: 1.2rem; }
+.given-up li { margin-bottom: .6rem; }
+.given-up .given { font-weight: 600; }
+.submit-row { display: flex; flex-wrap: wrap; gap: .6rem; }
+button.primary { background: var(--navy); color: var(--frost); }
+button.primary:hover { background: #1b2c4d; }
+.status-line { font-weight: 600; min-height: 1.2em; }
+.exception { border-left: 3px solid var(--line-strong); padding-left: .7rem; }
+.cmd-label { font-size: var(--s15); margin-top: .8rem !important; }
+pre.cmd { white-space: pre; overflow-x: auto; font-size: .8rem; margin: .3rem 0; }
+.step details summary { cursor: pointer; font-size: var(--s15); margin-top: .8rem; }
+@media (max-width: 640px) { .stat-grid { grid-template-columns: 1fr; } }
+.step p, .step li { overflow-wrap: anywhere; } /* a 44-character transaction hash may break; an account id fits a line and never does */

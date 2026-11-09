@@ -4,60 +4,102 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Docket — opt a DAO out of factory auto-update</title>
-<style>
-  body { font: 16px/1.5 system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem; color: #1b1b1b; }
-  h1 { font-size: 1.4rem; } h2 { font-size: 1.05rem; margin-top: 1.6rem; }
-  code, pre { font: 13px/1.45 ui-monospace, monospace; } pre { background: #f4f4f4; padding: .8rem; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
-  .basis { color: #555; font-size: .85rem; } .warn { border-left: 4px solid #b45309; padding-left: .8rem; }
-  .status { font-weight: 600; } button[disabled] { opacity: .6; }
-</style>
+<link rel="preload" href="assets/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
-<nav style="color:#555;font-size:.86rem"><a href="index.html">finding</a> &nbsp; <a href="account.html">account</a> &nbsp; <a href="docket.html">docket</a> &nbsp; <a href="register.html">register</a> &nbsp; <a href="optout.html">opt-out</a></nav>
-<h1>Opt a Sputnik DAO out of factory auto-update</h1>
-<p>Docket reads the DAO from NEAR mainnet, drafts one <code>FactoryInfoUpdate</code> proposal, and checks the result by
-re-reading the chain. It never holds a key and signs nothing.</p>
-<form id="pick"><label>DAO account <input id="dao" size="40" value="stnear.sputnik-dao.near" autocomplete="off"></label>
-<button>Read</button></form>
-<div id="out" aria-live="polite"></div>
+<a class="skip" href="#main">Skip to the draft</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="index.html" aria-label="Docket, overview">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M8.2 12h7.6" stroke="currentColor" stroke-width="2.2"/><rect x="15.8" y="8.6" width="6.8" height="6.8" rx="1.6" fill="currentColor"/></svg>
+      Docket
+    </a>
+    <nav class="site-nav" aria-label="Pages">
+      <a href="index.html">Overview</a>
+      <a href="account.html">Account</a>
+      <a href="docket.html">Proposals</a>
+      <a href="register.html">Register</a>
+      <a href="optout.html" aria-current="page">Opt out</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+  <section class="page-head compact">
+    <h1>Opt a Sputnik DAO out of factory auto-update</h1>
+    <p class="intro">One FactoryInfoUpdate proposal, passed by the DAO itself, sets auto_update to false. Docket reads the DAO from NEAR mainnet, drafts the proposal, and confirms the result only by re-reading the chain. It holds no key and signs nothing.</p>
+    <div class="pickrow">
+      <form id="pick" class="pick">
+        <label>Sputnik DAO <input id="dao" value="stnear.sputnik-dao.near" autocomplete="off" spellcheck="false" autocapitalize="off"></label>
+        <button type="submit">Read</button>
+      </form>
+    </div>
+  </section>
+  <div id="out" class="answer steps" aria-live="polite"></div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <a href="https://github.com/aditi3175/docket">github.com/aditi3175/docket</a>
+    <span>Read-only, holds no key</span>
+    <span id="footer-census">Census: reading graph.json…</span>
+  </div>
+</footer>
 
 <script type="module">
 import { createRpc } from './assets/rpc.js';
 import { planOptOut, confirmOptOut, screenModel } from './assets/optout.js';
 import { loadWalletSelector, submitWithWallet, addProposalTransaction, WALLET_SELECTOR_VERSION } from './assets/wallet.js';
+import { census } from './assets/census.js';
 
 const rpc = createRpc();
 const out = document.getElementById('out');
 const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
 
-function section(title) { const s = el('section'); s.append(el('h2', title)); out.append(s); return s; }
+let n = 0;
+function section(title, cls = '') { const s = el('section', undefined, `step ${cls}`.trim()); n++; const h = el('h2'); h.append(el('span', String(n), 'stepno'), document.createTextNode(title)); s.append(h); out.append(s); return s; }
+const stat = (k, v, cls) => { const d = el('div', undefined, 'stat-cell'); d.append(el('span', k, 'k'), el('span', v, `v ${cls ?? ''}`.trim())); return d; };
 
 function render(plan) {
-  out.replaceChildren();
-  const status = { draft: 'Ready to draft', 'opted-out': 'Already opted out', refused: 'Docket will not draft this', unknown: 'Unknown — a read failed' }[plan.status];
-  out.append(el('p', `${plan.dao}: ${status}${plan.reason ? ` — ${plan.reason}` : ''}`, 'status'));
+  out.replaceChildren(); n = 0;
+  const status = { draft: 'Ready to draft', 'opted-out': 'Already opted out', refused: 'Docket will not draft this', unknown: 'Unknown: a read failed' }[plan.status];
+  const banner = el('div', undefined, `banner ${plan.status === 'opted-out' ? 'is-optedout' : plan.status === 'unknown' ? 'is-unknown' : plan.status === 'draft' ? 'is-novote' : 'is-plain'}`);
+  const p = el('p', undefined, 'lede2'); p.append(el('span', plan.dao, 'nobr'), document.createTextNode(`: ${status}`)); banner.append(p);
+  if (plan.reason) banner.append(el('p', plan.reason, 'basis'));
+  out.append(banner);
   for (const { id, title } of screenModel(plan)) {
-    const s = section(title);
     if (id === 'current') {
-      if (!plan.current) { s.append(el('p', 'unknown')); continue; }
-      const c = plan.current;
-      s.append(el('p', `auto_update: ${c.autoUpdate}  ·  factory_id: ${c.factoryId}  ·  code: ${c.version ?? c.form} (${c.versionStatus})`));
+      const s = section(title);
+      if (!plan.current) { s.append(el('p', 'unknown', 'unknown-text')); continue; }
+      const c = plan.current; const g = el('div', undefined, 'stat-grid');
+      g.append(stat('auto_update', String(c.autoUpdate), c.autoUpdate === true ? 'novote' : c.autoUpdate === false ? 'optedout' : 'unknown-text'),
+        stat('factory_id', c.factoryId, 'id'), stat('code', `${c.version ?? c.form} (${c.versionStatus})`));
+      s.append(g);
+      if (c.autoUpdate === true) s.append(el('p', 'auto_update: true means the factory can replace this DAO’s code with no vote.', 'basis'));
     } else if (id === 'givenUp') {
-      const ul = el('ul'); s.classList.add('warn');
-      for (const g of plan.givenUp) { const li = el('li', g.text); const b = el('div', g.basis, 'basis'); if (g.link) { const l = el('a', g.link.text); l.href = g.link.href; b.append(document.createTextNode(' · '), l); } li.append(b); ul.append(li); }
+      const s = section(title, 'given-up');
+      const ul = el('ul');
+      for (const g of plan.givenUp) { const li = el('li'); li.append(el('p', g.text, 'given')); const b = el('p', g.basis, 'basis'); if (g.link) { const l = el('a', g.link.text); l.href = g.link.href; b.append(document.createTextNode(' · '), l); } li.append(b); ul.append(li); }
       s.append(ul);
     } else if (id === 'approve') {
-      if (!plan.approve) { s.append(el('p', 'unknown')); continue; }
+      const s = section(title);
+      if (!plan.approve) { s.append(el('p', 'unknown', 'unknown-text')); continue; }
       const a = plan.approve;
-      s.append(el('p', a.passers.length ? a.passers.map((p) => `${p.k} of ${p.n} in "${p.role}" (${p.members.join(', ')})`).join(' — or — ') : 'No role can approve factory_info_update.'));
+      if (!a.passers.length) s.append(el('p', 'No role can approve factory_info_update.'));
+      for (const x of a.passers) { const d = el('p', `${x.k} of ${x.n} in "${x.role}": `); x.members.forEach((m, i) => { if (i) d.append(document.createTextNode(', ')); d.append(el('span', m, 'id')); }); s.append(d); }
       if (a.ignored.length) s.append(el('p', `Also permitted, but never counted toward a threshold (Everyone roles): ${a.ignored.join(', ')}`, 'basis'));
       if (a.unknown.length) s.append(el('p', `Not decided (token-weighted): ${a.unknown.map((u) => u.role).join(', ')}`, 'basis'));
     } else if (id === 'cost') {
-      s.append(el('p', plan.bond ? `Proposal bond: ${plan.bond.near} NEAR, attached to add_proposal, ${plan.bond.refund}. Plus gas.` : 'unknown'));
+      const s = section(title);
+      s.append(el('p', plan.bond ? `Proposal bond: ${plan.bond.near} NEAR, attached to add_proposal, ${plan.bond.refund}. Plus gas.` : 'unknown', plan.bond ? '' : 'unknown-text'));
     } else if (id === 'submit') {
-      const b = el('button', 'Connect a wallet'); b.disabled = plan.status !== 'draft';
-      const ws = el('p', '', 'status');
-      s.append(b, ws, el('p', `Clicking loads NEAR Wallet Selector ${WALLET_SELECTOR_VERSION} from esm.sh (about 236 files, a few seconds). Your wallet shows the add_proposal transaction, with the ${plan.bond ? plan.bond.near + ' NEAR' : ''} bond, and signs it; Docket never sees a key. This path loads and connects in Chrome, but no opt-out has yet been signed through it: the near-cli command below is the one run on mainnet.`, 'basis'));
+      const s = section(title);
+      const row = el('div', undefined, 'submit-row');
+      const b = el('button', 'Connect a wallet', 'primary'); b.type = 'button'; b.disabled = plan.status !== 'draft';
+      row.append(b); s.append(row);
+      const ws = el('p', '', 'status-line'); s.append(ws);
+      s.append(el('p', `The one outside dependency on this site: clicking this button loads NEAR Wallet Selector ${WALLET_SELECTOR_VERSION} from esm.sh (about 236 files, a few seconds). Nothing loads until you click. Your wallet shows the add_proposal transaction, with the ${plan.bond ? plan.bond.near + ' NEAR' : ''} bond, and signs it; Docket never sees a key. This path loads and connects in Chrome, but no opt-out has yet been signed through it: the near-cli command below is the one run on mainnet.`, 'basis exception'));
       if (plan.status === 'draft') {
         let ctx = null;
         const submitTo = async () => {
@@ -66,14 +108,14 @@ function render(plan) {
           if (!who) return;
           b.textContent = `Submit add_proposal from ${who}`; b.disabled = false;
           b.onclick = async () => {
-            b.disabled = true; ws.textContent = 'waiting for your wallet…';
+            b.disabled = true; ws.textContent = 'Waiting for your wallet…';
             try { await submitWithWallet(ctx, addProposalTransaction(plan)); ws.textContent = 'Your wallet returned. That is not the confirmation: once the proposal passes, use the re-read below (I15).'; }
             catch (e) { ws.textContent = `Not submitted: ${e?.message ?? e}`; }
             b.disabled = false;
           };
         };
         b.onclick = async () => {
-          b.disabled = true; ws.textContent = 'loading the wallet selector…';
+          b.disabled = true; ws.textContent = 'Loading the wallet selector from esm.sh…';
           try {
             ctx ??= await loadWalletSelector();
             ctx.selector.store.observable.subscribe(() => submitTo());
@@ -81,28 +123,40 @@ function render(plan) {
             if (ctx.selector.isSignedIn()) await submitTo(); else { ctx.modal.show(); b.disabled = false; }
           } catch (e) { ws.textContent = `The wallet selector did not load (${e?.message ?? e}). Use the near-cli command below.`; b.disabled = false; }
         };
-        const c = el('button', 'I have voted — re-read get_factory_info'); s.append(c);
-        const r = el('p', '', 'status'); s.append(r);
-        c.addEventListener('click', async () => { r.textContent = 'reading…'; const x = await confirmOptOut(rpc, plan.dao);
-          r.textContent = { 'opted-out': `Opted out: get_factory_info reads auto_update: false (${x.readAt})`, 'not-opted-out': `Not yet: get_factory_info still reads auto_update: true (${x.readAt})`, unknown: `Unknown: ${x.reason}` }[x.status]; });
+        const c = el('button', 'I have voted: re-read get_factory_info'); c.type = 'button'; row.append(c);
+        const r = el('p', '', 'status-line'); s.append(r);
+        c.addEventListener('click', async () => { r.textContent = 'Reading…'; r.className = 'status-line'; const x = await confirmOptOut(rpc, plan.dao);
+          r.textContent = { 'opted-out': `Opted out: get_factory_info reads auto_update: false (${x.readAt})`, 'not-opted-out': `Not yet: get_factory_info still reads auto_update: true (${x.readAt})`, unknown: `Unknown: ${x.reason}` }[x.status];
+          r.className = `status-line ${x.status === 'opted-out' ? 'optedout' : x.status === 'unknown' ? 'unknown-text' : ''}`; });
       }
     } else if (id === 'cli') {
-      if (!plan.commands) { s.append(el('p', 'No command: nothing is drafted.')); continue; }
+      const s = section(title);
+      if (!plan.commands) { s.append(el('p', 'No command: nothing is drafted.', 'muted')); continue; }
       s.append(el('p', 'Run these in a POSIX shell (bash, zsh, Git Bash on Windows). Windows PowerShell 5.1 strips the quotes inside json-args.', 'basis'));
-      s.append(el('p', '1. Add the proposal (any account a proposer role matches):'), el('pre', plan.commands.add));
-      s.append(el('p', '2. Each approving member votes, using the id the first command returned:'), el('pre', plan.commands.approve));
-      s.append(el('p', 'Proposal JSON:'), el('pre', JSON.stringify(plan.proposal, null, 2)));
+      s.append(el('p', 'Add the proposal (any account a proposer role matches):', 'cmd-label'), el('pre', plan.commands.add, 'cmd'));
+      s.append(el('p', 'Each approving member votes, using the id the first command returned:', 'cmd-label'), el('pre', plan.commands.approve, 'cmd'));
+      const d = el('details'); d.append(el('summary', 'Proposal JSON'), el('pre', JSON.stringify(plan.proposal, null, 2), 'cmd')); s.append(d);
     }
   }
 }
 
-document.getElementById('pick').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  out.replaceChildren(el('p', 'reading mainnet…'));
-  render(await planOptOut(rpc, document.getElementById('dao').value.trim()));
-});
+async function run(dao) {
+  history.replaceState(null, '', `?dao=${encodeURIComponent(dao)}`);
+  out.replaceChildren(el('p', `Reading ${dao} from NEAR mainnet…`, 'loading'));
+  try { render(await planOptOut(rpc, dao)); }
+  catch (e) { out.replaceChildren(el('p', `Unknown: the page failed while reading (${e?.message ?? e}).`, 'lede2 is-unknown')); }
+}
+document.getElementById('pick').addEventListener('submit', (e) => { e.preventDefault(); run(document.getElementById('dao').value.trim()); });
+// never blank: with no DAO in the address, draft for stnear (Meta Pool's owner, auto_update: true)
 const q = new URLSearchParams(location.search).get('dao');
-if (q) { document.getElementById('dao').value = q; document.getElementById('pick').requestSubmit(); }
+if (q) document.getElementById('dao').value = q;
+run(q ?? document.getElementById('dao').value);
+
+fetch('../graph.json').then((r) => (r.ok ? r.json() : null)).then((g) => {
+  if (!g) throw new Error('unread');
+  const c = census(Object.values(g.daos));
+  document.getElementById('footer-census').textContent = `Census ${g.crawl?.lastRunAt?.slice(0, 10) ?? 'undated'}${g.crawl?.complete ? '' : ' (incomplete)'}: ${c.denominator.toLocaleString('en-US')} DAOs`;
+}).catch(() => { document.getElementById('footer-census').textContent = 'Census: unknown (graph.json unread)'; });
 </script>
 </body>
 </html>
