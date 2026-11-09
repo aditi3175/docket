@@ -4,28 +4,49 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Docket — the register: every Sputnik DAO, by reach</title>
-<style>
-  body { font: 15px/1.5 system-ui, sans-serif; max-width: 72rem; margin: 2rem auto; padding: 0 1rem; color: #1b1b1b; }
-  h1 { font-size: 1.45rem; margin-bottom: .2rem; }
-  .floor { font-weight: 600; padding: .6rem .9rem; border-left: 5px solid #6b7280; background: #f3f4f6; }
-  table { border-collapse: collapse; width: 100%; font-size: .88rem; } td, th { text-align: left; padding: .3rem .45rem; border-bottom: 1px solid #eee; vertical-align: top; }
-  th { position: sticky; top: 0; background: #fff; } td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .mono { font: 12.5px ui-monospace, monospace; } .t-true { color: #991b1b; font-weight: 600; } .t-false { color: #166534; font-weight: 600; } .t-unknown { color: #6b7280; }
-  .basis { color: #555; font-size: .86rem; } nav a { margin-right: .8rem; } tr.mapped td { background: #fafafa; }
-</style>
+<link rel="preload" href="assets/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
-<nav class="basis"><a href="index.html">finding</a><a href="account.html">account</a><a href="docket.html">docket</a><a href="register.html">register</a><a href="optout.html">opt-out</a></nav>
-<h1>The register: every Sputnik DAO, by reach</h1>
-<p id="floor" class="floor"></p>
-<p class="basis">Order: first the DAOs that administer a protocol Docket has mapped, by the value they administer
-(DefiLlama, read now); then every other DAO by its own NEAR balance. Rows come from the last census
-(<code>graph.json</code>, written by <code>tools/crawl.mjs</code>); the values are read when this page loads.
-"No-vote roots" looks one hop out: the factory, keys on the DAO, members who can pass a code or rule change alone.
-Each DAO's account page follows the whole path.</p>
-<p><label>Filter <input id="q" size="30" placeholder="part of a DAO name" spellcheck="false"></label>
-<label><input type="checkbox" id="onlyTrue"> only auto_update: true</label> <span id="count" class="basis"></span></p>
-<div id="out" aria-live="polite"><p class="basis">reading graph.json, DefiLlama and the factory's keys…</p></div>
+<a class="skip" href="#main">Skip to the table</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="index.html" aria-label="Docket, overview">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M8.2 12h7.6" stroke="currentColor" stroke-width="2.2"/><rect x="15.8" y="8.6" width="6.8" height="6.8" rx="1.6" fill="currentColor"/></svg>
+      Docket
+    </a>
+    <nav class="site-nav" aria-label="Pages">
+      <a href="index.html">Overview</a>
+      <a href="account.html">Account</a>
+      <a href="docket.html">Proposals</a>
+      <a href="register.html" aria-current="page">Register</a>
+      <a href="optout.html">Opt out</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+  <section class="page-head compact">
+    <h1>The register: every Sputnik DAO, by reach</h1>
+    <p id="stats" class="stats">Reading the census (graph.json)…</p>
+    <p class="intro"><strong id="floor"></strong> First the DAOs that administer a protocol Docket has mapped, by the value they administer; then every other DAO by its own NEAR balance. “No-vote roots” looks one hop out: the factory, keys on the DAO, members who can pass a code or rule change alone. Each DAO links to the whole path.</p>
+    <p id="prov" class="provenance recorded-note"></p>
+  </section>
+  <div class="tools">
+    <label>Filter <input id="q" placeholder="part of a DAO name" spellcheck="false" autocomplete="off" autocapitalize="off"></label>
+    <label class="check"><input type="checkbox" id="onlyTrue"> Only auto_update: true</label>
+    <span id="count" class="muted small" aria-live="polite"></span>
+  </div>
+  <div id="out" class="table-wrap"></div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <a href="https://github.com/aditi3175/docket">github.com/aditi3175/docket</a>
+    <span>Read-only, holds no key</span>
+    <span id="footer-census">Census: reading graph.json…</span>
+  </div>
+</footer>
 
 <script type="module">
 import { createRpc } from './assets/rpc.js';
@@ -38,42 +59,89 @@ const el = (tag, text, cls) => { const e = document.createElement(tag); if (text
 const out = document.getElementById('out');
 document.getElementById('floor').textContent = FLOOR;
 const SHOW = 300;
+const NBH = '‑'; const NBSP = ' ';
+const time = (iso) => (iso ? `${iso.slice(0, 10).replace(/-/g, NBH)}${NBSP}${iso.slice(11, 16)}${NBSP}UTC` : 'unknown');
 
-const [graph, llama, keys] = await Promise.all([
-  fetch('../graph.json').then((r) => (r.ok ? r.json() : null)).catch(() => null),
-  fetchDefiLlama(),
-  accessKeys(createRpc(), 'sputnik-dao.near'),
-]);
-if (!graph) { out.replaceChildren(el('p', 'Unknown: graph.json could not be loaded. Serve the repository root, so that ../graph.json is reachable, or run node tools/crawl.mjs.')); }
-else {
-  const factoryKeys = keys.status === 'ok' ? keys.keys.filter((k) => k.kind === 'FullAccess').length : 'unknown';
-  const reg = registerRows(graph, llama, factoryKeys);
+// Sort keys. Balances are whole NEAR as decimal strings: compared as BigInt, never Number (I10).
+const big = (s) => (/^[\d,]+$/.test(String(s)) ? BigInt(String(s).replace(/,/g, '')) : null);
+const usdNum = (s) => (/^\$[\d,]+$/.test(String(s)) ? Number(String(s).slice(1).replace(/,/g, '')) : null);
+const cmpNull = (a, b, f) => (a === null && b === null ? 0 : a === null ? 1 : b === null ? -1 : f(a, b));
+const COLS = [
+  { key: 'rank', label: '#', num: true, cmp: (a, b) => a.rank - b.rank },
+  { key: 'dao', label: 'DAO', cmp: (a, b) => a.dao.localeCompare(b.dao) },
+  { key: 'administered', label: 'Administered value', num: true, cmp: (a, b) => cmpNull(usdNum(a.administered), usdNum(b.administered), (x, y) => y - x) },
+  { key: 'balance', label: 'Own balance (NEAR)', num: true, cmp: (a, b) => cmpNull(big(a.balance), big(b.balance), (x, y) => (y > x ? 1 : y < x ? -1 : 0)) },
+  { key: 'autoUpdate', label: 'auto_update', cmp: (a, b) => a.autoUpdate.localeCompare(b.autoUpdate) },
+  { key: 'version', label: 'Code', cmp: (a, b) => String(a.version).localeCompare(String(b.version)) },
+  { key: 'roots', label: 'No-vote roots, one hop out', cmp: (a, b) => a.roots.localeCompare(b.roots) },
+];
+let sort = { key: 'rank', dir: 1 };
+let reg = null; let pending = { llama: true, keys: true };
+
+function draw() {
+  if (!reg) return;
+  const q = document.getElementById('q').value.trim().toLowerCase();
+  const onlyTrue = document.getElementById('onlyTrue').checked;
+  const col = COLS.find((c) => c.key === sort.key);
+  const rows = reg.rows.filter((r) => (!q || r.dao.includes(q)) && (!onlyTrue || r.autoUpdate === 'true')).sort((a, b) => sort.dir * col.cmp(a, b) || a.rank - b.rank);
+  document.getElementById('count').textContent = `${rows.length.toLocaleString('en-US')} shown${rows.length > SHOW ? ` (the first ${SHOW})` : ''}`;
+  const t = el('table', undefined, 'register');
+  const thead = el('thead'); const h = el('tr');
+  for (const c of COLS) {
+    const th = el('th'); th.scope = 'col'; if (c.num) th.className = 'num';
+    th.setAttribute('aria-sort', sort.key === c.key ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none');
+    const b = el('button', c.label, 'sorter'); b.type = 'button';
+    b.append(el('span', sort.key === c.key ? (sort.dir === 1 ? ' ▲' : ' ▼') : '', 'arrow'));
+    b.addEventListener('click', () => { sort = { key: c.key, dir: sort.key === c.key ? -sort.dir : 1 }; draw(); });
+    th.append(b); h.append(th);
+  }
+  thead.append(h); t.append(thead);
+  const tb = el('tbody');
+  for (const r of rows.slice(0, SHOW)) {
+    const tr = el('tr', undefined, r.protocol ? 'mapped' : '');
+    tr.append(el('td', String(r.rank), 'num muted'));
+    const d = el('td', undefined, 'dao'); const a = el('a', r.dao, 'id'); a.href = `account.html?account=${encodeURIComponent(r.dao)}`; d.append(a);
+    if (r.protocol) { const s = el('div', `administers ${r.protocol} `, 'sub'); s.append(el('span', r.contract, 'id')); d.append(s); }
+    const admin = pending.llama && r.protocol && /DefiLlama unread/.test(r.administered) ? 'reading DefiLlama…' : r.administered;
+    tr.append(d, el('td', admin, `num${/^\$|^—$/.test(admin) ? '' : ' wrap'}${/^unknown|reading/.test(admin) ? ' unknown-text' : ''}`), el('td', r.balance, `num${r.balance === 'unknown' ? ' unknown-text' : ''}`));
+    const au = r.autoUpdate === 'true' ? 'true' : r.autoUpdate === 'false' ? 'false' : r.autoUpdate === 'no-factory-info' ? 'unknown (no get_factory_info)' : 'unknown (unread)';
+    tr.append(el('td', au, r.autoUpdate === 'true' ? 'novote strong' : r.autoUpdate === 'false' ? 'optedout strong' : 'unknown-text'));
+    tr.append(el('td', r.version, 'small'));
+    tr.append(el('td', pending.keys ? r.roots.replace("factory's ? keys", "factory's keys (reading…)") : r.roots, 'small roots'));
+    tb.append(tr);
+  }
+  t.append(tb);
+  out.replaceChildren(t);
+}
+
+function build(graph, llama, factoryKeys) {
+  reg = registerRows(graph, llama, factoryKeys);
+  draw();
+}
+
+// never blank: the committed census draws at once; DefiLlama and the factory keys fill in as they arrive
+const graph = await fetch('../graph.json').then((r) => (r.ok ? r.json() : null)).catch(() => null);
+if (!graph) {
+  document.getElementById('stats').textContent = 'Census unknown';
+  out.replaceChildren(el('p', 'Unknown: graph.json could not be loaded. Serve the repository root, so that ../graph.json is reachable, or run node tools/crawl.mjs.', 'unknown-text'));
+  document.getElementById('footer-census').textContent = 'Census: unknown (graph.json unread)';
+} else {
   const c = census(Object.values(graph.daos));
-  const head = el('p', `${reg.rows.length} DAOs (the factory listed ${reg.numberDaos}) · census ${reg.crawl?.lastRunAt?.slice(0, 16).replace('T', ' ')} UTC${reg.crawl?.complete ? '' : ', INCOMPLETE'} · auto_update true ${c.counts.true}, false ${c.counts.false}, unknown ${c.counts['no-factory-info'] + c.counts.unread} · DefiLlama ${llama.status === 'ok' ? `read ${llama.readAt.slice(0, 16).replace('T', ' ')} UTC` : `unknown (${llama.reason})`}`, 'basis');
-
-  const draw = () => {
-    const q = document.getElementById('q').value.trim().toLowerCase();
-    const onlyTrue = document.getElementById('onlyTrue').checked;
-    const rows = reg.rows.filter((r) => (!q || r.dao.includes(q)) && (!onlyTrue || r.autoUpdate === 'true'));
-    document.getElementById('count').textContent = `${rows.length} shown${rows.length > SHOW ? ` (first ${SHOW})` : ''}`;
-    const t = el('table'); const h = el('tr');
-    for (const x of ['#', 'DAO', 'administered value', 'own balance (NEAR)', 'auto_update', 'code', 'no-vote roots']) h.append(el('th', x));
-    t.append(h);
-    for (const r of rows.slice(0, SHOW)) {
-      const tr = el('tr', undefined, r.protocol ? 'mapped' : '');
-      tr.append(el('td', String(r.rank), 'num'));
-      const d = el('td'); const a = el('a', r.dao, 'mono'); a.href = `account.html?account=${encodeURIComponent(r.dao)}`; d.append(a);
-      if (r.protocol) d.append(el('div', `administers ${r.protocol} (${r.contract})`, 'basis'));
-      tr.append(d, el('td', r.administered, r.protocol ? 'num' : ''), el('td', r.balance, 'num'));
-      const au = r.autoUpdate === 'true' ? 'true' : r.autoUpdate === 'false' ? 'false' : r.autoUpdate === 'no-factory-info' ? 'unknown (no get_factory_info)' : 'unknown (unread)';
-      tr.append(el('td', au, r.autoUpdate === 'true' ? 't-true' : r.autoUpdate === 'false' ? 't-false' : 't-unknown'), el('td', r.version), el('td', r.roots));
-      t.append(tr);
-    }
-    out.replaceChildren(head, t);
-  };
+  const when = graph.crawl?.lastRunAt;
+  const stats = document.getElementById('stats'); stats.replaceChildren();
+  stats.append(el('span', `${c.denominator.toLocaleString('en-US')} DAOs`, 'stat'), el('span', `${c.counts.true.toLocaleString('en-US')} read auto_update: true`, 'stat novote'),
+    el('span', `${c.counts.false} read false`, 'stat optedout'), el('span', `${(c.counts['no-factory-info'] + c.counts.unread).toLocaleString('en-US')} unknown`, 'stat muted'));
+  document.getElementById('footer-census').textContent = `Census ${when?.slice(0, 10) ?? 'undated'}${graph.crawl?.complete ? '' : ' (incomplete)'}: ${c.denominator.toLocaleString('en-US')} DAOs`;
+  const prov = document.getElementById('prov');
+  const setProv = (llama) => { prov.textContent = `Rows: census by tools/crawl.mjs, ${time(when)}${graph.crawl?.complete ? '' : ', incomplete'} (the factory listed ${graph.numberDaos}) · Values: DefiLlama ${llama ? (llama.status === 'ok' ? `read ${time(llama.readAt)}` : `unknown (${llama.reason})`) : 'reading now…'}`; };
+  setProv(null);
   document.getElementById('q').addEventListener('input', draw);
   document.getElementById('onlyTrue').addEventListener('change', draw);
-  draw();
+  build(graph, { status: 'unknown', reason: 'reading' }, 'unknown');
+  const [llama, keys] = await Promise.all([fetchDefiLlama(), accessKeys(createRpc(), 'sputnik-dao.near')]);
+  pending = { llama: false, keys: false };
+  build(graph, llama, keys.status === 'ok' ? keys.keys.filter((k) => k.kind === 'FullAccess').length : 'unknown');
+  setProv(llama); prov.classList.add('live');
 }
 </script>
 </body>
