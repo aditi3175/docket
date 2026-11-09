@@ -1,5 +1,6 @@
-/* site.css — Docket's one stylesheet. No framework, no remote anything.
-   Colour rules: red means "no vote" and nothing else (no-vote edges and their counts). Green means
+/* site.css — the tool pages' stylesheet (account, docket, register, optout). No framework, no remote anything.
+   The vault theme, shared with home.css: a dark gunmetal ground, gold for the value at stake.
+   Colour rules: red (coral) means "no vote" and nothing else (no-vote edges and their counts). Violet means
    "opted out" and nothing else. Unknown has no colour: a dashed Slate outline and the word "unknown". */
 
 @font-face {
@@ -14,14 +15,16 @@
 }
 
 :root {
-  --mist: #EDF1F5;   /* ground */
-  --frost: #F9FBFD;  /* surfaces */
-  --navy: #0D1B33;   /* ink, edges, keys */
-  --slate: #4D5B73;  /* secondary text, unknown */
-  --red: #C4152B;    /* no vote, only */
-  --green: #2C7350;  /* opted out, only */
-  --line: rgba(13, 27, 51, .15);
-  --line-strong: rgba(13, 27, 51, .32);
+  --mist: #0A0A0C;   /* ground */
+  --frost: #121216;  /* surfaces */
+  --navy: #F4F1EC;   /* ink, edges, keys (the name is historical: on the dark ground it is ivory) */
+  --slate: #8B8794;  /* secondary text, unknown */
+  --red: #FF786F;    /* no vote, only */
+  --violet: #B48CF2; /* opted out, only */
+  --gold: #FFD77A;   /* the value at stake */
+  --gold-2: #E0A93A;
+  --line: rgba(255, 255, 255, .09);
+  --line-strong: rgba(255, 255, 255, .22);
   --sans: "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, "Liberation Mono", monospace;
   --s15: .9375rem; --s17: 1.0625rem; --s21: 1.3125rem; --s28: 1.75rem; --s44: 2.75rem; --s64: 4rem;
@@ -74,7 +77,7 @@ p { margin: 0 0 .8em; }
 .recorded-note.live::before { border-style: solid; background: var(--navy); border-color: var(--navy); }
 
 .novote { color: var(--red); }
-.optedout { color: var(--green); }
+.optedout { color: var(--violet); }
 .unknown-text { color: var(--slate); font-style: italic; }
 
 /* hero */
@@ -111,15 +114,15 @@ td.num, .num { font-variant-numeric: tabular-nums; }
 .node.is-recorded { opacity: .62; }
 .node .note-m { display: none; }
 .node .note-m.novote { color: var(--red); font-weight: 600; }
-.node .note-m.optedout { color: var(--green); font-weight: 600; }
+.node .note-m.optedout { color: var(--violet); font-weight: 600; }
 
 .edge { fill: none; stroke: var(--navy); stroke-width: 1.5; stroke-linecap: round; }
 .edge.novote { stroke: var(--red); stroke-width: 4; }
-.edge.optedout { stroke: var(--green); stroke-width: 2.5; }
+.edge.optedout { stroke: var(--violet); stroke-width: 2.5; }
 .edge.unknown { stroke: var(--slate); stroke-dasharray: 5 6; stroke-width: 1.5; }
 .edge.recorded { opacity: .28; }
 .edge-label { font: 600 12.5px var(--sans); fill: var(--red); paint-order: stroke; stroke: var(--frost); stroke-width: 6px; stroke-linejoin: round; }
-.edge-label.optedout { fill: var(--green); }
+.edge-label.optedout { fill: var(--violet); }
 .edge-label.unknown { fill: var(--slate); font-style: italic; }
 @media (prefers-reduced-motion: no-preference) {
   .edge.drawing { transition: stroke-dashoffset .7s cubic-bezier(.3, .1, .2, 1); }
@@ -130,7 +133,7 @@ td.num, .num { font-variant-numeric: tabular-nums; }
 .legend span { display: inline-flex; align-items: center; gap: .55rem; }
 .legend i { display: inline-block; width: 2rem; height: 0; border-top: 1.5px solid var(--navy); }
 .legend i.novote { border-top: 4px solid var(--red); }
-.legend i.optedout { border-top: 2.5px solid var(--green); }
+.legend i.optedout { border-top: 2.5px solid var(--violet); }
 .legend i.unknown { border-top: 1.5px dashed var(--slate); }
 
 /* the four blocks */
@@ -149,7 +152,7 @@ td.num, .num { font-variant-numeric: tabular-nums; }
 
 button, .button { font: 600 var(--s15) var(--sans); color: var(--navy); background: var(--frost); border: 1.5px solid var(--navy);
   border-radius: 8px; padding: .55rem .9rem; cursor: pointer; text-align: left; }
-button:hover { background: #fff; }
+button:hover { background: #1c1c22; }
 button[disabled] { opacity: .55; cursor: progress; }
 
 /* why */
@@ -166,7 +169,7 @@ button[disabled] { opacity: .55; cursor: progress; }
 .pick input { font: 500 1rem var(--mono); color: var(--navy); background: var(--frost); border: 1.5px solid var(--line-strong); border-radius: 8px; padding: .62rem .8rem; width: 100%; }
 .pick input:focus-visible { outline: 3px solid var(--navy); outline-offset: 1px; border-color: var(--navy); }
 .pick button[type="submit"] { align-self: flex-end; background: var(--navy); color: var(--frost); padding: .66rem 1.2rem; }
-.pick button[type="submit"]:hover { background: #1b2c4d; }
+.pick button[type="submit"]:hover { filter: brightness(1.08); }
 .chips { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .8rem; align-items: center; font-size: var(--s15); color: var(--slate); }
 .chips button { font-weight: 500; border-color: var(--line-strong); padding: .32rem .7rem; border-radius: 999px; }
 .answer { margin-top: 2rem; }
@@ -221,7 +224,7 @@ button[disabled] { opacity: .55; cursor: progress; }
 /* docket.html: the DAO banner, then each proposal as "what members read" beside "what it does", flags in the margin */
 .banner { margin-top: .2rem; padding: .85rem 1.2rem; border-radius: 14px; background: var(--frost); border: 1px solid var(--line); border-left-width: 5px; }
 .banner.is-novote { border-left-color: var(--red); }
-.banner.is-optedout { border-left-color: var(--green); }
+.banner.is-optedout { border-left-color: var(--violet); }
 .banner.is-unknown { border: 1.5px dashed var(--slate); }
 .banner .lede2 { font-size: clamp(var(--s17), 1.7vw, var(--s21)); line-height: 1.35; font-weight: 600; max-width: 75ch; margin-bottom: .5rem; }
 .banner .basis { margin: 0; }
@@ -299,8 +302,8 @@ table.register th.num .sorter { text-align: right; }
 table.register td.num { text-align: right; white-space: nowrap; }
 table.register td.dao { white-space: nowrap; }
 table.register td.dao .sub { font-size: .78rem; color: var(--slate); }
-table.register tr.mapped td { background: #F1F5F9; }
-table.register tbody tr:hover td { background: #E9EEF4; }
+table.register tr.mapped td { background: #ffffff07; }
+table.register tbody tr:hover td { background: #ffffff0f; }
 .strong { font-weight: 650; }
 table.register td.small { white-space: nowrap; }
 table.register td.dao .sub { line-height: 1.25; }
@@ -326,7 +329,7 @@ table.register td.num.wrap { white-space: normal; min-width: 8rem; }
 .given-up .given { font-weight: 600; }
 .submit-row { display: flex; flex-wrap: wrap; gap: .6rem; }
 button.primary { background: var(--navy); color: var(--frost); }
-button.primary:hover { background: #1b2c4d; }
+button.primary:hover { filter: brightness(1.08); }
 .status-line { font-weight: 600; min-height: 1.2em; }
 .exception { border-left: 3px solid var(--line-strong); padding-left: .7rem; }
 .cmd-label { font-size: var(--s15); margin-top: .8rem !important; }
@@ -334,3 +337,78 @@ pre.cmd { white-space: pre; overflow-x: auto; font-size: .8rem; margin: .3rem 0;
 .step details summary { cursor: pointer; font-size: var(--s15); margin-top: .8rem; }
 @media (max-width: 640px) { .stat-grid { grid-template-columns: 1fr; } }
 .step p, .step li { overflow-wrap: anywhere; } /* a 44-character transaction hash may break; an account id fits a line and never does */
+
+/* ---------- the vault layer: the same look as the homepage (home.css) ---------- */
+body { -webkit-font-smoothing: antialiased; background:
+  radial-gradient(ellipse 70% 40% at 80% -5%, #ffd77a10, transparent 70%),
+  radial-gradient(ellipse 50% 40% at 0% 100%, #8755d912, transparent 70%) fixed, var(--mist); min-height: 100vh; }
+::selection { background: #ffd77a55; }
+:focus-visible { outline-color: var(--violet); }
+a { color: var(--navy); text-decoration-color: rgba(255, 255, 255, .3); }
+a:hover { text-decoration-color: var(--navy); }
+
+/* header: sticky, blurred, the gunmetal dial as the mark */
+.site-header { position: sticky; top: 0; z-index: 40; background: #0a0a0cc8; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom-color: var(--line); }
+.site-header .wrap { min-height: 4rem; justify-content: space-between; max-width: 1240px; }
+.brand { font-size: 1.25rem; }
+.brand svg { display: none; }
+.brand::before { content: ""; width: 24px; height: 24px; border-radius: 50%; flex: none;
+  background: radial-gradient(circle, #8d8f99 0 30%, #3a3b42 32% 60%, #5d5f68 62%); box-shadow: 0 0 0 2px #232429, 0 0 18px #ffd77a33; }
+.site-nav { gap: 1.6rem; font-size: .875rem; }
+.site-nav a { color: #c9c5cf; border-bottom: 0; }
+.site-nav a:hover, .site-nav a[aria-current="page"] { color: #fff; border-bottom: 0; }
+.site-nav a[aria-current="page"] { font-weight: 600; }
+.site-footer { margin-top: 6rem; padding: 2.2rem 0 3rem; }
+.site-footer .wrap { justify-content: space-between; max-width: 1240px; }
+.wrap { max-width: 1240px; }
+
+/* type */
+h1, h2, h3 { letter-spacing: -.03em; }
+.page-head { padding-top: clamp(2.2rem, 5vw, 4rem); }
+.page-head h1, .page-head.compact h1 { font-size: clamp(2rem, 4vw, 3.4rem); font-weight: 800; letter-spacing: -.04em; line-height: 1.02; text-wrap: balance; }
+.page-head .intro { color: #a8a4b0; font-size: 1.0625rem; line-height: 1.6; }
+.answer .lede2 { font-size: clamp(1.6rem, 3vw, 2.5rem); font-weight: 800; letter-spacing: -.035em; line-height: 1.08; }
+.lede { font-weight: 800; letter-spacing: -.04em; }
+.prose h2, .path-title, .proposals h2 { font-weight: 800; letter-spacing: -.03em; }
+.prose p, .prose li { color: #c9c5cf; }
+.muted, .basis, .sub { color: var(--slate); }
+
+/* surfaces: the homepage's rounded panels */
+.path, .proposal, .step, .banner, .table-wrap, .fact { border-radius: 22px; border-color: var(--line); box-shadow: inset 0 1px 0 #ffffff08; }
+.proposal, .step { transition: border-color .25s, transform .25s; }
+.proposal:hover, .step:hover { border-color: rgba(255, 255, 255, .18); }
+.banner { padding: 1.1rem 1.4rem; background: linear-gradient(180deg, #16161b, #111115); }
+.banner.is-plain { border-left-color: var(--gold); }
+pre { background: #0d0e11; border-color: #23242a; color: #d9d6de; }
+.p-flags { background: #0e0e11; }
+.p-id { color: #fff; }
+
+/* the authority path: gold values, a glowing no-vote edge */
+.node { background: var(--frost); }
+.node.box { border-color: rgba(255, 255, 255, .55); background: #16161b; border-radius: 12px; }
+.node.factory { border-color: #fff; box-shadow: 0 0 0 4px #ffffff0a; }
+.node.value .t { color: var(--gold); text-shadow: 0 0 22px #ffd77a44; }
+.node.value.is-unknown .t { color: var(--slate); text-shadow: none; }
+.keyglyph { color: var(--navy); }
+.edge { stroke: rgba(244, 241, 236, .7); }
+.edge.novote { filter: drop-shadow(0 0 6px var(--red)); }
+.edge.optedout { filter: drop-shadow(0 0 5px var(--violet)); }
+.edge-label { stroke: var(--frost); }
+
+/* controls */
+button, .button { background: #16161b; border: 1px solid var(--line-strong); color: var(--navy); border-radius: 999px; padding: .6rem 1.1rem; transition: transform .15s, background .15s; }
+button:hover { transform: translateY(-1px); }
+button[disabled] { transform: none; }
+.pick button[type="submit"], button.primary { background: linear-gradient(180deg, var(--gold), var(--gold-2)); color: #2a1b02; border: 0; box-shadow: 0 10px 30px -12px #ffd77a99; }
+.pick input, .tools input[type="search"], .tools #q { background: #0d0e11; color: var(--navy); border: 1px solid var(--line-strong); border-radius: 12px; }
+.pick input:focus-visible { outline-color: var(--violet); border-color: var(--violet); }
+.chips button { background: #ffffff08; }
+.stepno { border-color: var(--gold); color: var(--gold); }
+.flag.sev-critical, .flag.sev-high { border-left-color: var(--navy); }
+.given-up { border-left-color: var(--gold); }
+
+/* register */
+table.register thead th { background: #141418; }
+table.register th, table.register td { border-bottom-color: var(--line); }
+.stats .stat { letter-spacing: -.02em; }
+.banner .lede2, .answer .banner .lede2 { font-size: clamp(1.2rem, 2vw, 1.6rem); letter-spacing: -.025em; line-height: 1.25; }
