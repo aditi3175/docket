@@ -19,13 +19,22 @@ else. It holds no key, needs no account and signs nothing. The one exception is
 the optional delegate (below): it signs its own votes with a key that can do
 nothing else.
 
+| | |
+|---|---|
+| **3** | full-access keys on `sputnik-dao.near`, the only authority over the factory |
+| **1,607 of 2,086** | Sputnik DAOs read `auto_update: true`: the factory can replace their code with no vote (census 2026-11-07) |
+| **$126.7M + 2,553,885 NEAR** | behind the three DAOs that own Meta Pool, LiNEAR and NearX (DefiLlama 2026-11-06; NearX from chain) |
+| **13** | DAOs have opted out; one proposal does it, and Docket drafts it |
+| **PR #233** | the fix, merged 2026-03-24, still not in the factory's default build (read live) |
+| **0** | dependencies to verify it: `node tools/verify.mjs` re-reads every claim from mainnet |
+
 ---
 
 ## Contents
 
 - [What it found](#what-it-found)
 - [Run it](#run-it)
-- [The site](#the-site), with screenshots of every page
+- [The site](#the-site): five pages, five diagrams
 - [How it works](#how-it-works): architecture, reads, invariants
 - [The fix: opting out](#the-fix-opting-out)
 - [The delegate](#the-delegate-an-ai-voter-that-cannot-vote-past-a-flag)
@@ -168,65 +177,72 @@ Runs the test suite offline, against mainnet responses recorded in
 
 ## The site
 
-Five pages. Each reads NEAR mainnet and DefiLlama from your browser, with no
-server in between, and shows when each figure was read.
+Five pages, one question each. Every page reads NEAR mainnet and DefiLlama from
+your browser, with no server in between, and shows when each figure was read.
 
-### Overview: the vault
+```mermaid
+flowchart LR
+    O["<b>Overview</b><br/>the vault: 3 keys open<br/>the deposits, no vote"]
+    A["<b>Account</b><br/>who can change<br/>any account?"]
+    P["<b>Proposals</b><br/>does the action match<br/>the description?"]
+    R["<b>Register</b><br/>all 2,086 DAOs,<br/>by value at risk"]
+    X["<b>Opt out</b><br/>the one proposal<br/>that closes the gap"]
+    O -->|follow the path| A
+    O -->|every DAO| R
+    R -->|one DAO| A
+    A -->|its votes| P
+    A -->|auto_update: true| X
+    P -->|its DAO| X
+```
 
-![The vault opened on the three deposits; the factory's keys beside the five steps of an update](docs/screenshots/home-deposits-keys.png)
+| page | the question | how it answers | the diagram |
+|---|---|---|---|
+| **Overview** | Is this real, and how big? | Counts the factory's keys live, reads the three DAOs' `auto_update`, values the deposits on DefiLlama | a vault with one keyhole per key; the census as three blocks of squares (1,607 / 13 / 466) |
+| **Account** | Who can change *this* account without a vote? | Walks keys, owner (five getters, in order), global contract, factory and policy, up to six hops | a tower: the value on top, each account a floor, the keys as the foundation, a red crack where no vote stands |
+| **Proposals** | Does what members vote on match what it does? | Decodes all 17 proposal kinds and runs nine checks against the description | each proposal as a document, with every flag stamped in its margin |
+| **Register** | Where is the value, and who can move it? | Ranks every DAO the factory lists by the value it administers | a treemap of administered value, red where the factory can replace the code |
+| **Opt out** | How does a DAO close the gap today? | Drafts `FactoryInfoUpdate`, shows what is given up and who must approve, confirms only by re-reading | the fourth lock beside the factory's three keys, shut only when the chain reads `false` |
 
-One keyhole per full-access key on `sputnik-dao.near`, counted from a live
-read. The keys turn, the "DAO vote" light reads "bypassed", the bolts retract
-and the door opens on the value at stake. Below it: Meta Pool, LiNEAR and NearX,
-each with its contract, its owner DAO and that DAO's `auto_update`, read live.
-
-![One square per DAO: 1,607 red (true), 13 violet (false), 466 dashed (unknown)](docs/screenshots/home-census.png)
-
-The census: one square per DAO in the committed `graph.json`, in three labelled
-blocks. Hover for the DAO's id, click for its proposals. "Recount from the chain
-now" re-reads every DAO from your browser (about 15 minutes).
-
-![The fourth lock: the factory fix "Not shipped", one opt-out proposal, and the delegate's approve and refuse](docs/screenshots/home-fix.png)
-
-"Not shipped" is a live read of the factory's default build, never a stored
-value. Next to it, the one proposal a DAO can pass today, and the delegate's
-approve and refuse transactions.
-
-### Account: who can change this account without a vote?
+### The Account page
 
 ![Account page for meta-pool.near: 3 keys on 1 account can change it with no vote; the path drawn as a tower from the value down to the keys](docs/screenshots/account.png)
 
-Any NEAR account. Docket walks its keys, its owner (five owner getters, judged
-in order), the global contract it runs and, for a Sputnik DAO, the factory and
-the DAO's policy, up to six hops. The no-vote edge is the only thing drawn in
-red. Below it, the path in words and the two lanes: what members can stop, and
-what they cannot.
+`meta-pool.near`, read live: its owner is `stnear.sputnik-dao.near`, which
+reads `auto_update: true`, so the factory `sputnik-dao.near` can replace its
+code, and the factory answers only to its three full-access keys. Every floor is
+a link to that account's own path. Below the tower, the path in words, and the
+two routes into the DAO's code: the one members can stop and the one they
+cannot.
 
-### Proposals: what members read, beside what it does
+**How the walk decides each edge.** A failed read never becomes "no edge":
 
-![Burrow's proposals: each description beside its decoded action, with flags stamped in the margin](docs/screenshots/docket.png)
+```mermaid
+flowchart TB
+    S["account"] --> K["view_access_key_list"]
+    S --> O["owner getters, in order:<br/>get_owner → get_owner_id → get_config →<br/>get_metadata → get_contract_state"]
+    S --> F["get_factory_info<br/>(Sputnik DAOs)"]
+    S --> PO["get_policy"]
+    K -->|FullAccess key| ROOT["root: changes it, no vote"]
+    O -->|an account id| NEXT["walk the owner (≤ 6 hops)"]
+    F -->|auto_update: true| NEXT2["walk the factory: no vote"]
+    F -->|auto_update: false| GATE["vote required: path closed"]
+    PO -->|one member can pass it alone| ROOT
+    K & O & F & PO -->|read failed| U["unknown, listed,<br/>never counted as safe"]
+```
 
-A DAO's proposals, each description set beside the action decoded from the
-chain, with flags where they part. Docket flags and never clears: a proposal
-with no flag gets no verdict. The nine checks are `named-receiver`,
-`sibling-collision`, `named-amounts`, `silent-reach`, `cross-organisation`,
-`empty-assertion`, `authority-change`, `unknown-kind` and `undecodable-args`.
+### Proposals: the check that caught a real pattern
 
-### Register: every Sputnik DAO, by reach
+On Burrow's DAO, #1743 repeats the description of #1741 and #1744 that of #1742,
+each with a different receiver; Docket flags both `sibling-collision`.
+Each proposal is checked like this, and a clean result is never called safe:
 
-![Register: the census bar, a treemap of administered value coloured by auto_update, and the sortable table](docs/screenshots/register.png)
-
-All 2,086 DAOs, ranked by the value they administer, with `auto_update`, code
-version and the no-vote roots one hop out. It is labelled a floor: Docket only
-values the protocols it has mapped.
-
-### Opt out: the fourth lock
-
-![Opt-out page for stnear: the factory's three keys beside the DAO's own lock, a four-step stepper, what is given up, who must approve, and the submit options](docs/screenshots/optout.png)
-
-For any DAO reading `auto_update: true`: the drafted proposal, what is given up
-(stated above the submit button), who must approve, what it costs, and two ways
-to submit it. [More below](#the-fix-opting-out).
+```mermaid
+flowchart LR
+    P["get_proposals"] --> D["decode.js<br/>17 kinds; unknown kind<br/>= unknown and dangerous"]
+    D --> L["lint.js: 9 checks<br/>named-receiver · sibling-collision ·<br/>named-amounts · silent-reach ·<br/>cross-organisation · empty-assertion ·<br/>authority-change · unknown-kind ·<br/>undecodable-args"]
+    L -->|flags| F["stamped on the proposal<br/>critical · high · medium · low"]
+    L -->|no flag| N["'no check fired'<br/>never a verdict"]
+```
 
 ### Try it locally
 
