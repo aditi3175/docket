@@ -1163,7 +1163,13 @@ any row slips; it is not moved later to make room.
   because §17 shipped complete before its cutoff (§14). More tracks are more
   chances at one prize, not more prizes.
 - Public repo, MIT `LICENSE`, AI-tooling disclosure in the README — all required.
-- Demo post on X tagging `@NEARProtocol` with `#NEARHackathon`.
+- Demo post on X tagging `@NEARProtocol` with `#NEARHackathon`, saying it was
+  built at NEAR HACKATHON, with the video attached (rules re-read 2026-11-10 at
+  nearhackathon.com/HACKATHON.md; a hosted demo is a plus, Q-012). The form also
+  takes a mainnet payout account, chosen by the author, and its `website` field
+  must stay empty. The repo must be public by 2026-11-14 23:59 UTC; per §11,
+  nothing about the finding goes public before LiNEAR has the report, so that
+  timing is the author's call.
 - The AI pre-screen checks the repo runs and does what the README says, so the
   README's first command is `node tools/verify.mjs`, and it must print the
   §3.4 chain with no key, no account and no configuration.

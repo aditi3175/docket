@@ -33,6 +33,7 @@ nothing else.
 - [What has been run on mainnet](#what-has-been-run-on-mainnet)
 - [Repository layout](#repository-layout)
 - [How this was built](#how-this-was-built)
+- [NEAR HACKATHON](#near-hackathon): window, tracks, what to run
 
 ---
 
@@ -291,7 +292,10 @@ rule. `test/app.test.mjs` enforces that.
 and React DOM 19.3.1, built with Vite 8.3.7 and @vitejs/plugin-react 6.3.0, all
 MIT. Fonts: Instrument Serif and Instrument Sans, self-hosted in
 `web/assets/fonts` (SIL OFL). None of these are used by `verify.mjs`, the tests,
-`guard/` or `agent/`.
+`guard/` or `agent/`. One more library is loaded at runtime and only on request:
+NEAR Wallet Selector 10.1.4 (MIT), fetched from esm.sh when you click "Connect a
+wallet" on the opt-out page. The mainnet transactions in this README were signed
+with `near` (near-cli-rs), run by hand; it is a CLI, not a dependency.
 
 **No backend, deliberately.** The claim is that anyone can check this
 themselves; a server between reader and chain would weaken exactly that.
@@ -519,6 +523,19 @@ author's OS keychain. The delegate's vote on #7 was signed by the delegate's own
 FunctionCall key, also from the keychain. No key was ever shown to, or handled
 by, the agent. Every number in the spec traces to a read that `verify.mjs`, the
 crawl or a documented command can repeat.
+
+## NEAR HACKATHON
+
+Built for NEAR HACKATHON (development 2026-11-01 to 2026-11-14 UTC). This is a
+new repository: its first commit is 2026-11-05, so all of it was written in the
+hackathon window and there is no pre-hackathon baseline to diff against.
+
+- **Tracks:** Social Money (Sputnik DAO), AI Security & Defense (the delegate:
+  a function-call key for one method on one DAO), Open Innovation.
+- **What the judges can run:** `node tools/verify.mjs` and `npm test` with no
+  install; the site with `npm run build && npm run preview` (above).
+- **Libraries:** listed under [Two layers](#two-layers). **AI tooling:** see
+  [How this was built](#how-this-was-built).
 
 ## License
 

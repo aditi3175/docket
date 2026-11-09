@@ -11,7 +11,7 @@
     "preview": "npm --prefix app run preview"
   },
   "keywords": [],
-  "author": "",
+  "author": "Aditi (aditi3175)",
   "license": "MIT",
   "type": "module",
   "engines": {

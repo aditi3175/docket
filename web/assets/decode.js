@@ -44,9 +44,6 @@ export const AUTHORITY_KINDS = Object.freeze(['ChangePolicy', 'ChangePolicyUpdat
   'AddMemberToRole', 'RemoveMemberFromRole', 'SetStakingContract', 'FactoryInfoUpdate']);
 
 // types.rs Action — the label is the variant name.
-export const ACTIONS = Object.freeze(['AddProposal', 'RemoveProposal', 'VoteApprove', 'VoteReject',
-  'VoteRemove', 'Finalize', 'MoveToHub']);
-
 // A proposal's `kind` as returned by get_proposal(s): an object with exactly one key, or the bare
 // string "Vote" (a unit variant serialises as a string). Anything else is unknown (I7).
 // -> { status:'ok', name, label, risk, reaches, body } | { status:'unknown', name, risk:'critical', reason }
