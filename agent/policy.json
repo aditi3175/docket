@@ -4,6 +4,5 @@
   "allow": {
     "ChangeConfig": {},
     "Transfer": { "nativeNearOnly": true, "maxYocto": "500000000000000000000000", "descriptionMustNameAmount": true }
-  },
-  "llm": { "enabled": false }
+  }
 }

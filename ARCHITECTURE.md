@@ -859,7 +859,7 @@ never counted as a value** — §3.3 depends on that distinction.
 | I15 | An opt-out is confirmed by re-reading `get_factory_info`, never by the transaction succeeding | `verify.mjs` on the demo DAO |
 | I16 | The delegate never votes on a proposal carrying any critical or high flag, any **unknown** (I2/I7/I8), or a kind outside `policy.json` | synthetic proposals, one per flag |
 | I17 | The delegate's key is `FunctionCall`, receiver = its one DAO, methods = `["act_proposal"]` | `verify.mjs` reads `view_access_key_list` |
-| I18 | The optional LLM layer can add a flag and can never remove one; it is off by default; `verify.mjs` never calls it | test with a model stub that tries to clear |
+| I18 | *Withdrawn.* It governed an optional LLM layer, which was not built (§17.4). The number is kept so that I19 and I20 keep theirs | — |
 | I19 | The "fix shipped?" badge is derived from a live read of the factory's `get_contracts_metadata` and `get_default_code_hash`, never from a stored value or a transaction feed; an unread factory renders **unknown** | test with a synthetic new factory build, and with the factory unreadable |
 | I20 | The opted-out counter is always computed from reads, with its denominator and unknown bucket, and never stored as a bare number: from `graph.json`'s per-DAO records (dated), recounted from the chain on demand on `index.html`, by `crawl.mjs`, and, for the thirteen by name, by `verify.mjs` | copy + crawl test |
 
@@ -1460,12 +1460,12 @@ the critical and high rows of §6.4 is permanently outside it:
 measurement** (`maxYocto` in `agent/policy.json`). The description must name
 an amount, and the named-amounts check must not fire.
 
-### 17.4 The optional LLM layer
+### 17.4 The optional LLM layer — not built
 
-A model (NEAR AI Cloud, if its API and attestation hold up — **[verify]**)
-may compare a description with its decoded action and raise a
-`semantic-mismatch` flag. It can only add flags (I18). It is off by default,
-needs its own key, and nothing in `verify.mjs` touches it.
+**Not built.** The plan was a model that compares a description with its
+decoded action and can only add flags. It was cut. The delegate decides from
+Docket's deterministic checks alone (§6.3–§6.5), and no model is called
+anywhere in Docket.
 
 ### 17.5 What the demo shows
 

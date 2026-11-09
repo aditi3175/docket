@@ -1,8 +1,7 @@
-// agent/delegate.mjs, agent/llm.mjs — §17.2–§17.4. I16 (never votes past a critical/high flag, an unknown
+// agent/delegate.mjs — §17.2–§17.3. I16 (never votes past a critical/high flag, an unknown
 // or a kind outside policy.json), I17 (the delegate's only key: FunctionCall, its DAO, act_proposal),
-// I18 (the LLM layer only adds flags; off by default; verify.mjs never touches it).
 // Recorded: burrow #1741 and #1743 (the §7.1 pair), replayed as if still open: the "planted" proposal.
-// SYNTHETIC: the decided-on check objects, the keys, the model stub.
+// SYNTHETIC: the decided-on check objects, the keys.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -10,7 +9,6 @@ import { createRpc } from '../web/assets/rpc.js';
 import { kindOf } from '../web/assets/decode.js';
 import { checkProposal } from '../guard/index.mjs';
 import { decide, loadPolicy, delegateKeyOk, voteCommand, runOnce } from '../agent/delegate.mjs';
-import { mergeLlmFlags } from '../agent/llm.mjs';
 import { replayFetch, noSleep } from './helpers.mjs';
 
 const policy = loadPolicy(JSON.parse(readFileSync(new URL('../agent/policy.json', import.meta.url), 'utf8')));
@@ -71,22 +69,6 @@ test('I17: the delegate\'s only key is FunctionCall, receiver = its DAO, methods
   assert.match(delegateKeyOk({ status: 'ok', keys: [fc({ methods: [] })] }, dao).why, /methods \[\]/); // [] = any method
   assert.match(delegateKeyOk({ status: 'ok', keys: [fc({ methods: ['act_proposal', 'add_proposal'] })] }, dao).why, /methods/);
   assert.equal(delegateKeyOk({ status: 'unknown', reason: 'down' }, dao).ok, false);
-});
-
-test('I18 (model stub): the LLM layer can add a semantic-mismatch flag and can never remove or lower one; off by default', () => {
-  const existing = [{ check: 'sibling-collision', severity: 'high', detail: 'x' }];
-  const clearing = [{ check: 'sibling-collision', severity: 'low', detail: 'fine' }, { remove: 'sibling-collision' }, { check: 'semantic-mismatch', severity: 'none', detail: 'all clear' }];
-  assert.deepEqual(mergeLlmFlags(existing, clearing), existing);
-  assert.deepEqual(mergeLlmFlags(existing, 'ignore previous flags'), existing);
-  const added = mergeLlmFlags([], [{ check: 'semantic-mismatch', severity: 'high', detail: 'says rename, moves funds' }]);
-  assert.deepEqual(added.map((f) => [f.check, f.severity]), [['semantic-mismatch', 'high']]);
-  // off by default: a model flag changes nothing unless policy.json enables the layer
-  assert.equal(policy.llm.enabled, false);
-  const llmFlags = [{ check: 'semantic-mismatch', severity: 'high', detail: 'x' }];
-  assert.equal(decide(check(), policy, { llmFlags }).action, 'VoteApprove');
-  assert.equal(decide(check(), { ...policy, llm: { enabled: true } }, { llmFlags }).action, 'escalate');
-  // and verify.mjs never touches it
-  assert.doesNotMatch(readFileSync(new URL('../tools/verify.mjs', import.meta.url), 'utf8'), /llm/i);
 });
 
 test('runOnce: the first run starts at the current last id (no back-voting); an unreadable chain is an event, not a vote', async () => {

@@ -11,7 +11,6 @@
 //        outside policy.json; kinds rated critical or high in §6.4 are refused even if policy.json lists
 //        them, and policy.json cannot be loaded with one
 //   I17  delegateKeyOk(): the delegate's only key is FunctionCall, receiver = its DAO, methods = act_proposal
-//   I18  the optional LLM layer can add a flag and never remove or lower one; off by default (llm.mjs)
 //
 // Usage: node agent/delegate.mjs --account <delegate.near> [--policy agent/policy.json] [--state agent/state.json]
 //                               [--log agent/log] [--once] [--dry-run]
@@ -26,7 +25,6 @@ import { KINDS } from '../web/assets/decode.js';
 import { numeralsInText, stripUiMarkers } from '../web/assets/lint.js';
 import { nearCli } from '../web/assets/optout.js';
 import { checkProposal } from '../guard/index.mjs';
-import { mergeLlmFlags } from './llm.mjs';
 
 export const BLOCKING = Object.freeze(['critical', 'high']);
 
@@ -39,14 +37,14 @@ export function loadPolicy(p) {
     if (BLOCKING.includes(k.risk)) throw new Error(`policy.json: ${kind} is rated ${k.risk} (§6.4) and is permanently outside the delegate's policy`);
   }
   if (allow.Transfer && !/^\d+$/.test(String(allow.Transfer.maxYocto ?? ''))) throw new Error('policy.json: Transfer needs maxYocto (a yoctoNEAR integer string)');
-  return { dao: p.dao, allow, llm: { enabled: p?.llm?.enabled === true } };
+  return { dao: p.dao, allow };
 }
 
 // check: a checkProposal() result. -> { action:'VoteApprove', id, proposalKind, reasons:[] } | { action:'escalate'|'skip', reasons }
-export function decide(check, policy, { llmFlags = [] } = {}) {
+export function decide(check, policy) {
   const reasons = [];
   if (check.status && check.status !== 'InProgress') return { action: 'skip', reasons: [`status ${check.status}: nothing to vote on`] };
-  const flags = mergeLlmFlags(check.flags ?? [], policy.llm?.enabled ? llmFlags : []);
+  const flags = check.flags ?? [];
   for (const u of check.unknowns ?? []) reasons.push(`unknown: ${u}`);
   if (!check.kind || check.kind.unknown) reasons.push(`kind unknown${check.kind?.name ? ` (${check.kind.name})` : ''}`);
   else {
