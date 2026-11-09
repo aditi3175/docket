@@ -607,3 +607,12 @@ table.register td.dao .sub { font-size: .78rem; line-height: 1.25; color: var(--
   .action .method { overflow-wrap: anywhere; white-space: normal; }
 }
 @media (max-width: 640px) { .field { grid-template-columns: minmax(0, 1fr); gap: 0; padding: .3rem 0; } .field .k { font-size: .78rem; } }
+
+/* folded reading: a section shows its title and "+ Read it" until opened */
+details.fold { margin-top: .2rem; }
+details.fold > summary { cursor: pointer; list-style: none; display: inline-flex; gap: .5rem; align-items: center; font: 600 .9rem var(--sans); color: var(--navy); }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::before { content: "+"; display: inline-grid; place-items: center; width: 1.3rem; height: 1.3rem; border: 1px solid var(--line-strong); border-radius: 50%; font-weight: 500; transition: transform .25s; }
+details.fold[open] > summary::before { transform: rotate(45deg); }
+details.fold[open] > summary { margin-bottom: .6rem; }
+.page-head #how { margin-top: 1.4rem; }

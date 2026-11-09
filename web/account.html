@@ -6,6 +6,7 @@
 <title>Docket — who can change this account without a vote</title>
 <link rel="preload" href="assets/fonts/instrument-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="assets/iso.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to the answer</a>
@@ -29,7 +30,8 @@
   <section class="page-head">
     <div class="eyebrow">Account · who can change it</div>
     <h1>Who can change this account without a vote?</h1>
-    <p class="intro">Docket reads NEAR mainnet from your browser and follows every path by which an account’s code or rules can change: its keys, its owner, the global contract it runs, and, for a Sputnik DAO, its factory and its voting policy. It holds no key and signs nothing.</p>
+    <p class="intro">Type any NEAR account. See every key that can change it with no vote on the way.</p>
+    <div id="how" aria-label="How this page works"></div>
     <form id="pick" class="pick">
       <label>NEAR account <input id="acct" value="meta-pool.near" autocomplete="off" spellcheck="false" autocapitalize="off"></label>
       <button type="submit">Read</button>
@@ -59,9 +61,11 @@ import { fetchDefiLlama } from './assets/value.js';
 import { recall, remember, sameAnswer, loadSeed } from './assets/memo.js';
 import { SOURCE } from './assets/source.js';
 import { drawTower } from './assets/diagrams.js';
+import { drawSteps } from './assets/iso.js';
 import { census } from './assets/census.js';
 import { startMotion } from './assets/motion.js';
 startMotion();
+drawSteps(document.getElementById('how'), [{"obj":"account","title":"Any account","sub":"you type it"},{"obj":"walk","title":"The chain, walked","sub":"keys · owner · factory · policy"},{"obj":"keys","title":"Who holds the keys","sub":"red where no vote stands"}]);
 
 const rpc = createRpc();
 const out = document.getElementById('out');
@@ -80,7 +84,8 @@ const recalledText = (m) => (m.source === 'recorded'
   ? `Recorded ${hm(m.readAt)}: Docket's example, shown while it reads NEAR mainnet live…`
   : `Your last read, ${hm(m.readAt)}, shown while Docket reads NEAR mainnet live…`);
 
-const section = (title) => { const s = el('section'); s.append(el('h2', title)); prose.append(s); return s; };
+// a section; folded ones show only their title until opened (less to read, nothing removed)
+const section = (title, fold = false) => { const s = el('section'); s.append(el('h2', title)); prose.append(s); if (!fold) return s; const d = el('details', undefined, 'fold'); d.append(el('summary', 'Read it')); s.append(d); return d; };
 const para = (s, ...parts) => { const p = el('p'); for (const x of parts) p.append(typeof x === 'string' ? document.createTextNode(x) : x); s.append(p); return p; };
 
 // One path as a tower: the value on top, each account a floor, the keys as the foundation, and a crack
@@ -160,7 +165,7 @@ function render(r) {
   out.append(prose);
 
   if (r.groups.length) {
-    const s = section('The path, in words');
+    const s = section('The path, in words', true);
     for (const [i, g] of r.groups.entries()) {
       if (r.groups.length > 1) s.append(el('h3', `Path ${i + 1}`));
       const ol = el('ol', undefined, 'tl');
@@ -206,7 +211,7 @@ function render(r) {
     for (const v of r.votes.filter((x) => !r.gates.includes(x.dao) && !r.explainer)) para(s, idspan(v.dao), `: ${v.k} of ${v.n} in "${v.role}" to pass a code- or rule-changing proposal.`);
   }
 
-  { const s = section('The code it runs'); para(s, idspan(r.account), ' runs ', explainCode(r.code)); }
+  { const s = section('The code it runs', true); para(s, idspan(r.account), ' runs ', explainCode(r.code)); }
 
   if (r.unknowns.length) {
     const s = section(`Reads that failed (${r.unknowns.length})`);
@@ -214,7 +219,7 @@ function render(r) {
     const ul = el('ul'); for (const u of r.unknowns) ul.append(el('li', `${u.at} · ${u.read}: ${u.reason}`, 'unknown-text')); s.append(ul);
   }
 
-  { const s = section('What Docket cannot see');
+  { const s = section('What Docket cannot see', true);
     s.append(el('p', 'Only on-chain authority. Docket does not know who holds a key, whether several people share one, or what a multisig agrees off-chain. An empty result is never a statement that an account is safe.', 'basis')); }
 }
 

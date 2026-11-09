@@ -1,0 +1,64 @@
+/* iso.css — the isometric (3D) scenes of iso.js, shared by the homepage and the tool pages.
+   Each block shades one tone: a lit top, a mid left face, a dark right face. Red only for the no-vote
+   path, violet only for opted out, dashed grey for unknown. No glow, no gold. */
+
+.iso-box polygon { stroke: #24172226; stroke-width: 1; stroke-linejoin: round; }
+.t-ink.f-t { fill: #45333F; } .t-ink.f-l { fill: #2F232C; } .t-ink.f-r { fill: #1F161D; }
+.t-steel.f-t { fill: #E2D9DF; } .t-steel.f-l { fill: #C9BDC5; } .t-steel.f-r { fill: #B1A2AC; }
+.t-paper.f-t { fill: #F8F4F7; } .t-paper.f-l { fill: #E6DDE3; } .t-paper.f-r { fill: #D3C8CF; }
+.t-coin.f-t { fill: #D8CDD4; } .t-coin.f-l { fill: #B5A6B0; } .t-coin.f-r { fill: #9A8994; }
+.t-novote.f-t { fill: var(--red); } .t-novote.f-l { fill: #962018; } .t-novote.f-r { fill: #7A1A13; }
+.t-optedout.f-t { fill: var(--violet); } .t-optedout.f-l { fill: #5A3399; } .t-optedout.f-r { fill: #48287D; }
+.t-unknown { fill: #EEE8EC; stroke: #8C7D87 !important; stroke-dasharray: 4 3; }
+
+/* ---------------- the homepage's story (drawPathScene) ---------------- */
+.iso-scene { position: relative; }
+.iso-svg { display: block; width: 100%; height: auto; max-height: 520px; overflow: visible; }
+.iso-svg .floor { fill: #E9E2E7; stroke: #DCD1D8; stroke-width: 1; }
+.iso-svg .flow { fill: none; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 9 7; }
+.iso-svg .flow.novote { stroke: var(--red); }
+.iso-svg .flow.optedout { stroke: var(--violet); }
+.iso-svg .flow.unknown { stroke: #A6979F; stroke-dasharray: 3 5; }
+.iso-svg .flow.plain { stroke: #45333F; }
+.iso-svg .gate-iso line { stroke: #6E5C68; stroke-width: 3; stroke-linecap: round; }
+.iso-svg .gate-iso line.bar { stroke-dasharray: 6 6; stroke-width: 2.5; }
+.iso-label .l-main { font: 400 19px "Instrument Serif", Georgia, serif; fill: #241722; }
+.iso-label .l-sub { font: 500 11.5px "Instrument Sans", system-ui, sans-serif; fill: #6E5C68; }
+.iso-label.val-l .l-main { font-size: 24px; }
+.iso-label.val-l.unknown .l-main { font-style: italic; fill: #6E5C68; }
+.iso-label.dao-l.novote .l-sub, .iso-label.gate-l.novote .l-sub { fill: var(--red); font-weight: 600; }
+.iso-label.dao-l.optedout .l-sub, .iso-label.gate-l.optedout .l-sub { fill: var(--violet); font-weight: 600; }
+.iso-svg.down .iso-label .l-main { font-size: 30px; }
+.iso-svg.down .iso-label.val-l .l-main { font-size: 34px; }
+.iso-svg.down .iso-label .l-sub { font-size: 22px; }
+.iso-svg .coin { --d: 4; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .iso-svg .flow.novote, .iso-svg .flow.optedout, .iso-svg .flow.plain { animation: iso-flow 1.1s linear infinite; }
+  .iso-svg .iso-box, .iso-svg .iso-label, .iso-svg .flow, .iso-svg .gate-iso { transition: opacity .55s ease, transform .6s cubic-bezier(.2, .8, .2, 1); transition-delay: calc(var(--d, 0) * .32s); }
+  .iso-svg.pre .iso-box, .iso-svg.pre .gate-iso { opacity: 0; transform: translateY(-26px); }
+  .iso-svg.pre .iso-label, .iso-svg.pre .flow { opacity: 0; }
+}
+@keyframes iso-flow { to { stroke-dashoffset: -32; } }
+
+/* ---------------- a page's "how it works" strip (drawSteps) ---------------- */
+.iso-steps { margin: 1.2rem 0 .4rem; }
+.iso-row { list-style: none; margin: 0; padding: 0; display: flex; align-items: flex-start; gap: .6rem; }
+.iso-row > li:not(.iso-arrow) { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: .15rem; }
+.iso-obj { width: 100%; height: 92px; overflow: visible; margin-bottom: .35rem; }
+.iso-row b { font: 400 1.2rem/1.15 "Instrument Serif", Georgia, serif; color: #241722; }
+.iso-row span { font-size: .82rem; color: #6E5C68; line-height: 1.3; }
+.iso-arrow { flex: 0 0 2.2rem; align-self: center; height: 2px; margin-top: -2.2rem; background: #45333F; position: relative; }
+.iso-arrow::after { content: ""; position: absolute; right: -1px; top: -5px; border: 6px solid transparent; border-left: 9px solid #45333F; border-right: 0; }
+.shackle-iso { fill: none; stroke: #45333F; stroke-width: 5; stroke-linecap: round; }
+@media (prefers-reduced-motion: no-preference) {
+  .iso-row > li { transition: opacity .5s ease, transform .55s cubic-bezier(.2, .8, .2, 1); transition-delay: calc(var(--d, 0) * .22s); }
+  .iso-steps.pre .iso-row > li { opacity: 0; transform: translateY(12px); }
+}
+@media (max-width: 600px) {
+  .iso-row { gap: .3rem; }
+  .iso-obj { height: 70px; }
+  .iso-row b { font-size: 1rem; }
+  .iso-row span { font-size: .74rem; }
+  .iso-arrow { flex-basis: 1rem; }
+}

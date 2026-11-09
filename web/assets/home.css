@@ -349,3 +349,28 @@ footer a { color: var(--ink); }
   .cells a { width: 5px; height: 5px; border-radius: 1px; }
   .waffle-tip { font-size: 12px; }
 }
+
+/* ---------- the hero's three stats (Stats) ---------- */
+.stats-row { margin-top: 22px; display: grid; grid-template-columns: repeat(3, auto); justify-content: start; gap: 0 34px; }
+.stats-row .stat { display: flex; flex-direction: column; padding-left: 14px; border-left: 2px solid var(--line-2); }
+.stats-row .stat:first-child { padding-left: 0; border-left: 0; }
+.stats-row b { font: 400 44px/1 var(--serif); }
+.stats-row span { margin-top: 4px; font-size: 13.5px; color: var(--mute); }
+.stats-row .stat.novote b { color: var(--red); }
+.stats-row .stat.unknown-text b { font-size: 28px; font-style: italic; color: var(--mute); }
+
+/* ---------- 01 the story in 3D (iso.js drawPathScene) ---------- */
+.story-scene { margin: 4px 0 8px; min-height: 260px; }
+.story-steps { list-style: none; margin: 18px 0 0; padding: 18px 0 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.story-steps li { display: flex; gap: 12px; align-items: baseline; font-size: 16px; color: var(--ink-2); }
+.story-steps li b { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--ink); color: var(--paper); font: 600 13px var(--sans); transform: translateY(-2px); }
+.story-steps li.novote b { background: var(--red); }
+.story-steps li span.novote { color: var(--red); }
+.story-steps a { color: inherit; }
+@media (max-width: 600px) {
+  .stats-row { gap: 0 18px; }
+  .stats-row .stat { padding-left: 10px; }
+  .stats-row b { font-size: 34px; }
+  .stats-row span { font-size: 12px; }
+  .story-steps { grid-template-columns: 1fr; gap: 10px; }
+}

@@ -6,6 +6,7 @@
 <title>Docket — a DAO's proposals, decoded</title>
 <link rel="preload" href="assets/fonts/instrument-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="assets/iso.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to the proposals</a>
@@ -29,7 +30,8 @@
   <section class="page-head compact">
     <div class="eyebrow">Proposals · decoded and checked</div>
     <h1>A DAO’s proposals, decoded</h1>
-    <p class="intro">Members vote on a description and an action. Docket decodes the action from the chain, sets it beside the description, and flags where they part. It flags and never clears: a proposal with no flag is not thereby safe.</p>
+    <p class="intro">What members read, beside what the proposal actually does. Flags where they differ; never a verdict.</p>
+    <div id="how" aria-label="How this page works"></div>
     <div class="pickrow">
     <form id="pick" class="pick">
       <label>Sputnik DAO <input id="dao" value="burrow.sputnik-dao.near" autocomplete="off" spellcheck="false" autocapitalize="off"></label>
@@ -58,9 +60,11 @@ import { createRpc } from './assets/rpc.js';
 import { docketReport, headerSentence, policySentences, PAGE } from './assets/docket-view.js';
 import { explainCode } from './assets/account-view.js';
 import { census } from './assets/census.js';
+import { drawSteps } from './assets/iso.js';
 import { recall, remember, sameAnswer, loadSeed } from './assets/memo.js';
 import { startMotion } from './assets/motion.js';
 startMotion();
+drawSteps(document.getElementById('how'), [{"obj":"doc","title":"What members read","sub":"the description"},{"obj":"decode","title":"What it does","sub":"decoded from the chain"},{"obj":"stamp","title":"Where they differ","sub":"nine checks, stamped"}]);
 
 const rpc = createRpc();
 const out = document.getElementById('out');
@@ -184,7 +188,7 @@ function render(r) {
     notes.append(el('p', `What each kind here can reach: ${r.legend.map((k) => `${k.name} (risk ${k.risk}) reaches ${k.reaches}`).join('; ')}.`));
     if (r.controlled.length) notes.append(el('p', `Inside this DAO’s control set (owned by ${r.dao}): ${r.controlled.join(', ')}. A receiver there lowers named-receiver and silent-reach to low; the flag stays.`));
     notes.append(el('p', 'The same-words check compares proposals on this page only.'));
-    list.append(notes);
+    const nd = el('details', undefined, 'more'); nd.append(el('summary', 'About these checks'), notes); list.append(nd);
     for (const p of r.proposals) list.append(renderProposal(p));
     if (r.page.from > 0) {
       const older = Math.max(0, r.page.from - PAGE);

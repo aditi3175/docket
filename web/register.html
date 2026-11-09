@@ -6,6 +6,7 @@
 <title>Docket — the register: every Sputnik DAO, by reach</title>
 <link rel="preload" href="assets/fonts/instrument-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="assets/iso.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to the table</a>
@@ -30,7 +31,8 @@
     <div class="eyebrow">Register · every DAO, by reach</div>
     <h1>The register: every Sputnik DAO, by reach</h1>
     <p id="stats" class="stats">Reading the census (graph.json)…</p>
-    <p class="intro"><strong id="floor"></strong> First the DAOs that administer a protocol Docket has mapped, by the value they administer; then every other DAO by its own NEAR balance. “No-vote roots” looks one hop out: the factory, keys on the DAO, members who can pass a code or rule change alone. Each DAO links to the whole path.</p>
+    <p class="intro"><strong id="floor"></strong> Mapped protocols first, by the value they hold; then every other DAO by its own balance.</p>
+    <div id="how" aria-label="How this page works"></div>
     <p id="prov" class="provenance recorded-note"></p>
   </section>
   <figure class="tm-fig">
@@ -62,7 +64,9 @@ import { census } from './assets/census.js';
 import { registerRows, FLOOR } from './assets/register-view.js';
 import { startMotion } from './assets/motion.js';
 import { drawTreemap } from './assets/diagrams.js';
+import { drawSteps } from './assets/iso.js';
 startMotion();
+drawSteps(document.getElementById('how'), [{"obj":"cubes","title":"Every DAO","sub":"the factory lists"},{"obj":"towers","title":"By value","sub":"what each one controls"},{"obj":"keys","title":"Who can move it","sub":"red: the factory, no vote"}]);
 
 const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
 const out = document.getElementById('out');
