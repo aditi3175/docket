@@ -58,7 +58,7 @@ export function createPath(host, { reducedMotion } = {}) {
     n.replaceChildren();
     const inner = o.href ? el('a') : el('span');
     if (o.href) inner.href = o.href;
-    if (o.title !== undefined) inner.append(el('span', `t${o.mono ? ' id' : ''}${o.titleCls ? ` ${o.titleCls}` : ''}`, o.title));
+    if (o.title !== undefined) { const t = el('span', `t${o.mono ? ' id' : ''}${o.titleCls ? ` ${o.titleCls}` : ''}`, o.title); if (o.mono) t.title = o.title; inner.append(t); }
     if (o.sub) inner.append(el('span', 's', o.sub));
     if (o.note) inner.append(el('span', `s note-m ${o.noteCls ?? ''}`, o.note));
     n.append(inner);

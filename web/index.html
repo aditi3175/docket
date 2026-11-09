@@ -28,9 +28,13 @@
 
 <main id="main" class="wrap">
   <section class="hero" aria-labelledby="headline">
-    <h1 id="headline" class="lede">NEAR liquid staking can be rewritten by three keys, without a vote.</h1>
-    <p id="basis" class="sub">Reading NEAR mainnet and DefiLlama from your browser.</p>
-    <p id="readnote" class="recorded-note status" aria-live="polite">Showing the last recorded values while the live reads arrive.</p>
+    <div class="hero-grid">
+      <h1 id="headline" class="lede">NEAR liquid staking can be rewritten by three keys, without a vote.</h1>
+      <div class="hero-side">
+        <p id="basis" class="summary">Reading NEAR mainnet and DefiLlama from your browser.</p>
+        <p id="readnote" class="recorded-note provenance" aria-live="polite">Showing the last recorded values while the live reads arrive.</p>
+      </div>
+    </div>
     <div id="path" role="figure" aria-label="The authority path, from the value at stake to the factory's keys"></div>
     <div class="legend" aria-hidden="true">
       <span><i class="novote"></i>No vote: the factory can replace this DAO's code (update(), auto_update: true)</span>
@@ -65,15 +69,15 @@
       <p class="figure">1 proposal</p>
       <p>A DAO passes one FactoryInfoUpdate setting auto_update to false. Tested on mainnet: with it, the factory’s update was rejected; without it, the same update ran.</p>
       <div class="evidence">
-        <a href="optout.html?dao=stnear.sputnik-dao.near">Draft it for stnear.sputnik-dao.near</a>
+        <a href="optout.html?dao=stnear.sputnik-dao.near">Draft it for <span class="id">stnear.sputnik-dao.near</span></a>
         <a href="https://nearblocks.io/txns/772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS">Rejected, opted out</a>
         <a href="https://nearblocks.io/txns/EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b">Ran, not opted out</a>
       </div>
     </article>
     <article class="fact" id="fact-delegate">
-      <h2>A delegate that would not vote</h2>
-      <p class="figure">3 high flags</p>
-      <p>An autonomous council member whose only key can call act_proposal on one DAO. It approved a routine transfer, then refused one with the same words and a different receiver, and handed it to a human.</p>
+      <h2>A delegate that can’t overreach</h2>
+      <p class="figure">Approved 1, refused 1</p>
+      <p>A council member whose only key can call act_proposal on one DAO. It approved a routine transfer, then refused one with the same words and a different receiver, and handed it to a human. Any AI agent can run the same checks before it acts, through Docket’s MCP server.</p>
       <div class="evidence">
         <a href="https://nearblocks.io/txns/HnMopqHKJaJ7jJNY4sWkHoYJH6TLwZnVFmNzPh9ur6wZ">Its approval of #7</a>
         <a href="../agent/log/docket-demo.sputnik-dao.near-8.json">Its refusal of #8, with the report</a>
@@ -114,7 +118,8 @@ import { createPath, keyGlyph } from './assets/path.js';
 const rpc = createRpc();
 const $ = (id) => document.getElementById(id);
 const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
-const time = (iso) => (iso ? `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC` : 'unknown');
+const NBH = '‑'; const NBSP = ' '; // non-breaking hyphen and space: a date never breaks across lines
+const time = (iso) => (iso ? `${iso.slice(0, 10).replace(/-/g, NBH)}${NBSP}${iso.slice(11, 16)}${NBSP}UTC` : 'unknown');
 const nearWhole = (s) => `${String(s).split('.')[0]} NEAR`;
 const short = (id) => id.replace('.sputnik-dao.near', '');
 
@@ -182,16 +187,20 @@ function onRead(e) {
   }
 }
 
-function basisText(r, recorded) {
-  const rows = r.rows;
-  const valued = rows.filter((x) => x.slug && x.autoUpdate === true).map((x) => x.name).join(' and ');
-  const nearx = rows.find((x) => !x.slug);
-  const llamaWhen = recorded ? `recorded ${time(RECORDED.llamaReadAt)}` : `read ${time(r.llama.readAt)}`;
-  const parts = [];
-  if (typeof r.exposedUsd === 'number') parts.push(`${usd(r.exposedUsd)} is ${valued || 'none'}: ${share(r.exposedUsd, r.lsTotal)} of the ${usd(r.lsTotal)} NEAR liquid staking holds (DefiLlama, NEAR-only TVL, ${llamaWhen}).`);
-  else parts.push(`The dollar figure is unknown: ${r.llama?.status !== 'ok' ? `DefiLlama: ${r.llama?.reason ?? 'unread'}` : 'a chain read failed'}.`);
-  if (nearx?.staked?.near && nearx.autoUpdate === true) parts.push(`Plus ${nearWhole(nearx.staked.near)} staked in NearX, read from the chain; DefiLlama does not value it.`);
-  return parts.join(' ');
+// One short line of what the figure is, then one provenance line: both sources, the exact figures, the times.
+const pct0 = (a, b) => (typeof a === 'number' && typeof b === 'number' && b > 0 ? `${Math.round(100 * a / b)}%` : 'unknown');
+const nearShort = (v) => { const whole = String(v).split('.')[0]; const n = Number(whole.replace(/,/g, '')); return n >= 1e6 ? `${(n / 1e6).toFixed(2)}M NEAR` : `${whole} NEAR`; };
+function basisText(r) {
+  const valued = r.rows.filter((x) => x.slug && x.autoUpdate === true).map((x) => x.name).join(' and ');
+  const nearx = r.rows.find((x) => !x.slug && x.autoUpdate === true && x.staked?.near);
+  const lead = typeof r.exposedUsd === 'number' ? `${valued || 'None'}, ${pct0(r.exposedUsd, r.lsTotal)} of NEAR liquid staking` : 'The dollar figure is unknown right now';
+  return `${lead}${nearx ? `, plus ${nearShort(nearx.staked.near)} in NearX` : ''}.`;
+}
+function provenance(r, recorded) {
+  const money = typeof r.exposedUsd === 'number' ? `${usd(r.exposedUsd)} of ${usd(r.lsTotal)}, NEAR-only TVL` : 'value unknown';
+  return recorded
+    ? `Recorded values: DefiLlama ${money}, ${time(RECORDED.llamaReadAt)} · NEAR mainnet, ${RECORDED.chainRecordedOn}. Reading live now…`
+    : `DefiLlama ${money}, read ${time(r.llama.readAt)} · NEAR mainnet, read ${time(r.readAt)}`;
 }
 
 function setHeadline(r, recorded) {
@@ -200,11 +209,11 @@ function setHeadline(r, recorded) {
   const cut = text.indexOf(', without a vote.');
   if (cut > 0) h.append(document.createTextNode(text.slice(0, cut) + ', '), el('span', 'without a vote', 'novote'), document.createTextNode(text.slice(cut + ', without a vote'.length)));
   else h.textContent = text;
-  $('basis').textContent = basisText(r, recorded);
+  $('basis').textContent = basisText(r);
+  $('readnote').textContent = provenance(r, recorded);
 }
 
 setHeadline(RECORDED, true);
-$('readnote').textContent = `Last recorded values (DefiLlama ${time(RECORDED.llamaReadAt)}, chain ${RECORDED.chainRecordedOn}). Reading NEAR mainnet now…`;
 $('src').append(document.createTextNode('Source: '));
 const a = el('a', SOURCE.updateAssert.text); a.href = SOURCE.updateAssert.href; $('src').append(a);
 
@@ -217,12 +226,11 @@ indexReport(rpc, { onRead }).then((r) => {
   const note = $('readnote');
   if (!gaps.length) {
     setHeadline(r, false);
-    note.textContent = `Read live from NEAR mainnet at ${time(r.readAt)} and DefiLlama at ${time(r.llama.readAt)}.`;
     note.classList.add('live');
   } else {
     // I2: a failed read never becomes a value. The headline keeps the recorded values, labelled as such;
     // the path above shows each read that failed, dashed.
-    note.textContent = `Live reads failed for ${gaps.join(', ')} at ${time(r.readAt)}. The headline shows the values recorded on ${time(RECORDED.llamaReadAt)} (DefiLlama) and ${RECORDED.chainRecordedOn} (chain); the path shows what could not be read now.`;
+    note.textContent = `Live reads failed at ${time(r.readAt)}: ${gaps.join(', ')}. Shown above: the values recorded ${time(RECORDED.llamaReadAt)} (DefiLlama) and ${RECORDED.chainRecordedOn} (chain). The path shows what could not be read now.`;
   }
 }).catch((e) => {
   $('readnote').textContent = `Unknown: the page failed while reading (${e?.message ?? e}). The figures shown are the last recorded ones.`;
