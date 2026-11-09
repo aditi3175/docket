@@ -202,7 +202,7 @@ flowchart LR
 
 | page | the question | how it answers | the diagram |
 |---|---|---|---|
-| **Overview** | Is this real, and how big? | Counts the factory's keys live, reads the three DAOs' `auto_update`, values the deposits on DefiLlama | a vault with one keyhole per key; the path in 3D (keys → factory → DAOs → deposits, the vote skipped); the census as three blocks of squares (1,607 / 13 / 466) |
+| **Overview** | Is this real, and how big? | Counts the factory's keys live, reads the three DAOs' `auto_update`, values the deposits on DefiLlama | a vault with one keyhole per key; the census as three blocks of squares (1,607 / 13 / 466) |
 | **Account** | Who can change *this* account without a vote? | Walks keys, owner (five getters, in order), global contract, factory and policy, up to six hops | a tower: the value on top, each account a floor, the keys as the foundation, a red crack where no vote stands |
 | **Proposals** | Does what members vote on match what it does? | Decodes all 17 proposal kinds and runs nine checks against the description | each proposal as a document, with every flag stamped in its margin |
 | **Register** | Where is the value, and who can move it? | Ranks every DAO the factory lists by the value it administers | a treemap of administered value, red where the factory can replace the code |

@@ -44,14 +44,3 @@ test('I20: the waffle draws the same graph.json records the counts come from, on
   assert.match(readFileSync(new URL('../web/index.html', import.meta.url), 'utf8'), /drawWaffle\(\$\('waffle'\), recs, k\)/);
   assert.match(readFileSync(new URL('../app/src/Home.jsx', import.meta.url), 'utf8'), /<Waffle records=\{c\.records\} counts=\{k\} \/>/);
 });
-
-test('iso.js (the 3D scenes): text only through textContent, never markup; red only on no-vote classes', () => {
-  const s = src('iso.js');
-  assert.doesNotMatch(s, /innerHTML|outerHTML|insertAdjacentHTML|document\.write/);
-  const css = src('iso.css');
-  const red = css.split('}').filter((r) => /var\(--red\)/.test(r)).map((r) => r.split('{')[0].trim());
-  assert.ok(red.length > 0);
-  for (const sel of red) assert.match(sel, /novote/, sel);
-  for (const p of ['account', 'docket', 'register', 'optout']) assert.match(readFileSync(new URL(`../web/${p}.html`, import.meta.url), 'utf8'), /drawSteps\(document\.getElementById\('how'\)/, p);
-  assert.match(readFileSync(new URL('../app/src/Home.jsx', import.meta.url), 'utf8'), /drawPathScene\(ref\.current, model\)/);
-});
