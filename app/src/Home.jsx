@@ -136,7 +136,7 @@ function Vault({ s, st, frameRef }) {
               {s.rows.map((r) => { const v = valueOf(r); return <div key={r.contract} className={`box${v === 'unknown' ? ' unknown' : ''}`}><small>{r.name}</small><b>{v}</b></div>; })}
             </div>
             <div className="shelf" style={{ top: '36%' }} />
-            <div className="total"><b>{total}</b><small>OPEN · NO PROPOSAL · NO VOTE</small></div>
+            <div className="total"><b>{total}</b><small>Open. No proposal, no vote.</small></div>
             <div className="bars" aria-hidden="true">
               {[1, 2, 3, 4].map((k) => <div key={k}>{Array.from({ length: k }, (_, j) => <span key={j} className="bar" />)}</div>)}
             </div>
@@ -149,8 +149,8 @@ function Vault({ s, st, frameRef }) {
               <div className="wheel">
                 <svg viewBox="-100 -100 200 200" aria-hidden="true">
                   <defs>
-                    <linearGradient id="st" gradientUnits="userSpaceOnUse" x1="-100" y1="-100" x2="100" y2="100"><stop offset="0" stopColor="#eceef4" /><stop offset=".5" stopColor="#8b8d96" /><stop offset="1" stopColor="#3f4047" /></linearGradient>
-                    <radialGradient id="hub" cx=".35" cy=".3"><stop offset="0" stopColor="#f2f3f7" /><stop offset=".6" stopColor="#7d7f88" /><stop offset="1" stopColor="#34353b" /></radialGradient>
+                    <linearGradient id="st" gradientUnits="userSpaceOnUse" x1="-100" y1="-100" x2="100" y2="100"><stop offset="0" stopColor="#F2F0EB" /><stop offset=".5" stopColor="#9A958C" /><stop offset="1" stopColor="#4A4742" /></linearGradient>
+                    <radialGradient id="hub" cx=".35" cy=".3"><stop offset="0" stopColor="#F5F3EE" /><stop offset=".6" stopColor="#8E8980" /><stop offset="1" stopColor="#3A3834" /></radialGradient>
                   </defs>
                   <circle r="78" fill="none" stroke="url(#st)" strokeWidth="9" />
                   <g stroke="url(#st)" strokeWidth="10" strokeLinecap="round"><line x1="0" y1="0" x2="0" y2="-96" /><line x1="0" y1="0" x2="83" y2="48" /><line x1="0" y1="0" x2="-83" y2="48" /></g>
@@ -284,11 +284,11 @@ function Keys({ s }) {
         <div className="keyring">
           <div className="ring"><i /><span>keyring of <Id>{FACTORY}</Id></span></div>
           {n === null
-            ? <div className="krow missing"><KeySvg w={22} h={48} /><div><b>Factory keys</b><small>the read failed</small></div><span className="st">UNKNOWN</span></div>
+            ? <div className="krow missing"><KeySvg w={22} h={48} /><div><b>Factory keys</b><small>the read failed</small></div><span className="st">unknown</span></div>
             : Array.from({ length: n }, (_, i) => (
-              <div key={i} className="krow"><KeySvg w={22} h={48} /><div><b>Key {i + 1}</b><small>full access · <Id>{FACTORY}</Id></small></div><span className="st novote">{s.keys.state === 'live' ? 'READ LIVE' : 'RECORDED'}</span></div>
+              <div key={i} className="krow"><KeySvg w={22} h={48} /><div><b>Key {i + 1}</b><small>full access · <Id>{FACTORY}</Id></small></div><span className="st novote">{s.keys.state === 'live' ? 'read live' : 'recorded'}</span></div>
             ))}
-          <div className="krow missing"><KeySvg w={22} h={48} faint /><div><b>DAO vote</b><small>a proposal the members approve</small></div><span className="st">NOT A LOCK</span></div>
+          <div className="krow missing"><KeySvg w={22} h={48} faint /><div><b>DAO vote</b><small>a proposal the members approve</small></div><span className="st">not a lock</span></div>
         </div>
         <div className="flow">
           {steps.map((x, i) => <div key={i} className="step"><span>{i + 1}</span><div>{x}</div></div>)}
@@ -321,9 +321,9 @@ function Field({ records: raw }) {
       cx.clearRect(0, 0, g.CW, g.CH);
       g.cells.forEach((c, i) => {
         const r = g.SZ * 0.34; const hot = i === g.hover;
-        if (c.k === 't') { cx.fillStyle = hot ? '#fff' : `rgba(255,120,111,${calm ? 0.75 : 0.55 + 0.25 * Math.sin(t / 900 + i)})`; cx.beginPath(); cx.arc(c.x, c.y, r, 0, 7); cx.fill(); }
-        else if (c.k === 'f') { cx.shadowColor = '#b48cf2'; cx.shadowBlur = 12; cx.fillStyle = hot ? '#fff' : '#b48cf2'; cx.beginPath(); cx.arc(c.x, c.y, r + 1, 0, 7); cx.fill(); cx.shadowBlur = 0; }
-        else { cx.strokeStyle = hot ? '#fff' : '#5a5763'; cx.setLineDash([2, 2]); cx.beginPath(); cx.arc(c.x, c.y, r, 0, 7); cx.stroke(); cx.setLineDash([]); }
+        if (c.k === 't') { cx.fillStyle = hot ? '#161514' : `rgba(194,39,27,${calm ? 0.75 : 0.55 + 0.25 * Math.sin(t / 900 + i)})`; cx.beginPath(); cx.arc(c.x, c.y, r, 0, 7); cx.fill(); }
+        else if (c.k === 'f') { cx.fillStyle = hot ? '#161514' : '#6A3FB5'; cx.beginPath(); cx.arc(c.x, c.y, r + 1, 0, 7); cx.fill(); }
+        else { cx.strokeStyle = hot ? '#161514' : '#A6A39D'; cx.setLineDash([2, 2]); cx.beginPath(); cx.arc(c.x, c.y, r, 0, 7); cx.stroke(); cx.setLineDash([]); }
       });
       if (!calm) raf = requestAnimationFrame(paint);
     };
@@ -371,8 +371,8 @@ function Doors({ c }) {
       <div className="doors">
         {ok ? <Field records={c.records} /> : <div className="lg"><span className="unknown-text">{c.status === 'reading' ? 'Reading the census…' : `Census unknown: ${c.reason}`}</span></div>}
         <div className="legend">
-          <div className="lg"><b className={ok ? 'novote' : 'unknown-text'}>{ok ? fmt(k.true) : 'unknown'}</b><span><i style={{ background: 'var(--coral)' }} />auto_update: true. The factory can replace the code without a vote.</span></div>
-          <div className="lg"><b className={ok ? 'optedout' : 'unknown-text'}>{ok ? fmt(k.false) : 'unknown'}</b><span><i style={{ background: 'var(--violet-2)', boxShadow: '0 0 10px var(--violet-2)' }} />auto_update: false. Opted out.</span></div>
+          <div className="lg"><b className={ok ? 'novote' : 'unknown-text'}>{ok ? fmt(k.true) : 'unknown'}</b><span><i style={{ background: 'var(--red)' }} />auto_update: true. The factory can replace the code without a vote.</span></div>
+          <div className="lg"><b className={ok ? 'optedout' : 'unknown-text'}>{ok ? fmt(k.false) : 'unknown'}</b><span><i style={{ background: 'var(--violet)' }} />auto_update: false. Opted out.</span></div>
           <div className="lg"><b className={ok ? '' : 'unknown-text'}>{ok ? fmt(k['no-factory-info'] + k.unread) : 'unknown'}</b><span><i style={{ border: '1.5px dashed #8b8794' }} />{ok ? `Unknown: ${k['no-factory-info']} have no get_factory_info, ${k.unread} could not be read.` : 'Unknown.'}</span></div>
           <div className="lg recount">
             <span>{ok ? `${pct(c.c.shareTrueOfAnswered)} of the ${fmt(c.c.answered)} that answered read auto_update: true. Census ${c.when?.slice(0, 10) ?? 'undated'}${c.complete ? '' : ', incomplete'}.` : 'The census is computed from graph.json’s records.'}</span>
@@ -465,7 +465,7 @@ export default function Home() {
       </div></footer>
 
       <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true"><defs>
-        <linearGradient id="kg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#ffb3ad" /><stop offset=".5" stopColor="#ff786f" /><stop offset="1" stopColor="#b8322a" /></linearGradient>
+        <linearGradient id="kg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#8F8A81" /><stop offset=".5" stopColor="#5E5A53" /><stop offset="1" stopColor="#2E2C29" /></linearGradient>
         <g id="keyshape"><circle cx="17" cy="14" r="12" fill="none" stroke="url(#kg)" strokeWidth="6" /><rect x="14" y="25" width="6" height="52" rx="2" fill="url(#kg)" /><rect x="20" y="58" width="9" height="5" fill="url(#kg)" /><rect x="20" y="68" width="6" height="5" fill="url(#kg)" /></g>
       </defs></svg>
     </>

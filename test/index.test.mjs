@@ -84,8 +84,8 @@ test('site: the stylesheet and the font are local; no page loads a remote styles
   const css = readFileSync(new URL('../web/assets/site.css', import.meta.url), 'utf8');
   assert.doesNotMatch(css, /url\(\s*["']?(https?:)?\/\//);
   assert.doesNotMatch(css, /@import/);
-  assert.match(css, /url\("fonts\/schibsted-grotesk-latin\.woff2"\)/);
-  for (const f of ['schibsted-grotesk-latin.woff2', 'schibsted-grotesk-latin-italic.woff2', 'OFL.txt']) assert.ok(readFileSync(new URL(`../web/assets/fonts/${f}`, import.meta.url)).length > 1000, f);
+  assert.match(css, /url\("fonts\/instrument-sans-latin\.woff2"\)/);
+  for (const f of ['instrument-sans-latin.woff2', 'instrument-serif-latin.woff2', 'instrument-serif-latin-italic.woff2', 'OFL-instrument-sans.txt', 'OFL-instrument-serif.txt']) assert.ok(readFileSync(new URL(`../web/assets/fonts/${f}`, import.meta.url)).length > 1000, f);
   const html = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8');
   assert.doesNotMatch(html, /<link[^>]+href=["']https?:/);
   // the red token is used only by the no-vote classes

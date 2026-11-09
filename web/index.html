@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Docket — who can change a NEAR account without a vote</title>
 <meta name="description" content="Three keys can replace the code of the DAOs that run NEAR liquid staking, without a vote. Read live from NEAR mainnet.">
-<link rel="preload" href="assets/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/instrument-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/home.css">
 </head>
 <body>
@@ -49,7 +49,7 @@
         <div class="chamber">
           <div class="boxes" id="boxes"></div>
           <div class="shelf" style="top:36%"></div>
-          <div class="total"><b id="total">$126.7M</b><small>OPEN · NO PROPOSAL · NO VOTE</small></div>
+          <div class="total"><b id="total">$126.7M</b><small>Open. No proposal, no vote.</small></div>
           <div class="bars" aria-hidden="true">
             <div><span class="bar"></span></div>
             <div><span class="bar"></span><span class="bar"></span></div>
@@ -65,8 +65,8 @@
           <div class="thk" style="transform:translateZ(-20px)"></div><div class="thk" style="transform:translateZ(-24px)"></div>
           <div class="face" id="face">
             <div class="wheel"><svg viewBox="-100 -100 200 200" aria-hidden="true">
-              <defs><linearGradient id="st" gradientUnits="userSpaceOnUse" x1="-100" y1="-100" x2="100" y2="100"><stop offset="0" stop-color="#eceef4"/><stop offset=".5" stop-color="#8b8d96"/><stop offset="1" stop-color="#3f4047"/></linearGradient>
-              <radialGradient id="hub" cx=".35" cy=".3"><stop offset="0" stop-color="#f2f3f7"/><stop offset=".6" stop-color="#7d7f88"/><stop offset="1" stop-color="#34353b"/></radialGradient></defs>
+              <defs><linearGradient id="st" gradientUnits="userSpaceOnUse" x1="-100" y1="-100" x2="100" y2="100"><stop offset="0" stop-color="#F2F0EB"/><stop offset=".5" stop-color="#9A958C"/><stop offset="1" stop-color="#4A4742"/></linearGradient>
+              <radialGradient id="hub" cx=".35" cy=".3"><stop offset="0" stop-color="#F5F3EE"/><stop offset=".6" stop-color="#8E8980"/><stop offset="1" stop-color="#3A3834"/></radialGradient></defs>
               <circle r="78" fill="none" stroke="url(#st)" stroke-width="9"/>
               <g stroke="url(#st)" stroke-width="10" stroke-linecap="round"><line x1="0" y1="0" x2="0" y2="-96"/><line x1="0" y1="0" x2="83" y2="48"/><line x1="0" y1="0" x2="-83" y2="48"/></g>
               <circle cx="0" cy="-98" r="11" fill="url(#hub)"/><circle cx="85" cy="49" r="11" fill="url(#hub)"/><circle cx="-85" cy="49" r="11" fill="url(#hub)"/>
@@ -113,8 +113,8 @@
   <div class="doors">
     <div class="field-wrap"><canvas id="field" aria-label="Every DAO on the factory, by auto_update"></canvas><div id="tip"></div></div>
     <div class="legend">
-      <div class="lg"><b class="novote" id="n-true">…</b><span><i style="background:var(--coral)"></i>auto_update: true. The factory can replace the code without a vote.</span></div>
-      <div class="lg"><b class="optedout" id="n-false">…</b><span><i style="background:var(--violet-2);box-shadow:0 0 10px var(--violet-2)"></i>auto_update: false. Opted out.</span></div>
+      <div class="lg"><b class="novote" id="n-true">…</b><span><i style="background:var(--red)"></i>auto_update: true. The factory can replace the code without a vote.</span></div>
+      <div class="lg"><b class="optedout" id="n-false">…</b><span><i style="background:var(--violet)"></i>auto_update: false. Opted out.</span></div>
       <div class="lg"><b id="n-unknown">…</b><span><i style="border:1.5px dashed #8b8794"></i><span id="unknown-text">Unknown.</span></span></div>
       <div class="lg recount">
         <span id="census-note">Reading the census…</span>
@@ -171,7 +171,7 @@
 </div></footer>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
-  <linearGradient id="kg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffb3ad"/><stop offset=".5" stop-color="#ff786f"/><stop offset="1" stop-color="#b8322a"/></linearGradient>
+  <linearGradient id="kg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8F8A81"/><stop offset=".5" stop-color="#5E5A53"/><stop offset="1" stop-color="#2E2C29"/></linearGradient>
   <g id="keyshape"><circle cx="17" cy="14" r="12" fill="none" stroke="url(#kg)" stroke-width="6"/><rect x="14" y="25" width="6" height="52" rx="2" fill="url(#kg)"/><rect x="20" y="58" width="9" height="5" fill="url(#kg)"/><rect x="20" y="68" width="6" height="5" fill="url(#kg)"/></g>
 </defs></svg>
 
@@ -336,15 +336,15 @@ function drawKeys() {
   const rows = [];
   if (S.keys === null) {
     const r = el('div', null, 'krow missing'); const d = el('div'); d.append(el('b', 'Factory keys'), el('small', 'the read failed'));
-    r.append(keySvg(22, 48), d, el('span', 'UNKNOWN', 'st')); rows.push(r);
+    r.append(keySvg(22, 48), d, el('span', 'unknown', 'st')); rows.push(r);
   } else {
     for (let i = 0; i < S.keys; i++) {
       const r = el('div', null, 'krow'); const d = el('div'); const sm = el('small', 'full access · '); sm.append(el('span', FACTORY, 'id'));
-      d.append(el('b', `Key ${i + 1}`), sm); r.append(keySvg(22, 48), d, el('span', S.keysState === 'live' ? 'READ LIVE' : 'RECORDED', 'st novote')); rows.push(r);
+      d.append(el('b', `Key ${i + 1}`), sm); r.append(keySvg(22, 48), d, el('span', S.keysState === 'live' ? 'read live' : 'recorded', 'st novote')); rows.push(r);
     }
   }
   const m = el('div', null, 'krow missing'); const md = el('div'); md.append(el('b', 'DAO vote'), el('small', 'a proposal the members approve'));
-  const ks = keySvg(22, 48); ks.style.opacity = '0.3'; m.append(ks, md, el('span', 'NOT A LOCK', 'st')); rows.push(m);
+  const ks = keySvg(22, 48); ks.style.opacity = '0.3'; m.append(ks, md, el('span', 'not a lock', 'st')); rows.push(m);
   $('keyring').replaceChildren(...rows);
 
   const r0 = S.rows[0]; const owner = r0.owner && r0.owner !== 'unknown' && r0.owner !== 'none' ? r0.owner : null;
@@ -430,9 +430,9 @@ function paint(t) {
   cx.clearRect(0, 0, CW, CH);
   for (let i = 0; i < cells.length; i++) {
     const c = cells[i]; const r = SZ * 0.34;
-    if (c.k === 't') { cx.fillStyle = i === hover ? '#fff' : `rgba(255,120,111,${still ? 0.75 : 0.55 + 0.25 * Math.sin(t / 900 + i)})`; cx.beginPath(); cx.arc(c.x, c.y, r, 0, 7); cx.fill(); }
-    else if (c.k === 'f') { cx.shadowColor = '#b48cf2'; cx.shadowBlur = 12; cx.fillStyle = i === hover ? '#fff' : '#b48cf2'; cx.beginPath(); cx.arc(c.x, c.y, r + 1, 0, 7); cx.fill(); cx.shadowBlur = 0; }
-    else { cx.strokeStyle = i === hover ? '#fff' : '#5a5763'; cx.setLineDash([2, 2]); cx.beginPath(); cx.arc(c.x, c.y, r, 0, 7); cx.stroke(); cx.setLineDash([]); }
+    if (c.k === 't') { cx.fillStyle = i === hover ? '#161514' : `rgba(194,39,27,${still ? 0.75 : 0.55 + 0.25 * Math.sin(t / 900 + i)})`; cx.beginPath(); cx.arc(c.x, c.y, r, 0, 7); cx.fill(); }
+    else if (c.k === 'f') { cx.fillStyle = i === hover ? '#161514' : '#6A3FB5'; cx.beginPath(); cx.arc(c.x, c.y, r + 1, 0, 7); cx.fill(); }
+    else { cx.strokeStyle = i === hover ? '#161514' : '#A6A39D'; cx.setLineDash([2, 2]); cx.beginPath(); cx.arc(c.x, c.y, r, 0, 7); cx.stroke(); cx.setLineDash([]); }
   }
   if (!still) requestAnimationFrame(paint);
 }

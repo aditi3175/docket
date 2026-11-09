@@ -77,7 +77,7 @@ npm run preview                    # serves dist/ at http://localhost:4173
 | Open http://localhost:4173 | The finding in one sentence: "$… of NEAR liquid staking can be rewritten by three keys, without a vote." It starts from values recorded on 2026-11-06, labelled as recorded, then switches to live figures with their read times. |
 | Watch the vault beside it (or under the headline on a phone) | One keyhole per full-access key on `sputnik-dao.near`, counted from a live read. The keys turn, the "DAO vote" light reads "bypassed", the bolts retract and the door opens on the value at stake. The log under the vault narrates each step. |
 | Click "auto_update: false", then "Turn the keys" | The same keys turn, but the update is rejected and the door stays shut. This replays the mainnet opt-out test (transaction `772n4Z…`), not any DAO's current state. |
-| Scroll to "01 · Inside the vault" | Meta Pool, LiNEAR and NearX, each with its contract, its owner DAO and that DAO's `auto_update`, read live. The gold bars show their share of NEAR liquid staking. |
+| Scroll to "01 · Inside the vault" | Meta Pool, LiNEAR and NearX, each with its contract, its owner DAO and that DAO's `auto_update`, read live. The ink bars show their share of NEAR liquid staking. |
 | Scroll to "03 · Every door like this one" and hover a dot | One dot per DAO in the committed census: coral for `auto_update: true` (1,607), violet for false (13), dashed for unknown (466). Hovering shows the DAO's id; clicking opens its proposals. "Recount from the chain now" re-reads every DAO (about 15 minutes). |
 | Scroll to "04 · The fourth lock" | "Not shipped": the factory's default build, read live, does not contain the fix (PR #233). Next to it, the one proposal a DAO can pass today, and the delegate's approve and refuse transactions. |
 | Turn off the network and reload | The headline keeps the recorded values and names each read that failed. Unread values show as "unknown", never as zero. |
@@ -88,8 +88,8 @@ directory `dist`. For development, run `npm run app:install` once, then
 `npm run dev`.
 
 **Libraries in the site (Q-005), all pinned:** React 19.3.1 and React DOM
-19.3.1, built with Vite 8.3.7 and @vitejs/plugin-react 6.3.0, all MIT. The font
-is Schibsted Grotesk, self-hosted in `web/assets/fonts` (SIL OFL). None of these
+19.3.1, built with Vite 8.3.7 and @vitejs/plugin-react 6.3.0, all MIT. The fonts
+are Instrument Serif and Instrument Sans, self-hosted in `web/assets/fonts` (SIL OFL). None of these
 are used by `verify.mjs`, the tests, `guard/` or `agent/`.
 
 ### Without building
