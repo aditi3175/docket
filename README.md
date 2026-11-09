@@ -2,6 +2,16 @@
 
 **Who can change a NEAR account without a vote, read from the chain alone.**
 
+![license: MIT](https://img.shields.io/badge/license-MIT-2b1d26)
+![node ≥ 22](https://img.shields.io/badge/node-%E2%89%A5%2022-2b1d26)
+![root dependencies: 0](https://img.shields.io/badge/root%20dependencies-0-2b1d26)
+![backend: none](https://img.shields.io/badge/backend-none-2b1d26)
+![keys held: none](https://img.shields.io/badge/keys%20held-none-2b1d26)
+
+![The Docket homepage: "$123.7M of NEAR liquid staking can be rewritten by three keys, without a vote", beside a vault with one keyhole per factory key](docs/screenshots/home.png)
+
+<sub>The homepage, read live on 2026-11-09 18:28 UTC. The dollar figure is DefiLlama's at the moment of the read, so it moves; the spec's dated figure is $126.7M (2026-11-06).</sub>
+
 Docket follows every path by which an account's code or rules can change: its
 access keys, its owner, the global contract it runs, and, for a Sputnik DAO, the
 factory and the DAO's voting policy. It reads public view calls and nothing
@@ -9,14 +19,98 @@ else. It holds no key, needs no account and signs nothing. The one exception is
 the optional delegate (below): it signs its own votes with a key that can do
 nothing else.
 
-What it found: a Sputnik DAO's contract has a function, `update()`, that is not
-a proposal. While the DAO's `auto_update` setting is `true`, which is the
-default, the factory `sputnik-dao.near` can use it to replace the DAO's code
-with no vote. The factory owns itself, and its only authority is three
-full-access keys. The DAOs that administer Meta Pool, LiNEAR and NearX all read
-`true`. A fix exists (near-daos/sputnik-dao-contract PR #233) and has not been
-deployed. The full argument, with every number sourced and dated, is in
-[ARCHITECTURE.md](ARCHITECTURE.md).
+---
+
+## Contents
+
+- [What it found](#what-it-found)
+- [Run it](#run-it)
+- [The site](#the-site), with screenshots of every page
+- [How it works](#how-it-works): architecture, reads, invariants
+- [The fix: opting out](#the-fix-opting-out)
+- [The delegate](#the-delegate-an-ai-voter-that-cannot-vote-past-a-flag)
+- [Tools](#tools)
+- [What has been run on mainnet](#what-has-been-run-on-mainnet)
+- [Repository layout](#repository-layout)
+- [How this was built](#how-this-was-built)
+
+---
+
+## What it found
+
+A Sputnik DAO's contract has a function, `update()`, that is not a proposal.
+While the DAO's `auto_update` setting is `true`, **which is the default**, the
+factory `sputnik-dao.near` can use it to replace the DAO's code with no vote.
+The factory owns itself, so its only authority is its **three full-access
+keys**. The DAOs that administer Meta Pool, LiNEAR and NearX all read `true`.
+
+```mermaid
+flowchart TB
+    K["🔑 🔑 🔑<br/>3 full-access keys<br/>on sputnik-dao.near"]
+    F["sputnik-dao.near<br/>the factory (owns itself)"]
+    D1["stnear.sputnik-dao.near"]
+    D2["linear.sputnik-dao.near"]
+    D3["stader-nearx.sputnik-dao.near"]
+    P1["meta-pool.near<br/>Meta Pool"]
+    P2["linear-protocol.near<br/>LiNEAR"]
+    P3["nearx.stader-labs.near<br/>NearX"]
+    V["$126.7M of deposits (DefiLlama, 2026-11-06)<br/>+ 2,553,885 NEAR staked in NearX (chain)"]
+
+    K -->|sign as| F
+    F -->|"update(code)<br/>no proposal, no vote<br/>auto_update: true"| D1 & D2 & D3
+    D1 -->|owner of| P1
+    D2 -->|owner of| P2
+    D3 -->|owner of| P3
+    P1 & P2 & P3 --> V
+
+    linkStyle 1,2,3 stroke:#b3261e,stroke-width:2px,color:#b3261e
+```
+
+Every edge in that chart is a public view call, and `node tools/verify.mjs`
+re-reads every one of them.
+
+**The vote that can be skipped.** A DAO has two routes to new code. Members
+see only the first:
+
+```mermaid
+flowchart TB
+    subgraph A["Route 1 · by proposal (UpgradeSelf): members can stop it"]
+        direction LR
+        A1[A member proposes] --> A2[Members vote<br/>e.g. 3 of 4 in council] --> A3[Code changes<br/>only if the vote passes]
+    end
+    subgraph B["Route 2 · by update() from the factory: members never see it"]
+        direction LR
+        B1[A factory key signs] --> B2["update() is called<br/>(not a proposal)"] --> B3{"auto_update?"}
+        B3 -->|true| B4[Code changes<br/>no vote, no wait]
+        B3 -->|false| B5[Rejected<br/>ERR_MUST_BE_SELF_OR_FACTORY]
+    end
+    A ~~~ B
+```
+
+**The fix exists and is not deployed.** NEAR core fixed this in
+near-daos/sputnik-dao-contract **PR #233**, merged 2026-03-24 (an `UpgradeSelf`
+proposal with a two-week delay). The factory still publishes build
+`2b0f34a38604` as its default, which predates the fix. So this is reporting,
+not disclosure: Docket shows who is exposed until the fix ships, and drafts the
+one proposal that closes the gap today.
+
+**It is not one vault.** Of the 2,086 DAOs the factory lists (census,
+2026-11-07):
+
+```mermaid
+%%{init: {"theme": "base", "themeVariables": {"pie1": "#b3261e", "pie2": "#6b3fb8", "pie3": "#d9d2d6", "pieStrokeColor": "#2b1d26", "pieOuterStrokeColor": "#2b1d26"}}}%%
+pie showData
+    title auto_update across 2,086 Sputnik DAOs (2026-11-07)
+    "true: the factory can replace the code" : 1607
+    "false: opted out, a vote is required" : 13
+    "unknown: no get_factory_info" : 466
+```
+
+The full argument, with every number sourced and dated, is in
+[ARCHITECTURE.md](ARCHITECTURE.md). Claims that were wrong in earlier drafts,
+and how they were caught, are kept in its §12.
+
+---
 
 ## Run it
 
@@ -40,12 +134,27 @@ from NEAR mainnet, GitHub and DefiLlama:
         └── stader-nearx.sputnik-dao.near  owner of nearx.stader-labs.near
 ```
 
+```mermaid
+flowchart LR
+    V["node tools/verify.mjs"] --> C["NEAR mainnet<br/>owners, auto_update, keys,<br/>walk, code identity"]
+    V --> G["GitHub<br/>PR #233, commit order, dates"]
+    V --> L["DefiLlama<br/>TVL, coverage, LS share"]
+    C & G --> X{"exit code"}
+    L -.->|warn only| W["warnings"]
+    X -->|all confirmed| E0["0"]
+    X -->|a claim diverged| E1["1"]
+    X -->|a read failed: unknown| E2["2"]
+```
+
 Exit codes: **0** every claim confirmed; **1** a claim diverged from mainnet;
 **2** a read failed, so a claim is unknown (never counted as confirmed). Dollar
 figures come from DefiLlama, are dated by the read, and never change the exit
-code.
+code. What `verify.mjs` re-runs, and what is documented but not re-run (with
+the command to reproduce it by hand), is listed in §0 of the spec.
 
-`node tools/verify.mjs` makes only two unauthenticated GitHub calls; if GitHub rate-limits you, it reports those claims as unknown (exit 2), not failed — wait for the reset time it prints and re-run.
+`verify.mjs` makes only two unauthenticated GitHub calls; if GitHub rate-limits
+you, it reports those claims as unknown (exit 2), not failed. Wait for the
+reset time it prints and re-run.
 
 ```bash
 npm test
@@ -54,18 +163,73 @@ npm test
 Runs the test suite offline, against mainnet responses recorded in
 `test/fixtures/`. Tests name the invariants (§10 of the spec) they check.
 
+---
+
 ## The site
 
-The homepage is a small React app in `app/`, built with Vite. The four tool
-pages (`account`, `docket`, `register`, `optout`) are plain HTML and ES modules
-in `web/`, and the build copies them in, so every link works from `dist/`. Both
-read NEAR mainnet and DefiLlama from your browser, with no server in between.
-Neither computes anything of its own: every read, rule and figure comes from the
-dependency-free modules in `web/assets/`, the same ones `verify.mjs` and the
-tests use. The app's packages are pinned in `app/package-lock.json`; the root
-project has none.
+Five pages. Each reads NEAR mainnet and DefiLlama from your browser, with no
+server in between, and shows when each figure was read.
 
-**Try it (Node 22.12 or later):**
+### Overview: the vault
+
+![The vault opened on the three deposits; the factory's keys beside the five steps of an update](docs/screenshots/home-deposits-keys.png)
+
+One keyhole per full-access key on `sputnik-dao.near`, counted from a live
+read. The keys turn, the "DAO vote" light reads "bypassed", the bolts retract
+and the door opens on the value at stake. Below it: Meta Pool, LiNEAR and NearX,
+each with its contract, its owner DAO and that DAO's `auto_update`, read live.
+
+![One square per DAO: 1,607 red (true), 13 violet (false), 466 dashed (unknown)](docs/screenshots/home-census.png)
+
+The census: one square per DAO in the committed `graph.json`, in three labelled
+blocks. Hover for the DAO's id, click for its proposals. "Recount from the chain
+now" re-reads every DAO from your browser (about 15 minutes).
+
+![The fourth lock: the factory fix "Not shipped", one opt-out proposal, and the delegate's approve and refuse](docs/screenshots/home-fix.png)
+
+"Not shipped" is a live read of the factory's default build, never a stored
+value. Next to it, the one proposal a DAO can pass today, and the delegate's
+approve and refuse transactions.
+
+### Account: who can change this account without a vote?
+
+![Account page for meta-pool.near: 3 keys on 1 account can change it with no vote; the path drawn as a tower from the value down to the keys](docs/screenshots/account.png)
+
+Any NEAR account. Docket walks its keys, its owner (five owner getters, judged
+in order), the global contract it runs and, for a Sputnik DAO, the factory and
+the DAO's policy, up to six hops. The no-vote edge is the only thing drawn in
+red. Below it, the path in words and the two lanes: what members can stop, and
+what they cannot.
+
+### Proposals: what members read, beside what it does
+
+![Burrow's proposals: each description beside its decoded action, with flags stamped in the margin](docs/screenshots/docket.png)
+
+A DAO's proposals, each description set beside the action decoded from the
+chain, with flags where they part. Docket flags and never clears: a proposal
+with no flag gets no verdict. The nine checks are `named-receiver`,
+`sibling-collision`, `named-amounts`, `silent-reach`, `cross-organisation`,
+`empty-assertion`, `authority-change`, `unknown-kind` and `undecodable-args`.
+
+### Register: every Sputnik DAO, by reach
+
+![Register: the census bar, a treemap of administered value coloured by auto_update, and the sortable table](docs/screenshots/register.png)
+
+All 2,086 DAOs, ranked by the value they administer, with `auto_update`, code
+version and the no-vote roots one hop out. It is labelled a floor: Docket only
+values the protocols it has mapped.
+
+### Opt out: the fourth lock
+
+![Opt-out page for stnear: the factory's three keys beside the DAO's own lock, a four-step stepper, what is given up, who must approve, and the submit options](docs/screenshots/optout.png)
+
+For any DAO reading `auto_update: true`: the drafted proposal, what is given up
+(stated above the submit button), who must approve, what it costs, and two ways
+to submit it. [More below](#the-fix-opting-out).
+
+### Try it locally
+
+**Built (Node 22.12 or later):**
 
 ```bash
 npm run build                      # installs app/ from its lockfile, builds to dist/
@@ -74,12 +238,8 @@ npm run preview                    # serves dist/ at http://localhost:4173
 
 | do | see |
 |---|---|
-| Open http://localhost:4173 | The finding in one sentence: "$… of NEAR liquid staking can be rewritten by three keys, without a vote." It starts from values recorded on 2026-11-06, labelled as recorded, then switches to live figures with their read times. |
-| Watch the vault beside it (or under the headline on a phone) | One keyhole per full-access key on `sputnik-dao.near`, counted from a live read. The keys turn, the "DAO vote" light reads "bypassed", the bolts retract and the door opens on the value at stake. The log under the vault narrates each step. |
+| Open http://localhost:4173 | The finding in one sentence. It starts from values recorded on 2026-11-06, labelled as recorded, then switches to live figures with their read times. |
 | Click "auto_update: false", then "Turn the keys" | The same keys turn, but the update is rejected and the door stays shut. This replays the mainnet opt-out test (transaction `772n4Z…`), not any DAO's current state. |
-| Scroll to "01 · Inside the vault" | Meta Pool, LiNEAR and NearX, each with its contract, its owner DAO and that DAO's `auto_update`, read live. The ink bars show their share of NEAR liquid staking. |
-| Scroll to "03 · Every door like this one" and hover a square | One square per DAO in the committed census, in three labelled blocks: red for `auto_update: true` (1,607), violet for false (13), dashed for unknown (466). Hovering shows the DAO's id; clicking opens its proposals. "Recount from the chain now" re-reads every DAO (about 15 minutes). |
-| Scroll to "04 · The fourth lock" | "Not shipped": the factory's default build, read live, does not contain the fix (PR #233). Next to it, the one proposal a DAO can pass today, and the delegate's approve and refuse transactions. |
 | Turn off the network and reload | The headline keeps the recorded values and names each read that failed. Unread values show as "unknown", never as zero. |
 
 `dist/` is static (HTML, JS, CSS, fonts, the tool pages and `graph.json`) and
@@ -87,21 +247,12 @@ ready for Vercel or Netlify: the build command is `npm run build`, the output
 directory `dist`. For development, run `npm run app:install` once, then
 `npm run dev`.
 
-**Libraries in the site (Q-005), all pinned:** React 19.3.1 and React DOM
-19.3.1, built with Vite 8.3.7 and @vitejs/plugin-react 6.3.0, all MIT. The fonts
-are Instrument Serif and Instrument Sans, self-hosted in `web/assets/fonts` (SIL OFL). None of these
-are used by `verify.mjs`, the tests, `guard/` or `agent/`.
-
-### Without building
-
-The pages also work with no build at all. Serve the **repository root**,
-because the census loads `graph.json` from there:
+**Without building.** The pages also work with no build at all. Serve the
+**repository root**, because the census loads `graph.json` from there:
 
 ```bash
 python -m http.server 8000
 ```
-
-Then open:
 
 | page | what it shows |
 |---|---|
@@ -112,9 +263,163 @@ Then open:
 | http://localhost:8000/web/optout.html?dao=stnear.sputnik-dao.near | the fix a DAO can apply today: one proposal setting `auto_update` to `false` |
 
 Any static server works (`npx serve .`, for example); Python is only one option.
-The opt-out page can hand a transaction to your own wallet through NEAR Wallet
+
+---
+
+## How it works
+
+### Two layers
+
+```mermaid
+flowchart LR
+    LOGIC["<b>Logic</b> · web/assets/<br/>plain ES modules, zero dependencies, no build<br/><br/>rpc.js · queue, failover, cache<br/>resolve.js · owners, walk, code identity<br/>decode.js · 17 proposal kinds<br/>lint.js · 9 checks<br/>value.js · DefiLlama, FT, NEAR<br/>optout.js · draft FactoryInfoUpdate<br/>census.js · badge.js"]
+    TOOLS["<b>Node</b><br/>tools/verify.mjs<br/>tools/crawl.mjs → graph.json<br/>npm test<br/>guard/ · checkProposal, checkAccount, MCP<br/>agent/delegate.mjs"]
+    VIEW["<b>Presentation</b> · renders only<br/>app/ · React + Vite homepage<br/>web/*.html · account, docket,<br/>register, optout"]
+    DIST["dist/<br/>static files on Vercel"]
+    LOGIC -->|imported unchanged| TOOLS
+    LOGIC -->|imported unchanged| VIEW
+    VIEW -->|npm run build| DIST
+```
+
+The logic (`web/assets/`, `tools/`, `guard/`, `agent/`) has no dependencies and
+runs in Node 22 or a browser as it is: `node tools/verify.mjs` and `npm test`
+need no install. The presentation (`app/`) may use pinned npm packages, but it
+only renders: it imports the logic and never reimplements a read, a figure or a
+rule. `test/app.test.mjs` enforces that.
+
+**Libraries in the site, all pinned in `app/package-lock.json`:** React 19.3.1
+and React DOM 19.3.1, built with Vite 8.3.7 and @vitejs/plugin-react 6.3.0, all
+MIT. Fonts: Instrument Serif and Instrument Sans, self-hosted in
+`web/assets/fonts` (SIL OFL). None of these are used by `verify.mjs`, the tests,
+`guard/` or `agent/`.
+
+**No backend, deliberately.** The claim is that anyone can check this
+themselves; a server between reader and chain would weaken exactly that.
+
+### A page load
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as Your browser
+    participant S as Static host (dist/)
+    participant N as NEAR RPC
+    participant L as DefiLlama
+    U->>S: page, modules, graph.json
+    Note over U: draws recorded values at once,<br/>labelled "recorded" with their date
+    par chain reads (≤ 6 at a time)
+        U->>N: view_access_key_list sputnik-dao.near
+        U->>N: get_owner_id, get_factory_info, …
+        U->>N: get_default_code_hash (badge)
+    and value
+        U->>L: /protocols (once per visit, 10 min reuse)
+    end
+    N-->>U: each answer replaces its recorded value
+    L-->>U: NEAR-only TVL, dated by the read
+    Note over U: a failed read shows "unknown",<br/>never zero
+```
+
+### RPC: measured, not assumed
+
+```mermaid
+flowchart LR
+    Q["read<br/>(≤ 6 concurrent)"] --> C{"cached<br/>(8 s)?"}
+    C -->|yes| R["answer"]
+    C -->|no| F1["FastNear"]
+    F1 -->|ok| R
+    F1 -->|"429 / error / stalled 2.5 s"| F2["rpc.mainnet.near.org"]
+    F2 -->|ok| R
+    F2 -->|"429 / error"| F3["near.drpc.org"]
+    F3 -->|ok| R
+    F3 -->|all failed| U["unknown<br/>(never a value)"]
+```
+
+Concurrency is capped at 6 (24 trips FastNear's limiter; 6 does not). A 429
+fails over at once, and that endpoint moves to the back of the order for 5 s.
+`1rpc.io/near` is not used: it does not implement `query`.
+
+### Invariants
+
+The spec (§10) lists twenty invariants; each one that applies has a test that
+names it. The ones that matter most:
+
+| # | invariant |
+|---|---|
+| I1 | No number is invented; each traces to a call or a named source with a date |
+| I2 | A failed read renders as "unknown", never as zero, absent, or false |
+| I7 | An unknown proposal kind renders **unknown and dangerous** |
+| I9 | The classifier flags and never clears; no "safe" verdict and no score |
+| I10 | Base-unit amounts use BigInt; `Number` never touches one |
+| I13 | Docket never signs. No private key exists anywhere under `web/` or `guard/` |
+| I15 | An opt-out is confirmed by re-reading `get_factory_info`, never by the transaction succeeding |
+| I16 | The delegate never votes on a proposal carrying any critical or high flag, any unknown, or a kind outside `policy.json` |
+| I17 | The delegate's key is `FunctionCall`, receiver = its one DAO, methods = `["act_proposal"]` |
+| I19 | The "fix shipped?" badge is a live read, never a stored value |
+| I20 | The opted-out counter is computed from reads, with its denominator and unknown bucket |
+
+---
+
+## The fix: opting out
+
+One `FactoryInfoUpdate` proposal, passed by the DAO itself, sets `auto_update`
+to `false`. After that, `update()` from the factory is rejected.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor M as DAO member
+    participant D as Docket (optout.html)
+    participant W as Member's wallet / near-cli
+    participant DAO as The DAO on mainnet
+    D->>DAO: get_factory_info, get_policy, bond
+    DAO-->>D: auto_update: true · who must approve · 1 NEAR bond
+    D->>M: the drafted proposal, what is given up, who must approve
+    M->>W: submit add_proposal (FactoryInfoUpdate, auto_update: false)
+    W->>DAO: signed by the member, never by Docket
+    Note over DAO: members vote (e.g. 3 of 4 in council)
+    M->>D: "I have voted: re-read get_factory_info"
+    D->>DAO: get_factory_info
+    DAO-->>D: auto_update: false
+    Note over D: confirmed only by this re-read (I15)
+```
+
+**What is given up**, shown above the submit button on the page:
+(a) the factory can no longer rescue a DAO a migration has bricked; and
+(b) `UpgradeSelf` no longer works on its own. Upgrading then takes three
+proposals: `auto_update` back to `true`, the `UpgradeSelf`, and `auto_update`
+back to `false`, with the no-vote path open in between. (b) was confirmed on
+mainnet at v3.2.
+
+The page can hand the transaction to your own wallet through NEAR Wallet
 Selector, which it loads from esm.sh only when you click "Connect a wallet". It
-also prints the same transaction as a `near-cli` command.
+also prints the same transaction as a `near-cli` command. Drafting refuses v3.0
+DAOs (untested at that version), so it drafts nothing for `stader-nearx`.
+
+---
+
+## The delegate: an AI voter that cannot vote past a flag
+
+`@docket/guard` exposes Docket's two checks, `checkProposal` and
+`checkAccount`, as a JS library and as an MCP server, so any agent can run them
+before it acts. The delegate is a council member whose only key can call
+`act_proposal` on one DAO.
+
+```mermaid
+flowchart TB
+    N["new proposal on the DAO"] --> G["guard: checkProposal()<br/>decode + 9 checks"]
+    G --> Q1{"any critical or high flag,<br/>or anything unknown?"}
+    Q1 -->|yes| H["escalate to a human<br/>no vote · decision logged"]
+    Q1 -->|no| Q2{"kind and amount allowed<br/>by agent/policy.json?"}
+    Q2 -->|no| H
+    Q2 -->|yes| S["vote approve<br/>own FunctionCall key:<br/>act_proposal on one DAO only"]
+    S --> HU["a human casts<br/>the second vote (2 of 2)"]
+```
+
+`agent/policy.json` allows `ChangeConfig` and native-NEAR `Transfer` up to
+0.5 NEAR whose description names the amount. Everything else escalates. Kinds
+rated critical or high are refused even if listed.
+
+---
 
 ## Tools
 
@@ -125,23 +430,27 @@ also prints the same transaction as a `near-cli` command.
 | `node tools/demo-dao.mjs <you.near>` | prints the transactions of the demo-DAO opt-out test (spec §16.5). Read-only: you sign them yourself |
 | `node tools/receipts.mjs <tx> <signer> --step 5\|9` | judges that test from a transaction's receipts |
 | `node tools/capture-fixtures.mjs` | re-records the mainnet responses the tests replay |
+| `node tools/seed.mjs` | records the answers the account and docket pages show before their live read |
 | `node guard/mcp.mjs` | Docket's two checks, `check_proposal` and `check_account`, as MCP tools over stdio (spec §17.1) |
 | `node agent/delegate.mjs --account <delegate.near> [--dry-run]` | the delegate (spec §17.2): checks each new proposal and votes only on a clean one that `agent/policy.json` allows, signing with its own FunctionCall key from the OS keychain; otherwise it escalates to a human. `--dry-run` signs nothing |
 | `node tools/guard-setup.mjs [--pre T<n>]` | prints the delegate's setup and demo transactions T1–T9, with a read-only pre-check for each |
 
+---
+
 ## What has been run on mainnet
 
-On 2026-11-06 Docket created `docket-demo.sputnik-dao.near`, opted it out, and
-approved the same `UpgradeSelf` twice. With `auto_update: false` the factory's
-update was rejected (`ERR_MUST_BE_SELF_OR_FACTORY`); with `true` it ran. Every
-transaction is listed in the spec, §16.5. Signing an opt-out through a browser
-wallet has not been run yet; the `near-cli` path has.
+### The opt-out, tested on a demo DAO
 
-Before this repository was public, the finding went to NEAR security (asked to
-forward it to the sputnik-dao-contract maintainers), Meta Pool and Stader.
-LiNEAR has been asked for a private security contact and has not yet been sent
-the details. [REPORT.md](REPORT.md) has the text that was sent, to whom, when,
-and every reply.
+On 2026-11-06 Docket created `docket-demo.sputnik-dao.near`, opted it out, and
+approved the same `UpgradeSelf` twice:
+
+| `auto_update` | the factory's update | transaction |
+|---|---|---|
+| `false` | **rejected** (`ERR_MUST_BE_SELF_OR_FACTORY`) | [`772n4ZWM…`](https://nearblocks.io/txns/772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS) |
+| `true` | **ran** | [`EZw51V5k…`](https://nearblocks.io/txns/EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b) |
+
+Every transaction is listed in the spec, §16.5. Signing an opt-out through a
+browser wallet has not been run yet; the `near-cli` path has.
 
 ### The delegate, on the demo DAO
 
@@ -167,6 +476,36 @@ test)", were put to it:
 
 Every transaction of the setup and the demo, including three first attempts at
 #7's vote that never reached the chain, is in the spec, §17.5.
+
+### Reported before publishing
+
+Before this repository was public, the finding went to NEAR security (asked to
+forward it to the sputnik-dao-contract maintainers), Meta Pool and Stader.
+LiNEAR has been asked for a private security contact and has not yet been sent
+the details. [REPORT.md](REPORT.md) has the text that was sent, to whom, when,
+and every reply.
+
+---
+
+## Repository layout
+
+```
+docket/
+├── ARCHITECTURE.md      the spec: every claim, its command, its date; §12 corrections
+├── REPORT.md            what was reported, to whom, when, and every reply
+├── graph.json           the committed census (tools/crawl.mjs), regenerable
+├── web/
+│   ├── *.html           account, docket, register, optout (+ the static homepage)
+│   └── assets/          the logic: rpc, resolve, decode, lint, value, optout, census, badge, …
+├── app/                 the homepage: React + Vite, renders only; pinned lockfile
+├── tools/               verify, crawl, demo-dao, receipts, capture-fixtures, seed, guard-setup
+├── guard/               @docket/guard: checkProposal, checkAccount, and the MCP server
+├── agent/               the delegate, policy.json, decision logs
+├── test/                node --test suites, replaying recorded mainnet responses
+└── docs/screenshots/    the images in this README
+```
+
+---
 
 ## How this was built
 
