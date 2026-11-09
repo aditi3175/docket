@@ -56,6 +56,7 @@
 import { createRpc } from './assets/rpc.js';
 import { accountReport, valueAtStake, explainCode, diagramOf, FIX, CHECKED_BUILD } from './assets/account-view.js';
 import { fetchDefiLlama } from './assets/value.js';
+import { recall, remember, sameAnswer, loadSeed } from './assets/memo.js';
 import { SOURCE } from './assets/source.js';
 import { createPath, keyGlyph } from './assets/path.js';
 import { census } from './assets/census.js';
@@ -68,6 +69,17 @@ const el = (tag, text, cls) => { const e = document.createElement(tag); if (text
 const link = (href, text) => { const a = el('a', text); a.href = href; return a; };
 const idspan = (text) => el('span', text, 'id');
 const prose = el('div', undefined, 'prose');
+// I1: the line above every answer says where it came from and when it was read
+const hm = (iso) => `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`;
+function fresh(text, cls = '') {
+  let f = out.querySelector(':scope > .fresh');
+  if (!f) { f = el('p', undefined, 'fresh'); out.prepend(f); }
+  f.className = `fresh ${cls}`.trim(); f.replaceChildren(el('i'), el('span', text));
+}
+const recalledText = (m) => (m.source === 'recorded'
+  ? `Recorded ${hm(m.readAt)}: Docket's example, shown while it reads NEAR mainnet live…`
+  : `Your last read, ${hm(m.readAt)}, shown while Docket reads NEAR mainnet live…`);
+
 const section = (title) => { const s = el('section'); s.append(el('h2', title)); prose.append(s); return s; };
 const para = (s, ...parts) => { const p = el('p'); for (const x of parts) p.append(typeof x === 'string' ? document.createTextNode(x) : x); s.append(p); return p; };
 
@@ -229,15 +241,23 @@ function render(r) {
 // is drawn as soon as it lands; the value fills in when DefiLlama does, never before (I2: "reading", not a number).
 let llama = null; const llamaP = fetchDefiLlama().then((l) => (llama = l));
 let seq = 0;
+const seedP = loadSeed();
 async function run(id) {
   const me = ++seq;
   history.replaceState(null, '', `?account=${encodeURIComponent(id)}`);
-  out.replaceChildren(el('p', `Reading ${id} from NEAR mainnet…`, 'loading'), el('div', undefined, 'skeleton'));
+  // an answer already read is drawn at once, labelled; the live read replaces it (memo.js)
+  const prior = recall('account', id, { seed: await seedP });
+  if (me !== seq) return;
+  if (prior) { if (llama) prior.report.value = valueAtStake(id, llama); render(prior.report); fresh(recalledText(prior), 'is-recalled'); }
+  else out.replaceChildren(el('p', `Reading ${id} from NEAR mainnet…`, 'loading'), el('div', undefined, 'skeleton'));
   try {
+    const readAt = new Date().toISOString();
     const r = await accountReport(rpc, id, { llama: llama ?? { status: 'reading' } });
     if (me !== seq) return;
     if (llama && r.value?.status === 'reading') r.value = valueAtStake(r.account, llama);
-    render(r);
+    remember('account', id, r, readAt);
+    if (prior && sameAnswer(prior.report, r)) { updateValue(r); fresh(`Live: read from NEAR mainnet ${hm(readAt)}, the same as the answer shown before.`, 'is-live'); }
+    else { render(r); fresh(prior ? `Live: read from NEAR mainnet ${hm(readAt)}. It differs from the answer shown before, which is replaced.` : `Live: read from NEAR mainnet ${hm(readAt)}.`, 'is-live'); }
     if (r.value?.status === 'reading') llamaP.then((l) => { if (me === seq) { r.value = valueAtStake(r.account, l); updateValue(r); } });
   } catch (e) { if (me === seq) out.replaceChildren(el('p', `Unknown: the page failed while reading (${e?.message ?? e}).`, 'lede2 is-unknown')); }
 }

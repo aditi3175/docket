@@ -58,6 +58,7 @@ import { createRpc } from './assets/rpc.js';
 import { docketReport, headerSentence, policySentences, PAGE } from './assets/docket-view.js';
 import { explainCode } from './assets/account-view.js';
 import { census } from './assets/census.js';
+import { recall, remember, sameAnswer, loadSeed } from './assets/memo.js';
 import { startMotion } from './assets/motion.js';
 startMotion();
 
@@ -73,6 +74,16 @@ function withIds(text, cls = '') {
   String(text).split(ID).forEach((t, i) => { if (!t) return; if (i % 2) { const x = el('span', t, 'id clip'); x.title = t; e.append(x); } else e.append(document.createTextNode(t)); });
   return e;
 }
+// I1: the line above every answer says where it came from and when it was read
+const hm = (iso) => `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`;
+function fresh(text, cls = '') {
+  let f = out.querySelector(':scope > .fresh');
+  if (!f) { f = el('p', undefined, 'fresh'); out.prepend(f); }
+  f.className = `fresh ${cls}`.trim(); f.replaceChildren(el('i'), el('span', text));
+}
+const recalledText = (m) => (m.source === 'recorded'
+  ? `Recorded ${hm(m.readAt)}: Docket's example, shown while it reads NEAR mainnet live…`
+  : `Your last read, ${hm(m.readAt)}, shown while Docket reads NEAR mainnet live…`);
 const field = (label, value, mono) => { const d = el('div', undefined, 'field'); d.append(el('span', label, 'k'), el('span', value, mono ? 'v id' : 'v')); return d; };
 
 // One proposal: what the members read, beside what it does, with the flags in the margin. That
@@ -184,12 +195,26 @@ function render(r) {
   if (r.unknowns.length) { const s = el('section', undefined, 'prose'); s.append(el('h2', 'Reads that failed')); const u = el('ul'); for (const x of r.unknowns) u.append(el('li', x, 'unknown-text')); s.append(u); out.append(s); }
 }
 
+const seedP = loadSeed();
+let seq = 0;
 async function run(dao, from = null, limit = PAGE) {
+  const me = ++seq;
   const qs = new URLSearchParams({ dao }); if (from !== null) { qs.set('from', from); qs.set('limit', limit); }
   history.replaceState(null, '', `?${qs}`);
-  out.replaceChildren(el('p', `Reading ${dao} from NEAR mainnet…`, 'loading'), el('div', undefined, 'skeleton'));
-  try { render(await docketReport(rpc, dao, from === null ? {} : { from, limit })); }
-  catch (e) { out.replaceChildren(el('p', `Unknown: the page failed while reading (${e?.message ?? e}).`, 'lede2 is-unknown')); }
+  // an answer already read is drawn at once, labelled; the live read replaces it (memo.js)
+  const key = from === null ? `${dao}||` : `${dao}|${from}|${limit}`;
+  const prior = recall('docket', key, { seed: await seedP });
+  if (me !== seq) return;
+  if (prior) { render(prior.report); fresh(recalledText(prior), 'is-recalled'); }
+  else out.replaceChildren(el('p', `Reading ${dao} from NEAR mainnet…`, 'loading'), el('div', undefined, 'skeleton'));
+  try {
+    const readAt = new Date().toISOString();
+    const r = await docketReport(rpc, dao, from === null ? {} : { from, limit });
+    if (me !== seq) return;
+    remember('docket', key, r, readAt);
+    if (prior && sameAnswer(prior.report, r)) fresh(`Live: read from NEAR mainnet ${hm(readAt)}, the same as the answer shown before.`, 'is-live');
+    else { render(r); fresh(prior ? `Live: read from NEAR mainnet ${hm(readAt)}. It differs from the answer shown before, which is replaced.` : `Live: read from NEAR mainnet ${hm(readAt)}.`, 'is-live'); }
+  } catch (e) { if (me === seq) out.replaceChildren(el('p', `Unknown: the page failed while reading (${e?.message ?? e}).`, 'lede2 is-unknown')); }
 }
 const num = (v, d) => (v !== null && /^\d+$/.test(v) ? Number(v) : d);
 document.getElementById('pick').addEventListener('submit', (e) => { e.preventDefault(); run(document.getElementById('dao').value.trim()); });

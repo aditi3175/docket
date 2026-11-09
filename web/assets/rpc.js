@@ -30,6 +30,7 @@ const DEFAULTS = {
   endpoints: ENDPOINTS,
   concurrency: 6,        // §9: 24 trips the FastNear limiter; 6 does not
   timeoutMs: 10_000,
+  firstTimeoutMs: 2_500, // a first attempt that has not answered by now is stalled (answers take 0.3-1.4 s, measured 2026-11-09): retry
   cacheMs: 8_000,
   attemptsPerEndpoint: 2,
   backoffBaseMs: 300,
@@ -93,11 +94,11 @@ export function createRpc(opts = {}) {
     try { return await fn(); } finally { active--; waiting.shift()?.(); }
   }
 
-  async function once(endpoint, payload) {
+  async function once(endpoint, payload, timeoutMs = o.timeoutMs) {
     return withSlot(async () => {
       stats.requests++;
       const ctl = new AbortController();
-      const timer = setTimeout(() => ctl.abort(), o.timeoutMs);
+      const timer = setTimeout(() => ctl.abort(), timeoutMs);
       try {
         const res = await doFetch(endpoint, {
           method: 'POST',
@@ -111,7 +112,7 @@ export function createRpc(opts = {}) {
         return classify(body, payload.params.request_type);
       } catch (e) {
         if (e instanceof Transport) throw e;
-        throw new Transport(ctl.signal.aborted ? `timeout ${o.timeoutMs}ms` : `network: ${e?.message ?? e}`);
+        throw new Transport(ctl.signal.aborted ? `timeout ${timeoutMs}ms` : `network: ${e?.message ?? e}`);
       } finally {
         clearTimeout(timer);
       }
@@ -136,7 +137,7 @@ export function createRpc(opts = {}) {
     for (const endpoint of order()) {
       for (let i = 0; i < o.attemptsPerEndpoint; i++) {
         try {
-          return await once(endpoint, payload);
+          return await once(endpoint, payload, i === 0 ? Math.min(o.firstTimeoutMs, o.timeoutMs) : o.timeoutMs);
         } catch (e) {
           if (!(e instanceof Transport)) throw e; // a bug, not a network condition
           attempts.push({ endpoint, reason: e.message });

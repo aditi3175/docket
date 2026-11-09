@@ -90,7 +90,7 @@ test('I2: unknown is not cached — the next read retries', async () => {
 test('timeout is a transport failure (10s default; shortened here)', async () => {
   // SYNTHETIC: a fetch that never resolves until aborted.
   const hang = (_, init) => new Promise((_, rej) => init.signal.addEventListener('abort', () => rej(new DOMException('aborted', 'AbortError'))));
-  const rpc = createRpc({ fetch: hang, sleep: noSleep, timeoutMs: 20 });
+  const rpc = createRpc({ fetch: hang, sleep: noSleep, timeoutMs: 20, firstTimeoutMs: 20 });
   const r = await rpc.viewAccount('stnear.sputnik-dao.near');
   assert.equal(r.status, 'unknown');
   assert.match(r.reason, /timeout 20ms/);

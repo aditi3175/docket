@@ -563,3 +563,9 @@ button:active, .button:active { transform: scale(.97); }
 @keyframes run { 0% { left: 0; opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } 100% { left: calc(100% - 9px); opacity: 0; } }
 @keyframes ring { 0% { box-shadow: 0 0 0 0 #24172240; } 100% { box-shadow: 0 0 0 10px #24172200; } }
 @keyframes pulse { 50% { opacity: .45; } }
+
+/* where the answer on screen came from and when it was read (memo.js, I1) */
+.fresh { display: flex; gap: .55rem; align-items: center; font-size: .84rem; color: var(--slate); margin: 0 0 .9rem; }
+.fresh i { flex: none; width: .5rem; height: .5rem; border-radius: 50%; border: 1.5px dashed var(--slate); }
+.fresh.is-live i { border: 0; background: var(--navy); }
+@media (prefers-reduced-motion: no-preference) { .fresh.is-recalled i { animation: pulse 1.1s ease-in-out infinite; } }

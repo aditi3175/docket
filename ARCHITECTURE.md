@@ -868,7 +868,17 @@ Failover order: FastNear → `rpc.mainnet.near.org` → `near.drpc.org`. Concurr
 capped at 6 (24 trips the limiter; 6 does not). Backoff, failover, 8s cache for
 identical reads. A 429 (HTTP, or `-429` in the body) fails over at once rather
 than backing off, and that endpoint moves to the back of the order for 5 s; all
-three are still tried before a read is unknown. **An unreadable account is recorded as unknown and retried,
+three are still tried before a read is unknown. A first attempt that has not
+answered in 2.5 s is treated as stalled and retried with the full 10 s (answers
+take 0.3–1.4 s; on 2026-11-09 six first requests to FastNear hung until the 10 s
+timeout and held every slot).
+
+**Answers shown before the live read (`memo.js`).** The account and docket pages
+draw an answer already read at once and replace it with the live read: one this
+browser read in the last 24 h, or, for the pages' own examples, one recorded by
+`tools/seed.mjs` into `web/assets/seed.json`. Each is labelled with where it came
+from and when it was read (I1); only complete answers are kept or seeded (I2);
+amounts come back as BigInt (I10). `test/memo.test.mjs`. **An unreadable account is recorded as unknown and retried,
 never counted as a value** — §3.3 depends on that distinction.
 
 ---

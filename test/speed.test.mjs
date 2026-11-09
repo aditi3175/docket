@@ -78,3 +78,16 @@ test('I2: while DefiLlama is still reading, the value is "reading", never a numb
   assert.equal(v.usd, undefined);
   assert.match(v.label, /reading DefiLlama/);
 });
+
+test('§9: a stalled first attempt is cut at firstTimeoutMs and retried; the retry gets the full timeout (SYNTHETIC stall)', async () => {
+  let n = 0; const seen = [];
+  const inner = replayFetch();
+  const f = (ep, init) => { n++; seen.push(ep); if (n === 1) return new Promise((_, rej) => init.signal.addEventListener('abort', () => rej(new DOMException('aborted', 'AbortError')))); return inner(ep, init); };
+  const rpc = createRpc({ fetch: f, sleep: noSleep, firstTimeoutMs: 20 });
+  const t0 = Date.now();
+  const r = await rpc.viewFunction('v2.ref-finance.near', 'get_owner');
+  assert.equal(r.status, 'ok');
+  assert.deepEqual(seen, [ENDPOINTS[0], ENDPOINTS[0]]);
+  assert.ok(Date.now() - t0 < 2_000);
+  assert.equal(rpc.options.timeoutMs, 10_000);
+});
