@@ -54,6 +54,7 @@ import { planOptOut, confirmOptOut, screenModel } from './assets/optout.js';
 import { loadWalletSelector, submitWithWallet, addProposalTransaction, WALLET_SELECTOR_VERSION } from './assets/wallet.js';
 import { census } from './assets/census.js';
 import { startMotion } from './assets/motion.js';
+import { drawLock } from './assets/diagrams.js';
 startMotion();
 
 const rpc = createRpc();
@@ -67,21 +68,18 @@ const stat = (k, v, cls) => { const d = el('div', undefined, 'stat-cell'); d.app
 function stepper(plan) {
   const passers = plan.approve?.passers ?? [];
   const vote = passers.length ? passers.map((x) => `${x.k} of ${x.n} in "${x.role}"`).join(' or ') : 'what its policy requires';
+  // the fourth lock: open while get_factory_info reads true, shut once it reads false (the state is the read)
   const steps = [
-    ['Read the DAO', plan.current ? `auto_update: ${plan.current.autoUpdate}` : 'unknown'],
-    ['Draft the proposal', 'FactoryInfoUpdate'],
-    ['Members vote', vote],
-    ['Re-read the chain', 'auto_update: false'],
+    { title: 'Read the DAO', sub: plan.current ? `get_factory_info reads auto_update: ${plan.current.autoUpdate}` : 'unknown: get_factory_info unread' },
+    { title: 'Draft the proposal', sub: 'FactoryInfoUpdate, auto_update: false', here: plan.status === 'draft' ? 'you are here' : null },
+    { title: 'Members vote', sub: vote },
+    { title: 'Re-read the chain', sub: 'confirmed only when it reads auto_update: false' },
   ];
   const at = plan.status === 'opted-out' ? steps.length : plan.status === 'draft' ? 1 : 0;
-  const ol = el('ol', undefined, `stepper${plan.status === 'opted-out' ? ' complete' : ''}`);
-  steps.forEach(([t, sub], i) => {
-    const li = el('li', undefined, i < at ? 'done' : i === at ? 'here' : '');
-    li.append(el('b', t), el('span', sub));
-    if (i === at && plan.status === 'draft') li.append(el('em', 'you are here'));
-    ol.append(li);
-  });
-  return ol;
+  const state = plan.status === 'opted-out' || plan.current?.autoUpdate === false ? 'shut' : plan.current?.autoUpdate === true ? 'open' : 'unknown';
+  const host = el('div');
+  drawLock(host, { state, steps, at, dao: plan.dao });
+  return host;
 }
 
 function render(plan) {

@@ -33,6 +33,11 @@
     <p class="intro"><strong id="floor"></strong> First the DAOs that administer a protocol Docket has mapped, by the value they administer; then every other DAO by its own NEAR balance. “No-vote roots” looks one hop out: the factory, keys on the DAO, members who can pass a code or rule change alone. Each DAO links to the whole path.</p>
     <p id="prov" class="provenance recorded-note"></p>
   </section>
+  <figure class="tm-fig">
+    <figcaption><b>Where the value is, and who can move it</b><span id="tm-cap">Each DAO that administers a protocol Docket has mapped, sized by that protocol's NEAR-only TVL and coloured by its auto_update. Click one for its path.</span></figcaption>
+    <div id="tm" class="tm-host"><p class="loading">Reading DefiLlama…</p></div>
+    <p class="tm-leg"><span><i class="novote"></i>auto_update: true, the factory can replace the code without a vote</span><span><i class="optedout"></i>auto_update: false, opted out</span><span><i class="unknown"></i>unknown</span></p>
+  </figure>
   <div class="tools">
     <label>Filter <input id="q" placeholder="part of a DAO name" spellcheck="false" autocomplete="off" autocapitalize="off"></label>
     <label class="check"><input type="checkbox" id="onlyTrue"> Only auto_update: true</label>
@@ -56,6 +61,7 @@ import { fetchDefiLlama } from './assets/value.js';
 import { census } from './assets/census.js';
 import { registerRows, FLOOR } from './assets/register-view.js';
 import { startMotion } from './assets/motion.js';
+import { drawTreemap } from './assets/diagrams.js';
 startMotion();
 
 const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
@@ -126,6 +132,7 @@ function build(graph, llama, factoryKeys) {
 const graph = await fetch('../graph.json').then((r) => (r.ok ? r.json() : null)).catch(() => null);
 if (!graph) {
   document.getElementById('stats').textContent = 'Census unknown';
+  document.getElementById('tm').replaceChildren(el('p', 'Unknown: graph.json could not be loaded.', 'unknown-text'));
   out.replaceChildren(el('p', 'Unknown: graph.json could not be loaded. Serve the repository root, so that ../graph.json is reachable, or run node tools/crawl.mjs.', 'unknown-text'));
   document.getElementById('footer-census').textContent = 'Census: unknown (graph.json unread)';
 } else {
@@ -150,6 +157,15 @@ if (!graph) {
   pending = { llama: false, keys: false };
   build(graph, llama, keys.status === 'ok' ? keys.keys.filter((k) => k.kind === 'FullAccess').length : 'unknown');
   setProv(llama); prov.classList.add('live');
+  // the treemap: one tile per mapped DAO with a DefiLlama value (the same figures as the table's column)
+  const tm = document.getElementById('tm');
+  const items = reg.rows.filter((r) => /^\$[\d,]+$/.test(r.administered)).map((r) => {
+    const usd = Number(r.administered.slice(1).replace(/,/g, ''));
+    return { value: usd, label: usd >= 1e6 ? `$${(usd / 1e6).toFixed(1)}M` : r.administered, sub: r.protocol, id: r.dao, title: `${r.dao} · ${r.protocol} · ${r.administered} · auto_update: ${r.autoUpdate}`,
+      kind: r.autoUpdate === 'true' ? 'novote' : r.autoUpdate === 'false' ? 'optedout' : 'unknown', href: `account.html?account=${encodeURIComponent(r.dao)}` };
+  });
+  if (items.length) { tm.replaceChildren(); drawTreemap(tm, items); }
+  else tm.replaceChildren(el('p', `Unknown: no DefiLlama value was read (${llama.status === 'ok' ? 'no mapped protocol listed' : llama.reason}).`, 'unknown-text'));
 }
 </script>
 </body>

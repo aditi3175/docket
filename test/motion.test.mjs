@@ -28,3 +28,19 @@ test('every page and the homepage start motion.js', () => {
   }
   assert.match(readFileSync(new URL('../app/src/Home.jsx', import.meta.url), 'utf8'), /startMotion\(\)/);
 });
+
+test('diagrams.js: text only through textContent, never markup; each page draws its own diagram', () => {
+  const s = src('diagrams.js');
+  assert.doesNotMatch(s, /innerHTML|outerHTML|insertAdjacentHTML|document\.write/);
+  const uses = { 'account.html': 'drawTower', 'register.html': 'drawTreemap', 'optout.html': 'drawLock', 'index.html': 'drawWaffle' };
+  for (const [page, fn] of Object.entries(uses)) {
+    const html = readFileSync(new URL(`../web/${page}`, import.meta.url), 'utf8');
+    assert.match(html, new RegExp(String.raw`import \{[^}]*${fn}[^}]*\} from '\./assets/diagrams\.js'`), page);
+  }
+  assert.match(readFileSync(new URL('../app/src/Home.jsx', import.meta.url), 'utf8'), /drawWaffle\(ref\.current, records, counts\)/);
+});
+
+test('I20: the waffle draws the same graph.json records the counts come from, on both homepages', () => {
+  assert.match(readFileSync(new URL('../web/index.html', import.meta.url), 'utf8'), /drawWaffle\(\$\('waffle'\), recs, k\)/);
+  assert.match(readFileSync(new URL('../app/src/Home.jsx', import.meta.url), 'utf8'), /<Waffle records=\{c\.records\} counts=\{k\} \/>/);
+});

@@ -767,8 +767,14 @@ The homepage is a vault. It has one keyhole per full-access key on
 `sputnik-dao.near`, counted from the live key read. When the keys turn, the
 "DAO vote" light reads bypassed and the door opens on the value at stake. An
 `auto_update: false` replay shows the mainnet opt-out test: the update is
-rejected and the door stays shut. Below the vault, the census is drawn as one dot
-per DAO. Recorded values (`RECORDED`, tested equal to the fixtures) show at once,
+rejected and the door stays shut. Below the vault, the census is drawn as one square
+per DAO, in three labelled blocks. Each tool page has one diagram of its own, drawn by
+`web/assets/diagrams.js` from answers already read: the account path as a tower (the
+value on top, each account a floor, the keys as the foundation, a crack from the keys
+up to the account), the docket's flags as stamps on each proposal, the register's
+administered value as a treemap coloured by `auto_update`, and the opt-out as the
+fourth lock beside the factory's three keys, shut only when `get_factory_info` reads
+false. Recorded values (`RECORDED`, tested equal to the fixtures) show at once,
 labelled as recorded, and live reads replace them as they land. The page's
 styles are `web/assets/home.css`, shared with the static `web/index.html`. The
 commit before the React switch is tagged `static-site-backup`.

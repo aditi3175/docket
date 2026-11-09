@@ -58,7 +58,7 @@ import { accountReport, valueAtStake, explainCode, diagramOf, FIX, CHECKED_BUILD
 import { fetchDefiLlama } from './assets/value.js';
 import { recall, remember, sameAnswer, loadSeed } from './assets/memo.js';
 import { SOURCE } from './assets/source.js';
-import { createPath, keyGlyph } from './assets/path.js';
+import { drawTower } from './assets/diagrams.js';
 import { census } from './assets/census.js';
 import { startMotion } from './assets/motion.js';
 startMotion();
@@ -83,42 +83,21 @@ const recalledText = (m) => (m.source === 'recorded'
 const section = (title) => { const s = el('section'); s.append(el('h2', title)); prose.append(s); return s; };
 const para = (s, ...parts) => { const p = el('p'); for (const x of parts) p.append(typeof x === 'string' ? document.createTextNode(x) : x); s.append(p); return p; };
 
-// One path, drawn with the shared component at full size: [value] -> accounts -> [keys]. The boxes enter
-// in order and each edge draws in after them; a signal runs along every no-vote edge. All of it is drawn
-// from reads already resolved: the motion is the entrance, not a wait.
+// One path as a tower: the value on top, each account a floor, the keys as the foundation, and a crack
+// from the keys up to the account asked about (every hop of a path is reached with no vote). Drawn from
+// reads already resolved: the motion is the entrance, not a wait (diagrams.js).
 const drawn = [];
+function valueNode(value) {
+  if (value?.status === 'reading') return { kind: 'value', label: 'reading DefiLlama…', sub: null, state: 'unknown' };
+  if (value?.status === 'ok') return { kind: 'value', label: value.label.split(': ').pop(), sub: `${value.label.split(': ')[0]} · DefiLlama, NEAR-only TVL`, state: 'ok' };
+  if (value?.status === 'unknown') return { kind: 'value', label: 'value unknown', sub: 'DefiLlama unread', state: 'unknown' };
+  return { kind: 'value', label: 'not valued', sub: 'Docket has no value for it', state: 'unknown' };
+}
 function drawPath(host, g, value) {
-  const dm = diagramOf(g, value);
-  const cols = [];
-  dm.nodes.forEach((n, j) => {
-    if (j > 0 && dm.edges[j - 1].noVote) cols.push('minmax(2.5rem, 1fr)');
-    cols.push(n.kind === 'value' ? 'minmax(6.25rem, .7fr)' : n.kind === 'keys' ? 'minmax(6rem, .6fr)' : 'minmax(14.25rem, 1fr)');
-  });
-  host.classList.add('large');
-  host.classList.add('enter');
-  const p = createPath(host, { columns: cols.join(' ') });
-  drawn.push({ p, g });
-  let col = 0;
-  dm.nodes.forEach((n, j) => {
-    if (j > 0 && dm.edges[j - 1].noVote) col++;
-    col++;
-    const out = dm.edges[j];
-    const opts = { col, row: 1, mrow: j + 1, state: 'live' };
-    if (n.kind === 'value') Object.assign(opts, { cls: `value${value?.status === 'unknown' ? '' : ''}`, title: n.label, sub: n.sub ?? (value?.status === 'unknown' ? 'DefiLlama unread' : 'Docket has no value for it'), state: value?.status === 'unknown' ? 'unknown' : 'live' });
-    else if (n.kind === 'keys') Object.assign(opts, { cls: 'keys', sub: `${n.label}, ${n.sub}` });
-    else {
-      const into = dm.edges[j - 1];
-      const sub = j === 1 ? 'the account you asked about' : into?.noVote ? 'changes the account before it, with no vote' : into?.text;
-      Object.assign(opts, { cls: 'box', title: n.label, mono: true, sub, href: `account.html?account=${encodeURIComponent(n.label)}`, note: out?.noVote ? out.text : undefined, noteCls: 'novote' });
-    }
-    p.addNode(`n${j}`, opts);
-  });
-  const glyphs = el('div', undefined, 'glyphs');
-  const shown = Math.min(g.keys.length, 6);
-  for (let k = 0; k < shown; k++) glyphs.append(keyGlyph());
-  if (g.keys.length > shown) glyphs.append(el('span', `+${g.keys.length - shown}`, 'small'));
-  p.setNode(`n${dm.nodes.length - 1}`, { children: [glyphs] });
-  dm.edges.forEach((e, j) => p.addEdge(`e${j}`, `n${j}`, `n${j + 1}`, { kind: e.noVote ? 'novote' : 'plain', state: 'live', label: e.noVote ? 'no vote' : '', drawIn: 420 + j * 260 }));
+  const dm = diagramOf(g, value); const v = valueNode(value); dm.nodes[0] = v;
+  const k = dm.nodes.at(-1);
+  drawTower(host, dm, { valueState: v.state, keyCount: g.keys.length, keyNote: `${k.label}, ${k.sub}, on ${g.path.at(-1)}` });
+  drawn.push(host);
 }
 
 function stakeLine(value) {
@@ -130,9 +109,11 @@ function stakeLine(value) {
 // DefiLlama landed after the path was drawn: the value changes where it is shown, nothing else moves
 function updateValue(r) {
   out.querySelector('.stake')?.replaceWith(stakeLine(r.value));
-  for (const { p, g } of drawn) {
-    const n = diagramOf(g, r.value).nodes[0];
-    if (n?.kind === 'value') p.setNode('n0', { title: n.label, sub: n.sub ?? (r.value?.status === 'unknown' ? 'DefiLlama unread' : 'Docket has no value for it'), state: r.value?.status === 'unknown' ? 'unknown' : 'live' });
+  const v = valueNode(r.value);
+  for (const host of drawn) {
+    const f = host.querySelector('.floor.value'); if (!f) continue;
+    f.classList.toggle('is-unknown', v.state !== 'ok');
+    f.replaceChildren(el('b', v.label, 'fv')); if (v.sub) f.append(el('small', v.sub, 'fs'));
   }
 }
 

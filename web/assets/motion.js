@@ -9,9 +9,9 @@
 export const REVEAL = [
   // tool pages
   '.lede2', '.stake', '.path-title', '.path-scroll', '.prose > section', '.banner', '.step', '.proposal',
-  '.stepper', '.census-bar', '.lanes', '.tl > li', '.stats', '.tools', '.table-wrap',
+  '.census-bar', '.lanes', '.tl > li', '.stats', '.tools', '.table-wrap', '.tm-fig',
   // homepage
-  '.sh', '.dep', '.share', '.share-l', '.keyring .krow', '.flow .step', '.field-wrap', '.lg', '.card', '.why > div',
+  '.sh', '.dep', '.share', '.share-l', '.keyring .krow', '.flow .step', '.census-foot', '.card', '.why > div',
 ].join(', ');
 
 export function startMotion({ root = document, selector = REVEAL } = {}) {

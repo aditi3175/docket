@@ -101,7 +101,7 @@ function renderProposal(p) {
   const does = el('section', undefined, 'p-does');
   does.append(el('h3', 'What it does'));
   does.append(field('Kind', `${p.kind.name}, risk ${p.kind.risk}`));
-  if (p.receiver) does.append(field('Receiver', p.receiver, true));
+  if (p.receiver) { const f = field('Receiver', p.receiver, true); if (p.flags.some((x) => x.check === 'named-receiver' || x.check === 'silent-reach')) f.lastChild.classList.add('unnamed'); does.append(f); }
   if (p.amount) does.append(field('Amount', p.amount));
   if (p.hash) does.append(field('Code hash', p.hash, true));
   if (p.member) does.append(field('Member', `${p.member} → role "${p.role}"`, true));
@@ -116,8 +116,9 @@ function renderProposal(p) {
   margin.setAttribute('aria-label', `Flags on #${p.id}`);
   if (p.flags.length) {
     margin.append(el('h3', `${p.flags.length} flag${p.flags.length > 1 ? 's' : ''}`));
-    for (const f of p.flags) { const d = el('div', undefined, `flag sev-${f.severity}`); d.append(el('span', f.severity, 'sev'), el('span', f.check, 'check'), withIds(f.detail, 'detail')); margin.append(d); }
-  } else margin.append(el('h3', 'No flag'));
+    // each flag lands on the document as an inspector's stamp: severity and check, then what it found
+    p.flags.forEach((f, i) => { const d = el('div', undefined, `flag stamp sev-${f.severity}`); d.style.setProperty('--rot', `${i % 2 ? 2.5 : -3.5}deg`); d.style.setProperty('--k', String(i)); d.append(el('span', `${f.severity} · ${f.check}`, 'sev'), withIds(f.detail, 'detail')); margin.append(d); });
+  } else margin.append(el('h3', 'No flag'), el('p', 'No check fired. That is not a clearance: Docket flags and never clears.', 'note'));
   if (p.note) margin.append(el('p', p.note, 'note'));
   for (const u of p.unknowns) margin.append(el('p', `unknown: ${u}`, 'note unknown-text'));
 

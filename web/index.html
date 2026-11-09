@@ -107,21 +107,14 @@
 <section class="s" id="doors"><div class="wrap">
   <div class="sh"><div class="n">03 · Every door like this one</div><div>
     <h2 id="doors-h">Most DAOs on the factory have the same lock.</h2>
-    <p id="doors-p">One dot per DAO created by <span class="id">sputnik-dao.near</span>, from the dated census in graph.json. Hover a dot for its account id; click it to read its proposals.</p>
+    <p id="doors-p">One square per DAO created by <span class="id">sputnik-dao.near</span>, from the dated census in graph.json. Hover a square for its account id; click it to read its proposals.</p>
   </div></div>
-  <div class="doors">
-    <div class="field-wrap"><canvas id="field" aria-label="Every DAO on the factory, by auto_update"></canvas><div id="tip"></div></div>
-    <div class="legend">
-      <div class="lg"><b class="novote" id="n-true">…</b><span><i style="background:var(--red)"></i>auto_update: true. The factory can replace the code without a vote.</span></div>
-      <div class="lg"><b class="optedout" id="n-false">…</b><span><i style="background:var(--violet)"></i>auto_update: false. Opted out.</span></div>
-      <div class="lg"><b id="n-unknown">…</b><span><i style="border:1.5px dashed #8b8794"></i><span id="unknown-text">Unknown.</span></span></div>
-      <div class="lg recount">
-        <span id="census-note">Reading the census…</span>
-        <a href="register.html">Every DAO in the register →</a>
-        <button type="button" class="btn" id="recount">Recount from the chain now (about 15 minutes)</button>
-        <span id="recount-out" aria-live="polite"></span>
-      </div>
-    </div>
+  <div id="waffle"><p class="unknown-text" id="waffle-wait">Reading the census…</p></div>
+  <div class="census-foot">
+    <span id="census-note">Reading the census…</span>
+    <a href="register.html">Every DAO in the register →</a>
+    <button type="button" class="btn" id="recount">Recount from the chain now (about 15 minutes)</button>
+    <span id="recount-out" class="census-live" aria-live="polite"></span>
   </div>
 </div></section>
 
@@ -184,6 +177,7 @@ import { liveCounter, census, pct } from './assets/census.js';
 import { nearTvlFrom } from './assets/value.js';
 import { SOURCE } from './assets/source.js';
 import { startMotion } from './assets/motion.js';
+import { drawWaffle } from './assets/diagrams.js';
 startMotion();
 
 const rpc = createRpc();
@@ -326,7 +320,7 @@ function drawDeposits() {
   }));
   const valued = S.rows.filter((r) => r.slug && r.autoUpdate === true && typeof r.usd === 'number');
   const ok = typeof S.lsTotal === 'number' && typeof S.exposedUsd === 'number';
-  $('share').replaceChildren(...(ok ? valued.map((r, i) => { const s = el('i'); s.style.width = `${(100 * r.usd) / S.lsTotal}%`; s.style.background = i % 2 ? 'linear-gradient(90deg,#c58f2a,#e0a93a)' : 'linear-gradient(90deg,#e0a93a,#ffd77a)'; return s; }) : []));
+  $('share').replaceChildren(...(ok ? [...valued.map((r) => { const s = el('i'); s.style.width = `${(100 * r.usd) / S.lsTotal}%`; const t = el('span'); t.append(el('b', r.name), document.createTextNode(` ${usdShort(r.usd)}`)); s.append(t); return s; }), (() => { const b = el('b', undefined, 'rest'); const t = el('span', 'rest'); t.append(el('em', ' of NEAR liquid staking')); b.append(t); return b; })()] : []));
   $('share-l').textContent = ok ? `${valued.map((r) => r.name).join(' + ')} = ${pct0(S.exposedUsd, S.lsTotal)} of ${usdShort(S.lsTotal)} NEAR liquid staking (DefiLlama, NEAR-only TVL)` : 'Share of NEAR liquid staking: unknown';
   const nx = S.rows.find((r) => !r.slug);
   $('share-r').textContent = nx ? `${nx.name}: staked NEAR, no USD figure` : '';
@@ -418,59 +412,22 @@ indexReport(rpc, { onRead }).then((r) => {
 new IntersectionObserver((es, o) => es.forEach((x) => { if (x.isIntersecting) { run(); o.disconnect(); } }), { threshold: 0.25 }).observe(frame);
 
 // ---------------- 03 census: I20, from graph.json records; a chain recount only on the reader's click ----------------
-const cv = $('field'); const cx = cv.getContext('2d'); const tip = $('tip');
-let cells = []; let hover = -1; let CW = 0; let CH = 0; let SZ = 14; let recs = [];
-const kindOf = (a) => (a === 'true' ? 't' : a === 'false' ? 'f' : 'u');
-function layout() {
-  const dpr = devicePixelRatio || 1; CW = cv.clientWidth; if (!CW) return;
-  const cols = Math.max(10, Math.floor((CW - 40) / 14)); SZ = (CW - 40) / cols; CH = Math.ceil(recs.length / cols) * SZ + 40;
-  cv.style.height = `${CH}px`; cv.width = CW * dpr; cv.height = CH * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  cells = recs.map((r, i) => ({ id: r.id, a: r.autoUpdate, k: kindOf(r.autoUpdate), x: 20 + (i % cols) * SZ + SZ / 2, y: 20 + Math.floor(i / cols) * SZ + SZ / 2 }));
-}
-function paint(t) {
-  cx.clearRect(0, 0, CW, CH);
-  for (let i = 0; i < cells.length; i++) {
-    const c = cells[i]; const r = SZ * 0.34;
-    if (c.k === 't') { cx.fillStyle = i === hover ? '#241722' : `rgba(179,38,30,${still ? 0.75 : 0.55 + 0.25 * Math.sin(t / 900 + i)})`; cx.beginPath(); cx.arc(c.x, c.y, r, 0, 7); cx.fill(); }
-    else if (c.k === 'f') { cx.fillStyle = i === hover ? '#241722' : '#6A3FB5'; cx.beginPath(); cx.arc(c.x, c.y, r + 1, 0, 7); cx.fill(); }
-    else { cx.strokeStyle = i === hover ? '#241722' : '#B3A4AE'; cx.setLineDash([2, 2]); cx.beginPath(); cx.arc(c.x, c.y, r, 0, 7); cx.stroke(); cx.setLineDash([]); }
-  }
-  if (!still) requestAnimationFrame(paint);
-}
-cv.addEventListener('mousemove', (e) => {
-  const b = cv.getBoundingClientRect(); const x = e.clientX - b.left; const y = e.clientY - b.top;
-  hover = cells.findIndex((c) => Math.abs(c.x - x) < SZ / 2 && Math.abs(c.y - y) < SZ / 2);
-  if (hover < 0) { tip.style.display = 'none'; return; }
-  const c = cells[hover];
-  tip.textContent = `${c.id} · ${c.a === 'true' || c.a === 'false' ? `auto_update: ${c.a}` : c.a === 'no-factory-info' ? 'no get_factory_info' : 'unread'}`;
-  tip.style.display = 'block'; tip.style.left = `${Math.min(c.x + 12, CW - tip.offsetWidth - 6)}px`; tip.style.top = `${Math.max(c.y - 34, 4)}px`;
-  if (still) paint(0);
-});
-cv.addEventListener('mouseleave', () => { hover = -1; tip.style.display = 'none'; if (still) paint(0); });
-cv.addEventListener('click', () => { if (hover >= 0) location.href = `docket.html?dao=${encodeURIComponent(cells[hover].id)}`; });
-addEventListener('resize', () => { layout(); if (still) paint(0); });
-
 async function counter() {
   try {
     const g = await fetch('../graph.json').then((r) => (r.ok ? r.json() : null));
     if (!g) throw new Error('graph.json not found');
-    recs = Object.values(g.daos);
+    const recs = Object.values(g.daos);
     const c = census(Object.values(g.daos));
     const when = g.crawl?.lastRunAt?.slice(0, 10) ?? 'undated';
-    const k = c.counts; const unknown = k['no-factory-info'] + k.unread;
-    $('n-true').textContent = k.true.toLocaleString('en-US');
-    $('n-false').textContent = k.false.toLocaleString('en-US');
-    $('n-unknown').textContent = unknown.toLocaleString('en-US');
-    $('unknown-text').textContent = `Unknown: ${k['no-factory-info']} have no get_factory_info, ${k.unread} could not be read.`;
+    const k = c.counts;
+    drawWaffle($('waffle'), recs, k); // one square per DAO, the same records as the counts (I20)
     put($('doors-h'), 'This is not one vault. ', el('span', `${k.true.toLocaleString('en-US')} of ${c.denominator.toLocaleString('en-US')}`, 'novote'), ' DAOs have the same lock.');
     $('census-note').textContent = `${pct(c.shareTrueOfAnswered)} of the ${c.answered.toLocaleString('en-US')} that answered read auto_update: true. Census ${when}${g.crawl?.complete ? '' : ', incomplete'}.`;
     $('footer-census').textContent = `Census ${when}${g.crawl?.complete ? '' : ' (incomplete)'}: ${c.denominator.toLocaleString('en-US')} DAOs`;
-    layout(); requestAnimationFrame(paint);
   } catch (e) {
-    for (const id of ['n-true', 'n-false', 'n-unknown']) { $(id).textContent = 'unknown'; $(id).className = 'unknown-text'; }
+    $('waffle').replaceChildren(el('p', 'Census unknown.', 'unknown-text'));
     $('census-note').textContent = `Census unknown: ${e.message}. Serve the repository root so ../graph.json is reachable.`;
     $('footer-census').textContent = 'Census: unknown (graph.json unread)';
-    cv.style.display = 'none';
   }
   const b = $('recount'); const live = $('recount-out');
   b.addEventListener('click', async () => {

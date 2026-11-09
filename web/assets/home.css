@@ -147,7 +147,7 @@ h1 .novote { font-style: italic; }
 .readout .novote { color: var(--red); } .readout .optedout { color: var(--violet); }
 
 /* ---------- sections ---------- */
-section.s { padding: 88px 0; border-bottom: 1px solid var(--line); }
+section.s { padding: 72px 0; border-bottom: 1px solid var(--line); }
 .sh { display: grid; grid-template-columns: 160px 1fr; gap: 32px; margin-bottom: 40px; }
 .sh .n { font: 400 15px var(--sans); color: var(--mute); padding-top: 10px; }
 .sh h2 { font: 400 clamp(32px, 3.4vw, 46px)/1.06 var(--serif); letter-spacing: -0.01em; max-width: 820px; text-wrap: balance; }
@@ -195,18 +195,6 @@ section.s { padding: 88px 0; border-bottom: 1px solid var(--line); }
 .flow .step > span { font: 400 22px/1.1 var(--serif); color: var(--mute); min-width: 22px; }
 .flow b { color: var(--ink); font-weight: 600; }
 
-.doors { display: grid; grid-template-columns: 1fr 280px; gap: 32px; align-items: start; }
-.field-wrap { position: relative; }
-#field { width: 100%; display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; cursor: crosshair; }
-#tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--paper); font: 500 12.5px var(--mono); padding: 6px 10px; border-radius: 4px; white-space: nowrap; display: none; }
-.legend { display: flex; flex-direction: column; }
-.lg { padding: 16px 0; border-bottom: 1px solid var(--line); }
-.lg:first-child { border-top: 1px solid var(--ink); }
-.lg b { display: block; font: 400 46px/1 var(--serif); }
-.lg span { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 14px; color: var(--ink-2); }
-.lg i { width: 10px; height: 10px; border-radius: 50%; flex: none; }
-.lg.recount { display: flex; flex-direction: column; gap: 10px; font-size: 14px; color: var(--ink-2); line-height: 1.5; border-bottom: 0; }
-
 .cards { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--ink); }
 .card { position: relative; padding: 22px 26px 4px 0; display: flex; flex-direction: column; }
 .card + .card { padding-left: 26px; border-left: 1px solid var(--line); }
@@ -232,7 +220,7 @@ footer a { color: var(--ink); }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01s !important; animation-duration: .01s !important; } }
 
-.hero > .wrap > *, .keys > *, .doors > *, .deposits > *, .cards > * { min-width: 0; }
+.hero > .wrap > *, .keys > *, .deposits > *, .cards > * { min-width: 0; }
 @media (max-width: 980px) {
   .top .wrap { display: flex; justify-content: space-between; }
   .chip { display: none; }
@@ -242,7 +230,7 @@ footer a { color: var(--ink); }
   .hero-text > * { order: 3; }
   .hero-text > .eyebrow, .hero-text > h1 { order: 1; }
   .stage { order: 2; margin: 24px 0 8px; }
-  .keys, .doors, .why, .deposits, .cards { grid-template-columns: 1fr; }
+  .keys, .why, .deposits, .cards { grid-template-columns: 1fr; }
   .dep + .dep, .card + .card, .flow { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); }
   .sh { grid-template-columns: 1fr; gap: 6px; }
   :root { --v: min(420px, 74vw); }
@@ -250,7 +238,7 @@ footer a { color: var(--ink); }
 @media (max-width: 600px) {
   .wrap { padding: 0 18px; }
   .top nav { gap: 18px; }
-  .lede .id, .prov, .flow .id { white-space: normal; overflow-wrap: anywhere; }
+  .prov { white-space: normal; overflow-wrap: anywhere; }
   .modes { display: grid; width: 100%; }
   .frame { width: calc(var(--v) + 40px); }
   .kh .lbl { display: none; }
@@ -265,7 +253,7 @@ footer a { color: var(--ink); }
 }
 
 /* ---------- motion: the rest of the page moves too. Nothing is hidden unless motion is allowed. ---------- */
-.btn, .modes button, .top nav a, .krow, .card, .dep, .lg { transition: background-color .2s, border-color .2s, color .2s, transform .15s; }
+.btn, .modes button, .top nav a, .krow, .card, .dep { transition: background-color .2s, border-color .2s, color .2s, transform .15s; }
 .btn:active, .modes button:active { transform: scale(.97); }
 .card:hover h3 i { transform: scale(1.4); }
 .card h3 i { transition: transform .3s; }
@@ -284,8 +272,80 @@ footer a { color: var(--ink); }
   .keyring .krow.rv.in:hover svg { transform: rotate(0); }
   .dep:hover, .card:hover { transform: translateY(-3px); }
   .dep .amt { transition: letter-spacing .4s; }
-  .lg.rv b { display: inline-block; }
   .padlock { animation: sway 4s ease-in-out infinite; transform-origin: 50% 0; }
 }
 @keyframes rise { from { opacity: 0; transform: translateY(16px); } }
 @keyframes sway { 50% { transform: rotate(-6deg); } }
+
+/* ---------- 03 the census as three blocks (diagrams.js drawWaffle) ---------- */
+.waffle { display: flex; gap: 32px; align-items: flex-start; flex-wrap: wrap; }
+.waffle .wb { min-width: 0; }
+.waffle .wb.novote { flex: 1607 1 420px; }
+.waffle .wb.optedout { flex: 0 0 150px; }
+.waffle .wb.unknown { flex: 466 1 210px; }
+.wb-n { font: 400 64px/1 var(--serif); }
+.wb.novote .wb-n { color: var(--red); }
+.wb.optedout .wb-n { color: var(--violet); }
+.wb.unknown .wb-n { color: var(--mute); }
+.wb-l { font-size: 14px; line-height: 1.4; color: var(--ink-2); margin: 8px 0 14px; min-height: 40px; max-width: 30ch; }
+.cells { display: grid; grid-template-columns: repeat(auto-fill, 10px); gap: 3px; }
+.cells a { display: block; width: 10px; height: 10px; border-radius: 2px; background: var(--line); }
+.wb.unknown .cells a { background: none; box-shadow: inset 0 0 0 1px var(--line-2); }
+.waffle.filled .cells a, .cells a.on { transition: background-color .25s; }
+.waffle.filled .wb.novote .cells a, .wb.novote .cells a.on { background: var(--red); }
+.waffle.filled .wb.optedout .cells a, .wb.optedout .cells a.on { background: var(--violet); }
+.waffle.filled .wb.unknown .cells a, .wb.unknown .cells a.on { box-shadow: inset 0 0 0 1px var(--faint); }
+.cells a:hover, .cells a:focus-visible { background: var(--ink) !important; outline: none; }
+.waffle-tip { flex: 1 1 100%; margin-top: 4px; font: 13px var(--mono); color: var(--ink-2); min-height: 20px; overflow-wrap: anywhere; }
+.census-foot { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; font-size: 14px; color: var(--ink-2); }
+.census-foot .btn { padding: 9px 14px; font-size: 14px; }
+.census-live { flex: 1 1 100%; color: var(--mute); }
+@media (max-width: 600px) {
+  .waffle { gap: 22px; }
+  .waffle .wb.novote, .waffle .wb.unknown { flex: 1 1 100%; }
+  .waffle .wb.optedout { flex: 1 1 100%; }
+  .wb-n { font-size: 48px; }
+  .wb-l { min-height: 0; }
+  .cells { grid-template-columns: repeat(auto-fill, 7px); gap: 2px; }
+  .cells a { width: 7px; height: 7px; border-radius: 1.5px; }
+}
+
+/* share-bar labels: name then amount; on phones name over amount, and "rest" alone */
+.share span b { font-weight: 600; }
+.share span em { font-style: normal; }
+@media (max-width: 600px) {
+  .share { height: 46px; }
+  .share i span { display: flex; flex-direction: column; line-height: 1.15; font-size: 11px; padding: 0 7px; }
+  .share .rest span em { display: none; }
+}
+.why .basis a, .card .ev a { display: inline-block; }
+
+/* ---------- phones: the logo on one row, all five pages on the next; nothing cut off ---------- */
+@media (max-width: 600px) {
+  .top .wrap { display: flex; flex-wrap: wrap; height: auto; padding-top: 10px; padding-bottom: 6px; gap: 6px 0; }
+  .top nav { flex: 1 1 100%; justify-content: space-between; gap: 0; overflow: visible; }
+  .top nav a { font-size: 14px; }
+  /* the vault: a little smaller and to the left, so the open door stays on the screen */
+  :root { --v: min(420px, 62vw); }
+  .stage { align-items: flex-start; }
+  .panel, .readout { align-self: stretch; }
+  .open .door { transform: rotateY(104deg); }
+}
+@media (max-width: 600px) {
+  .readout { width: auto; }
+  .boxes { left: 11%; right: 11%; top: 20%; gap: 3px; }
+  .box { padding: 4px 2px; }
+  .box small { font-size: 8.5px; }
+  .box b { font-size: 12.5px; }
+  .total { top: 47%; }
+  .total b { font-size: 34px; }
+  .total small { font-size: 10px; padding: 0 16%; }
+}
+/* keys: the status never wraps; the waffle a little denser on phones */
+.krow .st { white-space: nowrap; padding-left: 8px; }
+.krow > div { min-width: 0; }
+@media (max-width: 600px) {
+  .cells { grid-template-columns: repeat(auto-fill, 5px); gap: 2px; }
+  .cells a { width: 5px; height: 5px; border-radius: 1px; }
+  .waffle-tip { font-size: 12px; }
+}

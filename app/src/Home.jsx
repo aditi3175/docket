@@ -4,13 +4,14 @@
 // Styling is shared with web/index.html: both use web/assets/home.css.
 // Carried over: I2 (a failed read is shown as unknown, never a value), I9 (no reassuring words),
 // I20 (the census from graph.json's records; the chain recount on click only).
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import '../../web/assets/home.css';
 import { createRpc } from '../../web/assets/rpc.js';
 import { liveCounter, pct } from '../../web/assets/census.js';
 import { FACTORY } from '../../web/assets/index-view.js';
 import { SOURCE } from '../../web/assets/source.js';
 import { startMotion } from '../../web/assets/motion.js';
+import { drawWaffle } from '../../web/assets/diagrams.js';
 import { useFinding, useCensus, headline, usd, usdShort, time, nearShort, pct0, RECORDED } from './lib/finding.js';
 const REPO = 'https://github.com/aditi3175/docket';
 
@@ -252,8 +253,8 @@ function Deposits({ s }) {
         })}
       </div>
       <div className="share" aria-hidden="true">
-        {ok && valued.map((x) => <i key={x.contract} style={{ width: `${(100 * x.usd) / r.lsTotal}%` }}><span>{x.name} · {usdShort(x.usd)}</span></i>)}
-        {ok && <b className="rest"><span>rest of NEAR liquid staking</span></b>}
+        {ok && valued.map((x) => <i key={x.contract} style={{ width: `${(100 * x.usd) / r.lsTotal}%` }}><span><b>{x.name}</b> {usdShort(x.usd)}</span></i>)}
+        {ok && <b className="rest"><span>rest<em> of NEAR liquid staking</em></span></b>}
       </div>
       <div className="share-l">
         <span>{ok ? `${valued.map((x) => x.name).join(' + ')} = ${pct0(r.exposedUsd, r.lsTotal)} of ${usdShort(r.lsTotal)} NEAR liquid staking (DefiLlama, NEAR-only TVL)` : 'Share of NEAR liquid staking: unknown'}</span>
@@ -299,56 +300,12 @@ function Keys({ s }) {
   );
 }
 
-// ---------------- 03 every door: the census ----------------
-const kindOf = (a) => (a === 'true' ? 't' : a === 'false' ? 'f' : 'u');
-
-const BUCKET_ORDER = { true: 0, false: 1, 'no-factory-info': 2, unread: 3 };
-function Field({ records: raw }) {
-  const records = useMemo(() => raw.map((r, i) => ({ ...r, i })).sort((a, b) => (BUCKET_ORDER[a.autoUpdate] ?? 4) - (BUCKET_ORDER[b.autoUpdate] ?? 4) || a.i - b.i), [raw]);
+// The census as three blocks, one square per DAO (diagrams.js). I20: the records and the counts are the
+// same graph.json census; the chain recount stays on the reader's click.
+function Waffle({ records, counts }) {
   const ref = useRef(null);
-  const geo = useRef({ cells: [], hover: -1, CW: 0, CH: 0, SZ: 14 });
-  const [tip, setTip] = useState(null);
-  useEffect(() => {
-    const cv = ref.current; const cx = cv.getContext('2d'); const g = geo.current; let raf = 0; let alive = true;
-    const calm = still();
-    const layout = () => {
-      const dpr = devicePixelRatio || 1; g.CW = cv.clientWidth; if (!g.CW) return;
-      const cols = Math.max(10, Math.floor((g.CW - 40) / 14)); g.SZ = (g.CW - 40) / cols; g.CH = Math.ceil(records.length / cols) * g.SZ + 40;
-      cv.style.height = `${g.CH}px`; cv.width = g.CW * dpr; cv.height = g.CH * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      g.cells = records.map((r, i) => ({ id: r.id, a: r.autoUpdate, k: kindOf(r.autoUpdate), x: 20 + (i % cols) * g.SZ + g.SZ / 2, y: 20 + Math.floor(i / cols) * g.SZ + g.SZ / 2 }));
-    };
-    const paint = (t) => {
-      if (!alive) return;
-      cx.clearRect(0, 0, g.CW, g.CH);
-      g.cells.forEach((c, i) => {
-        const r = g.SZ * 0.34; const hot = i === g.hover;
-        if (c.k === 't') { cx.fillStyle = hot ? '#241722' : `rgba(179,38,30,${calm ? 0.75 : 0.55 + 0.25 * Math.sin(t / 900 + i)})`; cx.beginPath(); cx.arc(c.x, c.y, r, 0, 7); cx.fill(); }
-        else if (c.k === 'f') { cx.fillStyle = hot ? '#241722' : '#6A3FB5'; cx.beginPath(); cx.arc(c.x, c.y, r + 1, 0, 7); cx.fill(); }
-        else { cx.strokeStyle = hot ? '#241722' : '#B3A4AE'; cx.setLineDash([2, 2]); cx.beginPath(); cx.arc(c.x, c.y, r, 0, 7); cx.stroke(); cx.setLineDash([]); }
-      });
-      if (!calm) raf = requestAnimationFrame(paint);
-    };
-    layout(); paint(0);
-    const onResize = () => { layout(); if (calm) paint(0); };
-    addEventListener('resize', onResize);
-    return () => { alive = false; cancelAnimationFrame(raf); removeEventListener('resize', onResize); };
-  }, [records]);
-  const move = (e) => {
-    const g = geo.current; const b = ref.current.getBoundingClientRect(); const x = e.clientX - b.left; const y = e.clientY - b.top;
-    g.hover = g.cells.findIndex((c) => Math.abs(c.x - x) < g.SZ / 2 && Math.abs(c.y - y) < g.SZ / 2);
-    if (g.hover < 0) { setTip(null); return; }
-    const c = g.cells[g.hover];
-    const what = c.a === 'true' || c.a === 'false' ? `auto_update: ${c.a}` : c.a === 'no-factory-info' ? 'no get_factory_info' : 'unread';
-    setTip({ text: `${c.id} · ${what}`, x: Math.min(c.x + 12, g.CW - 300), y: Math.max(c.y - 34, 4) });
-  };
-  const leave = () => { geo.current.hover = -1; setTip(null); };
-  const open = () => { const g = geo.current; if (g.hover >= 0) location.href = `docket.html?dao=${encodeURIComponent(g.cells[g.hover].id)}`; };
-  return (
-    <div className="field-wrap">
-      <canvas id="field" ref={ref} onMouseMove={move} onMouseLeave={leave} onClick={open} aria-label="Every DAO on the factory, by auto_update" />
-      {tip && <div id="tip" style={{ display: 'block', left: `${Math.max(tip.x, 4)}px`, top: `${tip.y}px` }}>{tip.text}</div>}
-    </div>
-  );
+  useEffect(() => { if (ref.current) drawWaffle(ref.current, records, counts); }, [records, counts]);
+  return <div ref={ref} />;
 }
 
 function Doors({ c }) {
@@ -367,21 +324,14 @@ function Doors({ c }) {
     <section className="s" id="doors"><div className="wrap">
       <div className="sh"><div className="n">03 · Every door like this one</div><div>
         <h2>{ok ? <>This is not one vault. <span className="novote">{fmt(k.true)} of {fmt(c.c.denominator)}</span> DAOs have the same lock.</> : 'Most DAOs on the factory have the same lock.'}</h2>
-        <p>One dot per DAO created by <Id>{FACTORY}</Id>, from the dated census in graph.json. Hover a dot for its account id; click it to read its proposals.</p>
+        <p>One square per DAO created by <Id>{FACTORY}</Id>, from the dated census in graph.json. Hover a square for its account id; click it to read its proposals.</p>
       </div></div>
-      <div className="doors">
-        {ok ? <Field records={c.records} /> : <div className="lg"><span className="unknown-text">{c.status === 'reading' ? 'Reading the census…' : `Census unknown: ${c.reason}`}</span></div>}
-        <div className="legend">
-          <div className="lg"><b className={ok ? 'novote' : 'unknown-text'}>{ok ? fmt(k.true) : 'unknown'}</b><span><i style={{ background: 'var(--red)' }} />auto_update: true. The factory can replace the code without a vote.</span></div>
-          <div className="lg"><b className={ok ? 'optedout' : 'unknown-text'}>{ok ? fmt(k.false) : 'unknown'}</b><span><i style={{ background: 'var(--violet)' }} />auto_update: false. Opted out.</span></div>
-          <div className="lg"><b className={ok ? '' : 'unknown-text'}>{ok ? fmt(k['no-factory-info'] + k.unread) : 'unknown'}</b><span><i style={{ border: '1.5px dashed #8b8794' }} />{ok ? `Unknown: ${k['no-factory-info']} have no get_factory_info, ${k.unread} could not be read.` : 'Unknown.'}</span></div>
-          <div className="lg recount">
-            <span>{ok ? `${pct(c.c.shareTrueOfAnswered)} of the ${fmt(c.c.answered)} that answered read auto_update: true. Census ${c.when?.slice(0, 10) ?? 'undated'}${c.complete ? '' : ', incomplete'}.` : 'The census is computed from graph.json’s records.'}</span>
-            <a href="register.html">Every DAO in the register →</a>
-            <button type="button" className="btn" onClick={recount} disabled={busy}>Recount from the chain now (about 15 minutes)</button>
-            {live && <span aria-live="polite">{live}</span>}
-          </div>
-        </div>
+      {ok ? <Waffle records={c.records} counts={k} /> : <p className="unknown-text">{c.status === 'reading' ? 'Reading the census…' : `Census unknown: ${c.reason}`}</p>}
+      <div className="census-foot">
+        <span>{ok ? `${pct(c.c.shareTrueOfAnswered)} of the ${fmt(c.c.answered)} that answered read auto_update: true. Census ${c.when?.slice(0, 10) ?? 'undated'}${c.complete ? '' : ', incomplete'}.` : 'The census is computed from graph.json’s records.'}</span>
+        <a href="register.html">Every DAO in the register →</a>
+        <button type="button" className="btn" onClick={recount} disabled={busy}>Recount from the chain now (about 15 minutes)</button>
+        {live && <span className="census-live" aria-live="polite">{live}</span>}
       </div>
     </div></section>
   );
