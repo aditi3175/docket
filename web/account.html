@@ -29,7 +29,8 @@
   <section class="page-head">
     <div class="eyebrow">Account · who can change it</div>
     <h1>Who can change this account without a vote?</h1>
-    <p class="intro">Docket reads NEAR mainnet from your browser and follows every path by which an account’s code or rules can change: its keys, its owner, the global contract it runs, and, for a Sputnik DAO, its factory and its voting policy. It holds no key and signs nothing.</p>
+    <p class="intro">Type any NEAR account. See every key that can change it with no vote on the way.</p>
+    <div id="how" class="how" aria-label="How this page works"></div>
     <form id="pick" class="pick">
       <label>NEAR account <input id="acct" value="meta-pool.near" autocomplete="off" spellcheck="false" autocapitalize="off"></label>
       <button type="submit">Read</button>
@@ -58,10 +59,11 @@ import { accountReport, valueAtStake, explainCode, diagramOf, FIX, CHECKED_BUILD
 import { fetchDefiLlama } from './assets/value.js';
 import { recall, remember, sameAnswer, loadSeed } from './assets/memo.js';
 import { SOURCE } from './assets/source.js';
-import { drawTower } from './assets/diagrams.js';
+import { drawTower, drawFlow, keyGlyph } from './assets/diagrams.js';
 import { census } from './assets/census.js';
 import { startMotion } from './assets/motion.js';
 startMotion();
+drawFlow(document.getElementById('how'), [{ title: 'An account', sub: 'any NEAR account' }, { title: 'Its owners', sub: 'keys · owner · factory · policy' }, { title: 'The keys', sub: 'that change it with no vote', cls: 'novote' }], [{ text: 'walk' }, { text: 'up to 6 hops' }]);
 
 const rpc = createRpc();
 const out = document.getElementById('out');
@@ -77,8 +79,8 @@ function fresh(text, cls = '') {
   f.className = `fresh ${cls}`.trim(); f.replaceChildren(el('i'), el('span', text));
 }
 const recalledText = (m) => (m.source === 'recorded'
-  ? `Recorded ${hm(m.readAt)}: Docket's example, shown while it reads NEAR mainnet live…`
-  : `Your last read, ${hm(m.readAt)}, shown while Docket reads NEAR mainnet live…`);
+  ? `Recorded ${hm(m.readAt)} · reading NEAR mainnet live…`
+  : `Your last read, ${hm(m.readAt)} · reading NEAR mainnet live…`);
 
 const section = (title) => { const s = el('section'); s.append(el('h2', title)); prose.append(s); return s; };
 const para = (s, ...parts) => { const p = el('p'); for (const x of parts) p.append(typeof x === 'string' ? document.createTextNode(x) : x); s.append(p); return p; };
@@ -160,62 +162,75 @@ function render(r) {
   out.append(prose);
 
   if (r.groups.length) {
-    const s = section('The path, in words');
+    const s = section('The keys at the end');
     for (const [i, g] of r.groups.entries()) {
-      if (r.groups.length > 1) s.append(el('h3', `Path ${i + 1}`));
-      const ol = el('ol', undefined, 'tl');
-      for (const hop of g.hops ?? []) ol.append(el('li', hop.text));
-      const last = el('li', `At the end: ${g.keys.length} key${g.keys.length > 1 ? 's' : ''}, each ${g.keys[0].text.replace(/^a /, '')}`);
-      const ul = el('ul', undefined, 'keylist'); for (const k of g.keys) { const li = el('li'); li.append(idspan(k.publicKey)); ul.append(li); } last.append(ul);
-      ol.append(last); s.append(ol);
-      if (g.hops?.some((x) => x.type.startsWith('owner via '))) {
-        s.append(el('p', "An owner edge means the contract names that account as its owner. What an owner may do is set by the contract's own code; Docket follows the owner as authority and does not check each contract's owner-only methods.", 'basis'));
+      const full = g.keys.filter((k) => k.kind === 'FullAccess').length;
+      const line = el('p', undefined, 'keys-line');
+      line.append(el('b', `${g.keys.length} key${g.keys.length > 1 ? 's' : ''}`), document.createTextNode(`${r.groups.length > 1 ? ` (path ${i + 1})` : ''} · ${full === g.keys.length ? 'full access' : `${full} full access`} on `), idspan(g.path.at(-1)));
+      s.append(line);
+      const chips = el('div', undefined, 'keychips');
+      for (const k of g.keys) {
+        const c = el('span', undefined, 'keychip'); c.title = k.publicKey;
+        const pk = String(k.publicKey); c.append(keyGlyph(26), el('span', pk.length > 28 ? `${pk.slice(0, 18)}…${pk.slice(-6)}` : pk, 'id'));
+        chips.append(c);
       }
+      s.append(chips);
+      if (g.hops?.some((x) => x.type.startsWith('owner via '))) s.append(el('p', 'An owner edge: the contract names that account as its owner; Docket follows it as authority.', 'basis'));
     }
   }
 
   if (r.explainer) {
     const s = section('Why no vote is needed');
     for (const dao of r.explainer.daos) s.append(lanes(r, dao));
-    const more = el('details', undefined, 'more'); more.append(el('summary', 'Read it in the source, with the default and the fix'));
-    s.append(more);
-    para(more, "Sputnik DAOs vote on proposals. Changing a DAO's code by proposal (UpgradeSelf) takes the vote its policy requires. But the contract has a second way in: a function called update(), which is not a proposal at all. It checks one thing, the caller (Sputnik v3.2, ", link(SOURCE.updateAssert.href, SOURCE.updateAssert.text), '):');
-    more.append(el('pre', 'assert!(\n    predecessor == this DAO\n    || (predecessor == factory_id && auto_update),\n    "ERR_MUST_BE_SELF_OR_FACTORY");'));
-    para(more, "So when auto_update is true, the factory can replace the DAO's code with no proposal, no vote and no waiting period. A DAO that never set this value reads true: true is the default in the contract (", link(SOURCE.defaultTrue.href, SOURCE.defaultTrue.text), '). Turning it off takes a FactoryInfoUpdate proposal that the DAO itself passes.');
-    for (const dao of r.explainer.daos) {
-      const v = r.votes.filter((x) => x.dao === dao);
-      if (v.length) para(more, 'For contrast: to change ', idspan(dao), `'s code or rules by proposal, its policy requires ${v.map((x) => `${x.k} of ${x.n} in "${x.role}"`).join(' or ')}. The factory path above needs none of them.`);
-    }
+    const code = el('pre', undefined, 'codeblk'); code.setAttribute('aria-label', 'The check in update(), Sputnik v3.2');
+    code.append(document.createTextNode('assert!(\n    predecessor == this DAO\n'), el('span', '    || (predecessor == factory_id && auto_update),', 'hl'), document.createTextNode('\n    "ERR_MUST_BE_SELF_OR_FACTORY");'));
+    s.append(code);
     const fd = r.explainer.factoryDefault;
-    para(more, 'The factory, ', idspan('sputnik-dao.near'), ', owns itself, so its access keys are its only authority. They are the keys at the end of the path.');
-    para(more, `A fix exists. PR #${FIX.pr} in near-daos/sputnik-dao-contract (merged ${FIX.merged}, merge commit ${FIX.mergeCommit}) makes a factory update wait for an UpgradeSelf proposal that has been open for two weeks. `,
-      fd && String(fd.commit ?? '').startsWith(CHECKED_BUILD) ? `Read just now, the factory's default build is ${fd.version}, commit ${CHECKED_BUILD}, which does not contain it (GitHub compare: the fix is 2 commits ahead of that commit; tools/verify.mjs re-checks this).`
-        : fd ? `Read just now, the factory's default build is ${fd.version}, commit ${String(fd.commit ?? 'unknown').slice(0, 12)}. That is not the build Docket checked against the fix (${CHECKED_BUILD}), so whether it contains the fix is unknown here.`
-        : `The factory's default build could not be read just now (${r.explainer.factoryReason}), so whether it contains the fix is unknown here.`);
-    para(s, 'Shipping the fix would not close the path by itself: each DAO runs the code it has until it upgrades. Today the only setting that puts a vote in front of every code change is auto_update: false, which a DAO sets for itself:');
-    const ul = el('ul'); for (const dao of r.explainer.daos) { const li = el('li'); const a = link(`optout.html?dao=${encodeURIComponent(dao)}`, 'Draft the opt-out for '); a.append(idspan(dao)); li.append(a, document.createTextNode(' · '), link(`docket.html?dao=${encodeURIComponent(dao)}`, 'its proposals')); ul.append(li); }
-    s.append(ul);
+    const fixState = fd && String(fd.commit ?? '').startsWith(CHECKED_BUILD) ? ['novote', `fix PR #${FIX.pr}: not in the factory's build (${fd.version}, read now)`]
+      : fd ? ['unknown', `fix PR #${FIX.pr}: unknown (factory build ${fd.version} · ${String(fd.commit ?? 'unknown').slice(0, 7)})`]
+      : ['unknown', `fix PR #${FIX.pr}: unknown (factory unread)`];
+    const tags = el('div', undefined, 'tags');
+    const tag = (text, cls, href) => { const t = href ? link(href, text) : el('span', text); t.className = `tagx ${cls}`.trim(); tags.append(t); };
+    tag('auto_update: true by default', 'novote', SOURCE.defaultTrue.href);
+    tag('update() checks the caller only', '', SOURCE.updateAssert.href);
+    tag('the factory owns itself: its keys are its only authority', '');
+    tag(fixState[1], fixState[0]);
+    s.append(tags);
+    const go = el('div', undefined, 'gobtns');
+    for (const dao of r.explainer.daos) { const a = link(`optout.html?dao=${encodeURIComponent(dao)}`, 'Draft the opt-out for '); a.append(idspan(dao)); a.className = 'gobtn'; const b = link(`docket.html?dao=${encodeURIComponent(dao)}`, 'its proposals'); b.className = 'gobtn ghost'; go.append(a, b); }
+    s.append(el('p', 'Until the fix ships, one proposal closes the path:', 'basis'), go);
   }
 
   if (r.gates.length || (!r.explainer && r.votes.length)) {
     const s = section('Where a vote is required');
-    for (const g of r.gates) {
-      const v = r.votes.filter((x) => x.dao === g);
-      para(s, idspan(g), ' reads ', el('span', 'auto_update: false', 'optedout'), ', so its factory cannot replace its code without a vote. ', v.length ? `Changing its code or rules takes ${v.map((x) => `${x.k} of ${x.n} in "${x.role}"`).join(' or ')}.` : '', ' ', link(`docket.html?dao=${encodeURIComponent(g)}`, 'its proposals'));
-    }
-    for (const v of r.votes.filter((x) => !r.gates.includes(x.dao) && !r.explainer)) para(s, idspan(v.dao), `: ${v.k} of ${v.n} in "${v.role}" to pass a code- or rule-changing proposal.`);
+    const cards = el('div', undefined, 'gatecards');
+    const card = (dao, gate, v) => {
+      const c = el('div', undefined, `gatecard${gate ? ' optedout' : ''}`);
+      const top = el('div', undefined, 'gc-top'); top.append(idspan(dao)); if (gate) top.append(el('span', 'auto_update: false', 'gc-tag'));
+      c.append(top);
+      const fig = el('div', undefined, 'gc-fig');
+      if (v.length) for (const x of v) { const f = el('p'); f.append(el('b', `${x.k} of ${x.n}`), el('span', `in "${x.role}"`)); fig.append(f); }
+      else fig.append(el('p', 'vote: unknown', 'unknown-text'));
+      c.append(fig, el('p', gate ? 'must approve any code change' : 'must pass a code- or rule-change', 'gc-note'));
+      if (gate) c.append(link(`docket.html?dao=${encodeURIComponent(dao)}`, 'its proposals →'));
+      cards.append(c);
+    };
+    for (const g of r.gates) card(g, true, r.votes.filter((x) => x.dao === g));
+    const others = r.votes.filter((x) => !r.gates.includes(x.dao) && !r.explainer);
+    for (const dao of [...new Set(others.map((x) => x.dao))]) card(dao, false, others.filter((x) => x.dao === dao));
+    s.append(cards);
   }
 
   { const s = section('The code it runs'); para(s, idspan(r.account), ' runs ', explainCode(r.code)); }
 
   if (r.unknowns.length) {
     const s = section(`Reads that failed (${r.unknowns.length})`);
-    s.append(el('p', 'Each of these is unknown, not empty. A failed read never counts as "no key" or "no owner".', 'basis'));
+    s.append(el('p', 'Unknown, not empty: never counted as "no key".', 'basis'));
     const ul = el('ul'); for (const u of r.unknowns) ul.append(el('li', `${u.at} · ${u.read}: ${u.reason}`, 'unknown-text')); s.append(ul);
   }
 
   { const s = section('What Docket cannot see');
-    s.append(el('p', 'Only on-chain authority. Docket does not know who holds a key, whether several people share one, or what a multisig agrees off-chain. An empty result is never a statement that an account is safe.', 'basis')); }
+    s.append(el('p', 'Who holds a key, or what a multisig agrees off-chain. An empty result is never a statement that an account is safe.', 'basis')); }
 }
 
 // DefiLlama is read once per page view (and reused across pages for 10 minutes, value.js). The chain answer
@@ -237,8 +252,8 @@ async function run(id) {
     if (me !== seq) return;
     if (llama && r.value?.status === 'reading') r.value = valueAtStake(r.account, llama);
     remember('account', id, r, readAt);
-    if (prior && sameAnswer(prior.report, r)) { updateValue(r); fresh(`Live: read from NEAR mainnet ${hm(readAt)}, the same as the answer shown before.`, 'is-live'); }
-    else { render(r); fresh(prior ? `Live: read from NEAR mainnet ${hm(readAt)}. It differs from the answer shown before, which is replaced.` : `Live: read from NEAR mainnet ${hm(readAt)}.`, 'is-live'); }
+    if (prior && sameAnswer(prior.report, r)) { updateValue(r); fresh(`Live: read from NEAR mainnet ${hm(readAt)}.`, 'is-live'); }
+    else { render(r); fresh(prior ? `Live: read from NEAR mainnet ${hm(readAt)} · updated.` : `Live: read from NEAR mainnet ${hm(readAt)}.`, 'is-live'); }
     if (r.value?.status === 'reading') llamaP.then((l) => { if (me === seq) { r.value = valueAtStake(r.account, l); updateValue(r); } });
   } catch (e) { if (me === seq) out.replaceChildren(el('p', `Unknown: the page failed while reading (${e?.message ?? e}).`, 'lede2 is-unknown')); }
 }

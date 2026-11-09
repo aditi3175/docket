@@ -30,7 +30,8 @@
     <div class="eyebrow">Register · every DAO, by reach</div>
     <h1>The register: every Sputnik DAO, by reach</h1>
     <p id="stats" class="stats">Reading the census (graph.json)…</p>
-    <p class="intro"><strong id="floor"></strong> First the DAOs that administer a protocol Docket has mapped, by the value they administer; then every other DAO by its own NEAR balance. “No-vote roots” looks one hop out: the factory, keys on the DAO, members who can pass a code or rule change alone. Each DAO links to the whole path.</p>
+    <p class="intro"><strong id="floor"></strong> Mapped protocols first, by the value they hold; then every other DAO by its own balance.</p>
+    <div id="how" class="how" aria-label="How this page works"></div>
     <p id="prov" class="provenance recorded-note"></p>
   </section>
   <figure class="tm-fig">
@@ -61,8 +62,9 @@ import { fetchDefiLlama } from './assets/value.js';
 import { census } from './assets/census.js';
 import { registerRows, FLOOR } from './assets/register-view.js';
 import { startMotion } from './assets/motion.js';
-import { drawTreemap } from './assets/diagrams.js';
+import { drawTreemap, drawFlow } from './assets/diagrams.js';
 startMotion();
+drawFlow(document.getElementById('how'), [{"title":"Every DAO","sub":"the factory lists"},{"title":"By value","sub":"what each one controls"},{"title":"Who can move it","sub":"red: the factory, no vote","cls":"novote"}], [{"text":"rank"},{"text":"read auto_update"}]);
 
 const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
 const out = document.getElementById('out');

@@ -192,3 +192,26 @@ export function drawLock(host, { state, steps, at, dao }) {
   host.append(plate, ol);
   onView(host, (instant) => { if (!instant) { plate.classList.add('pre'); requestAnimationFrame(() => requestAnimationFrame(() => plate.classList.remove('pre'))); } });
 }
+
+// ---------------------------------------------------------------- a flowchart
+// nodes: [{ title, sub, cls }] boxes left to right (top to bottom on phones); edges: [{ text, cls }] the
+// label on the arrow after each node, optional. Plain boxes and arrows laid out by the page, so nothing
+// can overlap. cls 'novote' | 'optedout' | 'unknown' colours a box or an arrow by the rules above.
+export function drawFlow(host, nodes, edges = []) {
+  host.replaceChildren(); host.classList.add('flowchart');
+  const ol = el('ol', 'fc');
+  nodes.forEach((n, i) => {
+    const li = el('li', `fc-node${n.cls ? ` ${n.cls}` : ''}`);
+    li.append(el('b', undefined, n.title));
+    if (n.sub) li.append(el('span', undefined, n.sub));
+    ol.append(li);
+    if (i < nodes.length - 1) {
+      const e = edges[i] ?? {};
+      const a = el('li', `fc-edge${e.cls ? ` ${e.cls}` : ''}`); a.setAttribute('aria-hidden', 'true');
+      a.append(el('i'));
+      if (e.text) a.append(el('span', undefined, e.text));
+      ol.append(a);
+    }
+  });
+  host.append(ol);
+}

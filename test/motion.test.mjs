@@ -44,3 +44,16 @@ test('I20: the waffle draws the same graph.json records the counts come from, on
   assert.match(readFileSync(new URL('../web/index.html', import.meta.url), 'utf8'), /drawWaffle\(\$\('waffle'\), recs, k\)/);
   assert.match(readFileSync(new URL('../app/src/Home.jsx', import.meta.url), 'utf8'), /<Waffle records=\{c\.records\} counts=\{k\} \/>/);
 });
+
+test('flowcharts: each tool page draws its three-box flowchart; the homepage draws the path as two lanes, from reads', () => {
+  for (const p of ['account', 'register', 'optout']) {
+    const html = readFileSync(new URL(`../web/${p}.html`, import.meta.url), 'utf8');
+    assert.match(html, /drawFlow\(document\.getElementById\('how'\)/, p);
+  }
+  const home = readFileSync(new URL('../app/src/Home.jsx', import.meta.url), 'utf8');
+  assert.match(home, /className=\{`ends\$\{play \? ' play' : ''\}`\}/);
+  // today's lane is the reads: the key count and the DAOs reading auto_update: true; the other lane
+  // is the mainnet opt-out test, linked by its transaction
+  assert.match(home, /const n = s\.keys\.count;\s+const open = s\.rows\.filter\(\(x\) => x\.autoUpdate === true\);/);
+  assert.match(home, /TX\('772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS'\)}>tested on mainnet/);
+});

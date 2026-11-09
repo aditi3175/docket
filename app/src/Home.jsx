@@ -223,6 +223,51 @@ function Hero({ s }) {
   );
 }
 
+// ---------------- the path: today, and after one proposal ----------------
+// Two lanes, the same keys. Today's lane is the read: the key count and how many DAOs read
+// auto_update: true. The other is the mainnet opt-out test (§16.5): the factory's update was rejected.
+// Motion: when the lanes scroll into view the steps light up in order; then a dot keeps running the
+// path (to the end today; to the ✕ after the proposal). Off under prefers-reduced-motion (home.css).
+function Story({ s }) {
+  const n = s.keys.count;
+  const open = s.rows.filter((x) => x.autoUpdate === true);
+  const keys = n === null ? 'keys: unknown' : `${n} keys`;
+  const ref = useRef(null);
+  const [play, setPlay] = useState(false);
+  useEffect(() => {
+    const e = ref.current; if (!e || typeof IntersectionObserver !== 'function') { setPlay(true); return undefined; }
+    const o = new IntersectionObserver((es) => { if (es.some((x) => x.isIntersecting)) { setPlay(true); o.disconnect(); } }, { threshold: 0.35 });
+    o.observe(e); return () => o.disconnect();
+  }, []);
+  const node = (i, icon, label, dim) => <li className={`n${dim ? ' dim' : ''}`} style={{ '--i': i }}><svg aria-hidden="true"><use href={`#${icon}`} /></svg><b>{label}</b></li>;
+  const arrow = (i, cls = '') => <li className={`a ${cls}`.trim()} style={{ '--i': i }} aria-hidden="true"><em /></li>;
+  return (
+    <section className="s" id="story"><div className="wrap">
+      <div className="sh"><div className="n">01 · The path</div><div>
+        <h2>Same keys. <span className="novote">Different ending.</span></h2>
+      </div></div>
+      <div ref={ref} className={`ends${play ? ' play' : ''}`}>
+        <div className={`end ${open.length ? 'novote' : 'unknown'}`}>
+          <h3>Today</h3>
+          <small>{open.length ? `auto_update: true on ${open.map((x) => x.name).join(', ')}` : 'auto_update: unknown'}</small>
+          <ol className="chain" aria-label="Today: the factory's keys replace the DAO's code">
+            {node(0, 'i-key', keys)}{arrow(1)}{node(2, 'i-factory', 'factory')}{arrow(3)}{node(4, open.length ? 'i-dao' : 'i-dao-u', 'DAO')}{arrow(5)}{node(6, 'i-coins', 'deposits')}
+          </ol>
+          <div className="end-out" style={{ '--i': 7 }}>{open.length ? <><b>replaced</b><span>no proposal, no vote</span></> : <><b className="unknown-text">unknown</b><span>auto_update unread</span></>}</div>
+        </div>
+        <div className="end optedout">
+          <h3>After one proposal</h3>
+          <small>auto_update: false</small>
+          <ol className="chain" aria-label="After the opt-out: the factory's update is rejected at the DAO">
+            {node(0, 'i-key', keys)}{arrow(1)}{node(2, 'i-factory', 'factory')}{arrow(3, 'stop')}{node(4, 'i-dao-v', 'DAO')}{arrow(5, 'dim')}{node(6, 'i-coins', 'deposits', true)}
+          </ol>
+          <div className="end-out" style={{ '--i': 7 }}><b>rejected</b><span>a vote is required · <a href={TX('772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS')}>tested on mainnet</a></span></div>
+        </div>
+      </div>
+    </div></section>
+  );
+}
+
 // ---------------- 01 deposits ----------------
 function Deposits({ s }) {
   const r = s.headlineOf;
@@ -231,7 +276,7 @@ function Deposits({ s }) {
   const nx = s.rows.find((x) => !x.slug);
   return (
     <section className="s" id="inside"><div className="wrap">
-      <div className="sh"><div className="n">01 · Inside the vault</div><div>
+      <div className="sh"><div className="n">02 · Inside the vault</div><div>
         <h2>Each deposit is owned by a DAO the factory can upgrade <span className="novote">without a vote</span>.</h2>
         <p>Each protocol's contract is owned by a Sputnik DAO. Each card shows that DAO's <Id>auto_update</Id>, read from the chain.</p>
       </div></div>
@@ -280,7 +325,7 @@ function Keys({ s }) {
   ];
   return (
     <section className="s" id="keys"><div className="wrap">
-      <div className="sh"><div className="n">02 · Who holds the keys</div><div>
+      <div className="sh"><div className="n">03 · Who holds the keys</div><div>
         <h2>The factory's full-access keys open every one. <span className="novote">The DAO's vote is not a lock.</span></h2>
         <p>With <Id>auto_update: true</Id>, the factory's <Id>update()</Id> replaces a DAO's code. No proposal is created, so there is nothing for members to vote on.</p>
       </div></div>
@@ -324,7 +369,7 @@ function Doors({ c }) {
   const fmt = (n) => n.toLocaleString('en-US');
   return (
     <section className="s" id="doors"><div className="wrap">
-      <div className="sh"><div className="n">03 · Every door like this one</div><div>
+      <div className="sh"><div className="n">04 · Every door like this one</div><div>
         <h2>{ok ? <>This is not one vault. <span className="novote">{fmt(k.true)} of {fmt(c.c.denominator)}</span> DAOs have the same lock.</> : 'Most DAOs on the factory have the same lock.'}</h2>
         <p>One square per DAO created by <Id>{FACTORY}</Id>, from the dated census in graph.json. Hover a square for its account id; click it to read its proposals.</p>
       </div></div>
@@ -339,37 +384,43 @@ function Doors({ c }) {
   );
 }
 
-// ---------------- 04 the fourth lock ----------------
+// ---------------- 05 the fourth lock ----------------
+// I19: the first card's state is the live read of the factory, never a stored value; the build on the
+// timeline is named only when that read says the factory still deploys it.
 function Fix({ badge }) {
   const word = !badge ? 'Reading the factory…' : { 'not-shipped': 'Not shipped', 'factory-changed': 'The factory has changed', unknown: 'Unknown' }[badge.state] ?? 'Unknown';
   const unknown = !badge || badge.state === 'unknown';
+  const shipped = badge?.state === 'not-shipped';
   return (
     <section className="s" id="fix"><div className="wrap">
-      <div className="sh"><div className="n">04 · The fourth lock</div><div>
+      <div className="sh"><div className="n">05 · The fourth lock</div><div>
         <h2>A fix exists and is not deployed. <span className="optedout">One proposal</span> fits the lock today.</h2>
       </div></div>
       <div className="cards">
         <article className="card"><div className="tag">The factory fix</div>
           <h3 className={unknown ? 'unknown-text' : ''}><i />{word}</h3>
-          <p>{badge ? badge.text.replace(/^Fix shipped\? (No\. )?/, '') : 'A change to the Sputnik contract makes a factory update wait for a matching proposal. Whether the factory publishes it is read live.'}</p>
+          <ol className="ftl" aria-label="The factory's default build, then the fix">
+            <li className={shipped ? 'on' : 'unk'}><b>{shipped ? 'v3.2 · 2b0f34a' : 'unknown'}</b><span>what the factory deploys</span></li>
+            <li className="fix"><b>PR #233</b><span>the fix · not deployed</span></li>
+          </ol>
           <div className="ev"><a href="https://github.com/near-daos/sputnik-dao-contract/pull/233">PR #233, merged 2026-03-24</a><span className="muted">{badge ? (badge.state === 'unknown' ? `Factory read failed: ${badge.detail}` : `Factory read ${time(badge.readAt)}`) : 'Factory read: pending'}</span></div>
         </article>
         <article className="card lock"><div className="tag">Fit it yourself</div>
           <svg className="padlock" viewBox="0 0 64 72" aria-hidden="true"><path d="M18 32V22a14 14 0 0 1 28 0v10" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" /><rect x="8" y="30" width="48" height="38" rx="10" fill="currentColor" /><circle cx="32" cy="46" r="5" fill="#120e1c" /><rect x="29.5" y="48" width="5" height="10" rx="2" fill="#120e1c" /></svg>
           <h3>1 proposal</h3>
-          <p>A DAO passes one <Id>FactoryInfoUpdate</Id> setting <Id>auto_update</Id> to false. Tested on mainnet: with it, the factory's update was rejected; without it, the same update ran.</p>
-          <div className="ev">
-            <a href="optout.html?dao=stnear.sputnik-dao.near">Draft it for <Id>stnear.sputnik-dao.near</Id> →</a>
-            <a href={TX('772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS')}>Rejected, opted out</a>
-            <a href={TX('EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b')}>Ran, not opted out</a>
+          <p>Set <Id>auto_update</Id> to false. Tested on mainnet:</p>
+          <div className="chips2">
+            <a className="chip2 optedout" href={TX('772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS')}><b>false</b><span>factory update rejected</span></a>
+            <a className="chip2 novote" href={TX('EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b')}><b>true</b><span>factory update ran</span></a>
           </div>
+          <div className="ev"><a href="optout.html?dao=stnear.sputnik-dao.near">Draft it for <Id>stnear.sputnik-dao.near</Id> →</a></div>
         </article>
         <article className="card"><div className="tag">A delegate that can’t overreach</div>
           <h3>Approved 1, refused 1</h3>
-          <p>A council member whose only key can call act_proposal on one DAO. It approved a routine transfer, then refused one with the same words and a different receiver, and handed it to a human. Any AI agent can run the same checks before it acts, through Docket’s MCP server.</p>
-          <div className="ev">
-            <a href={TX('HnMopqHKJaJ7jJNY4sWkHoYJH6TLwZnVFmNzPh9ur6wZ')}>Its approval of #7</a>
-            <a href={`${REPO}/blob/master/agent/log/docket-demo.sputnik-dao.near-8.json`}>Its refusal of #8, with the report</a>
+          <p>An AI voter whose only key can vote on one DAO.</p>
+          <div className="chips2">
+            <a className="chip2" href={TX('HnMopqHKJaJ7jJNY4sWkHoYJH6TLwZnVFmNzPh9ur6wZ')}><b>#7 ✓</b><span>clean: approved</span></a>
+            <a className="chip2" href={`${REPO}/blob/master/agent/log/docket-demo.sputnik-dao.near-8.json`}><b>#8 ✕</b><span>3 flags: sent to a human</span></a>
           </div>
         </article>
       </div>
@@ -392,20 +443,26 @@ export default function Home() {
 
       <main id="main">
         <Hero s={s} />
+        <Story s={s} />
         <Deposits s={s} />
         <Keys s={s} />
         <Doors c={c} />
         <Fix badge={s.badge} />
-        <section className="s"><div className="wrap why">
-          <div>
+        <section className="s" id="why"><div className="wrap why2">
+          <div className="codecard">
             <h2>Why the vote can be skipped</h2>
-            <p>A Sputnik DAO changes its own code by proposal and vote. Its contract also has update(), which is not a proposal. It accepts new code from the factory whenever the DAO reads auto_update: true, and true is the default for a DAO that never set it.</p>
-            <p className="basis">Source: <a href={SOURCE.updateAssert.href}>{SOURCE.updateAssert.text}</a> · <a href={SOURCE.defaultTrue.href}>{SOURCE.defaultTrue.text}</a></p>
+            <pre aria-label="The check in update(), from the Sputnik contract"><code><span className="c-k">assert!</span>({'\n'}{'    '}predecessor == this DAO{'\n'}<span className="c-hl">{'    '}|| (predecessor == factory_id && auto_update)</span>{'\n'});</code></pre>
+            <div className="pins"><span className="pin novote">the factory: no vote needed</span><span className="pin novote">auto_update: true by default</span></div>
+            <p className="srcs"><a href={SOURCE.updateAssert.href}>upgrade.rs 117–128</a><a href={SOURCE.defaultTrue.href}>upgrade.rs 94–100</a></p>
           </div>
-          <div>
+          <div className="promises">
             <h2>What these numbers are</h2>
-            <p>Every figure on this page is read by your browser from NEAR mainnet or DefiLlama, with no server in between. Until the live reads arrive, the page shows the last recorded values and says so. A read that fails is shown as unknown, never as zero. Docket holds no key and signs nothing. The auto_update: false replay above shows the mainnet test, not this DAO's current state.</p>
-            <p className="basis"><a href="account.html?account=meta-pool.near">Follow the whole path for meta-pool.near</a></p>
+            <ul>
+              <li><svg viewBox="0 0 40 40" aria-hidden="true"><rect x="4" y="7" width="32" height="24" rx="3" fill="none" stroke="currentColor" strokeWidth="3" /><path d="M14 36h12M20 31v5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /><circle cx="20" cy="19" r="4" fill="currentColor" /></svg><div><b>Read live</b><span>by your browser, from NEAR mainnet and DefiLlama</span></div></li>
+              <li><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="15" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray="5 4" /><path d="M15.5 15.5a4.5 4.5 0 1 1 6 4.2c-1.2.5-1.5 1.3-1.5 2.8M20 27v.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg><div><b>“unknown”, never 0</b><span>when a read fails</span></div></li>
+              <li><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="14" cy="15" r="7" fill="none" stroke="currentColor" strokeWidth="3" /><path d="M19 20l14 14M28 29l3-3" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /><path d="M6 34L34 6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg><div><b>No key</b><span>Docket signs nothing</span></div></li>
+            </ul>
+            <p className="srcs"><a href="account.html?account=meta-pool.near">Follow the whole path for meta-pool.near →</a></p>
           </div>
         </div></section>
       </main>
@@ -418,6 +475,12 @@ export default function Home() {
 
       <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true"><defs>
         <linearGradient id="kg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#9A8994" /><stop offset=".5" stopColor="#5F4D5A" /><stop offset="1" stopColor="#2F232C" /></linearGradient>
+        <symbol id="i-key" viewBox="0 0 64 64"><circle cx="20" cy="22" r="12" fill="none" stroke="#241722" strokeWidth="5" /><path d="M29 30 L54 55 M44 45 L50 39 M50 51 L56 45" stroke="#241722" strokeWidth="5" strokeLinecap="round" fill="none" /></symbol>
+        <symbol id="i-factory" viewBox="0 0 64 64"><path d="M8 56 V30 L22 38 V30 L36 38 V20 h10 v36 Z" fill="#241722" /><rect x="40" y="10" width="6" height="12" fill="#241722" /><rect x="14" y="44" width="6" height="6" fill="#F8F4F7" /><rect x="28" y="44" width="6" height="6" fill="#F8F4F7" /></symbol>
+        <symbol id="i-dao" viewBox="0 0 64 64"><g fill="#B3261E"><path d="M32 6 L58 20 H6 Z" /><rect x="10" y="24" width="6" height="24" /><rect x="22" y="24" width="6" height="24" /><rect x="36" y="24" width="6" height="24" /><rect x="48" y="24" width="6" height="24" /><rect x="6" y="50" width="52" height="7" /></g></symbol>
+        <symbol id="i-dao-v" viewBox="0 0 64 64"><g fill="#6A3FB5"><path d="M32 6 L58 20 H6 Z" /><rect x="10" y="24" width="6" height="24" /><rect x="22" y="24" width="6" height="24" /><rect x="36" y="24" width="6" height="24" /><rect x="48" y="24" width="6" height="24" /><rect x="6" y="50" width="52" height="7" /></g></symbol>
+        <symbol id="i-dao-u" viewBox="0 0 64 64"><g fill="none" stroke="#8C7D87" strokeWidth="2.5" strokeDasharray="4 3"><path d="M32 6 L58 20 H6 Z" /><rect x="8" y="24" width="48" height="33" /></g></symbol>
+        <symbol id="i-coins" viewBox="0 0 64 64"><ellipse cx="32" cy="48" rx="20" ry="7" fill="#45333F" /><rect x="12" y="34" width="40" height="14" fill="#45333F" /><ellipse cx="32" cy="34" rx="20" ry="7" fill="#6E5C68" /><rect x="12" y="20" width="40" height="14" fill="#6E5C68" /><ellipse cx="32" cy="20" rx="20" ry="7" fill="#B3A4AE" /></symbol>
         <g id="keyshape"><circle cx="17" cy="14" r="12" fill="none" stroke="url(#kg)" strokeWidth="6" /><rect x="14" y="25" width="6" height="52" rx="2" fill="url(#kg)" /><rect x="20" y="58" width="9" height="5" fill="url(#kg)" /><rect x="20" y="68" width="6" height="5" fill="url(#kg)" /></g>
       </defs></svg>
     </>

@@ -11,7 +11,7 @@ export const REVEAL = [
   '.lede2', '.stake', '.path-title', '.path-scroll', '.prose > section', '.banner', '.step', '.proposal',
   '.census-bar', '.lanes', '.tl > li', '.stats', '.tools', '.table-wrap', '.tm-fig',
   // homepage
-  '.sh', '.dep', '.share', '.share-l', '.keyring .krow', '.flow .step', '.census-foot', '.card', '.why > div',
+  '.sh', '.dep', '.share', '.share-l', '.keyring .krow', '.flow .step', '.census-foot', '.card', '.why2 > div', '.promises li',
 ].join(', ');
 
 export function startMotion({ root = document, selector = REVEAL } = {}) {
