@@ -36,6 +36,36 @@ function census() {
   };
 }
 
+// Deployed addresses carry no ".html": /account?account=…, and / for the homepage. The source keeps its
+// .html links (so web/ works with no build at all); the build rewrites every link to one of the five pages.
+// A name preceded by "/", "." or a word character (web/index.html, foo.account.html) is not a page link.
+export const PAGE_LINK = /(?<![\w./-])(index|account|docket|register|optout)\.html\b/g;
+export const cleanLinks = (s) => s.replace(PAGE_LINK, (_, p) => (p === 'index' ? '/' : `/${p}`));
+
+// Build only: the React bundle's own links (app/src) and the logic it imports (web/assets) are rewritten too.
+function cleanUrls() {
+  let build = false;
+  return {
+    name: 'docket-clean-urls',
+    configResolved(c) { build = c.command === 'build'; },
+    transform(code, id) {
+      const p = id.split('\\').join('/');
+      if (!build || !/\.(jsx?|mjs)$/.test(p) || !/\/(app\/src|web\/assets)\//.test(p)) return null;
+      return { code: cleanLinks(code), map: null };
+    },
+    // `npm run preview` serves dist/ the way the host does: /account is account.html
+    configurePreviewServer(server) {
+      const dist = fileURLToPath(new URL('../dist/', import.meta.url));
+      server.middlewares.use((req, _res, next) => {
+        const [path, query] = (req.url ?? '').split('?');
+        const name = path.replace(/^\//, '');
+        if (/^[a-z]+$/.test(name) && existsSync(join(dist, `${name}.html`))) req.url = `/${name}.html${query ? `?${query}` : ''}`;
+        next();
+      });
+    },
+  };
+}
+
 function toolPages() {
   return {
     name: 'docket-tool-pages',
@@ -51,14 +81,16 @@ function toolPages() {
     generateBundle(_opts, bundle) {
       for (const f of webFiles()) {
         if (bundle[f]) throw new Error(`web/${f} would overwrite a built file of the same name`);
-        this.emitFile({ type: 'asset', fileName: f, source: readFileSync(join(WEB, f)) });
+        // pages and scripts get clean links (above); fonts and other binaries are copied byte for byte
+        const source = /\.(html|js)$/.test(f) ? cleanLinks(readFileSync(join(WEB, f), 'utf8')) : readFileSync(join(WEB, f));
+        this.emitFile({ type: 'asset', fileName: f, source });
       }
     },
   };
 }
 
 export default defineConfig({
-  plugins: [react(), census(), toolPages()],
+  plugins: [react(), census(), toolPages(), cleanUrls()],
   server: { fs: { allow: ['..'] } },
   build: { outDir: '../dist', emptyOutDir: true },
 });

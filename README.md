@@ -2,6 +2,11 @@
 
 **Who can change a NEAR account without a vote, read from the chain alone.**
 
+**Live: [doc-ket-project.vercel.app](https://doc-ket-project.vercel.app)** · try
+[meta-pool.near](https://doc-ket-project.vercel.app/account?account=meta-pool.near),
+[Burrow's proposals](https://doc-ket-project.vercel.app/docket?dao=burrow.sputnik-dao.near&from=1741&limit=4),
+[the register](https://doc-ket-project.vercel.app/register)
+
 ![license: MIT](https://img.shields.io/badge/license-MIT-2b1d26)
 ![node ≥ 22](https://img.shields.io/badge/node-%E2%89%A5%2022-2b1d26)
 ![root dependencies: 0](https://img.shields.io/badge/root%20dependencies-0-2b1d26)
@@ -548,6 +553,8 @@ hackathon window and there is no pre-hackathon baseline to diff against.
 
 - **Tracks:** Social Money (Sputnik DAO), AI Security & Defense (the delegate:
   a function-call key for one method on one DAO), Open Innovation.
+- **Hosted demo:** [doc-ket-project.vercel.app](https://doc-ket-project.vercel.app),
+  a static build of this repository (`vercel.json`), with no server of its own.
 - **What the judges can run:** `node tools/verify.mjs` and `npm test` with no
   install; the site with `npm run build && npm run preview` (above).
 - **Libraries:** listed under [Two layers](#two-layers). **AI tooling:** see
