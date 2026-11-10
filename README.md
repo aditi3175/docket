@@ -202,8 +202,8 @@ flowchart LR
 
 | page | the question | how it answers | the diagram |
 |---|---|---|---|
-| **Overview** | Is this real, and how big? | Counts the factory's keys live, reads the three DAOs' `auto_update`, values the deposits on DefiLlama | a vault with one keyhole per key; the census as three blocks of squares (1,607 / 13 / 466) |
-| **Account** | Who can change *this* account without a vote? | Walks keys, owner (five getters, in order), global contract, factory and policy, up to six hops | a tower: the value on top, each account a floor, the keys as the foundation, a red crack where no vote stands |
+| **Overview** | Is this real, and how big? | Counts the factory's keys live, reads the three DAOs' `auto_update`, values the deposits on DefiLlama | a vault with one keyhole per key; "Same keys. Different ending.": today's path from the reads beside the mainnet opt-out test, run by a moving dot; the census as three blocks of squares (1,607 / 13 / 466); the fix as a timeline; the contract's check as a code card |
+| **Account** | Who can change *this* account without a vote? | Walks keys, owner (five getters, in order), global contract, factory and policy, up to six hops | a tower: the value on top, each account a floor, the keys as the foundation, a red crack where no vote stands; the keys as chips; the check as a code card with the facts as tags; vote gates as cards (k of n from `get_policy`) |
 | **Proposals** | Does what members vote on match what it does? | Decodes all 17 proposal kinds and runs nine checks against the description | each proposal as a document, with every flag stamped in its margin |
 | **Register** | Where is the value, and who can move it? | Ranks every DAO the factory lists by the value it administers | a treemap of administered value, red where the factory can replace the code |
 | **Opt out** | How does a DAO close the gap today? | Drafts `FactoryInfoUpdate`, shows what is given up and who must approve, confirms only by re-reading | the fourth lock beside the factory's three keys, shut only when the chain reads `false` |
@@ -215,9 +215,10 @@ flowchart LR
 `meta-pool.near`, read live: its owner is `stnear.sputnik-dao.near`, which
 reads `auto_update: true`, so the factory `sputnik-dao.near` can replace its
 code, and the factory answers only to its three full-access keys. Every floor is
-a link to that account's own path. Below the tower, the path in words, and the
-two routes into the DAO's code: the one members can stop and the one they
-cannot.
+a link to that account's own path. Below the tower: the keys at the end as
+chips, the two routes into the DAO's code (the one members can stop and the one
+they cannot), and the contract's check as a code card with the fix's status
+read live.
 
 **How the walk decides each edge.** A failed read never becomes "no edge":
 
@@ -278,7 +279,7 @@ python -m http.server 8000
 
 | page | what it shows |
 |---|---|
-| http://localhost:8000/web/index.html | the static version of the homepage: the same vault, reads and figures |
+| http://localhost:8000/web/index.html | the static fallback of the homepage: the same vault, reads and figures, in a simpler layout (the deployed homepage is the React build) |
 | http://localhost:8000/web/account.html?account=meta-pool.near | who can change any account without a vote, drawn as a path |
 | http://localhost:8000/web/docket.html?dao=burrow.sputnik-dao.near | a DAO's proposals, decoded and checked against their descriptions |
 | http://localhost:8000/web/register.html | every Sputnik DAO the factory lists, by reach |
