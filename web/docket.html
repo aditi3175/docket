@@ -149,7 +149,7 @@ function banner(h, dao) {
   const b = el('div', undefined, `banner ${h.autoUpdate === true ? 'is-novote' : h.autoUpdate === false ? 'is-optedout' : 'is-unknown'}`);
   const s = headerSentence(h, dao);
   const p = el('p', undefined, 'lede2');
-  // colour only the claim: red for the no-vote path, green for opted out; the DAO id never breaks
+  // colour only the claim: red for the no-vote path, violet for opted out; the DAO id never breaks
   const mark = h.autoUpdate === true ? 'with no proposal and no vote' : h.autoUpdate === false ? 'auto_update: false' : null;
   for (const part of mark ? s.split(mark) .flatMap((t, i) => (i ? [mark, t] : [t])) : [s]) {
     if (part === mark) { p.append(el('span', part, h.autoUpdate === true ? 'novote' : 'optedout')); continue; }
