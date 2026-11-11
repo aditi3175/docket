@@ -8,14 +8,19 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import '../../web/assets/home.css';
 import { createRpc } from '../../web/assets/rpc.js';
 import { liveCounter, pct } from '../../web/assets/census.js';
-import { FACTORY } from '../../web/assets/index-view.js';
+import { FACTORY, countWord } from '../../web/assets/index-view.js';
 import { SOURCE } from '../../web/assets/source.js';
 import { startMotion } from '../../web/assets/motion.js';
 import { drawWaffle } from '../../web/assets/diagrams.js';
-import { useFinding, useCensus, headline, usd, usdShort, time, nearShort, pct0, RECORDED } from './lib/finding.js';
+import { useFinding, useCensus, usd, usdShort, time, nearShort, pct0, RECORDED } from './lib/finding.js';
 const REPO = 'https://github.com/aditi3175/docket';
 
 const TX = (h) => `https://nearblocks.io/txns/${h}`;
+const PR = 'https://github.com/near-daos/sputnik-dao-contract/pull/233';
+// The mainnet opt-out test on docket-demo.sputnik-dao.near (ARCHITECTURE.md §16.5): the same factory
+// update twice, only auto_update changed between them.
+const TX_TRUE = 'EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b'; // step 9, auto_update: true, update ran
+const TX_FALSE = '772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS'; // step 5, auto_update: false, rejected
 const PAGES = [['Overview', 'index.html'], ['Account', 'account.html'], ['Proposals', 'docket.html'], ['Register', 'register.html'], ['Opt out', 'optout.html']];
 const known = (o) => Boolean(o) && o !== 'unknown' && o !== 'none';
 const auKind = (a) => (a === true ? 'novote' : a === false ? 'optedout' : 'unknown');
@@ -28,37 +33,38 @@ function KeySvg({ w, h, faint }) {
 }
 
 // ---------------- copy built from the reads ----------------
-function Headline({ of }) {
-  const text = headline(of);
-  const cut = text.indexOf(', without a vote.');
-  if (cut < 0) return <>{text}</>;
-  return <>{text.slice(0, cut)}, <span className="novote">without a vote</span>.</>;
+// One sentence. The key count and the dollar figure are reads (recorded first, labelled below); an
+// unknown read says unknown (I2). The figure is the same one everywhere: Meta Pool + LiNEAR, the
+// DefiLlama-valued protocols whose DAO reads auto_update: true (index-view.js).
+function Headline({ s }) {
+  const n = s.keys.count; const x = s.headlineOf.exposedUsd;
+  const w = n === null ? null : countWord(n);
+  const who = w === null ? 'The factory’s keys (how many is unknown)' : `${w[0].toUpperCase()}${w.slice(1)} key${n === 1 ? '' : 's'}`;
+  return <>{who} can replace the code behind {typeof x === 'number' ? usdShort(x) : 'an unknown amount'} of NEAR liquid staking. <span className="novote">No vote needed.</span></>;
 }
 
-function Lede({ s }) {
-  const r = s.headlineOf;
-  const valued = r.rows.filter((x) => x.slug && x.autoUpdate === true).map((x) => x.name).join(' and ');
-  const nearx = r.rows.find((x) => !x.slug && x.autoUpdate === true && x.staked?.near);
-  const n = s.keys.count;
-  return (
-    <p className="lede">
-      {typeof r.exposedUsd === 'number'
-        ? <>The vault holds {valued || 'none of them'}, {pct0(r.exposedUsd, r.lsTotal)} of NEAR liquid staking{nearx ? <>, plus {nearShort(nearx.staked.near)} in NearX</> : null}. </>
-        : <>The dollar figure is unknown right now. </>}
-      {n === null
-        ? <>How many keys open it is unknown right now.</>
-        : <>Its locks are the {n} full-access key{n === 1 ? '' : 's'} of <Id>{FACTORY}</Id>. The DAO’s own vote is not one of them.</>}
-    </p>
-  );
+// I19: "never been deployed" is said only while the live factory read says so.
+function FixLine({ badge }) {
+  const tail = !badge ? <>Whether it is deployed: reading the factory…</>
+    : badge.state === 'not-shipped' ? <><a href="#fix">The fix has never been deployed.</a></>
+      : badge.state === 'factory-changed' ? <><a href="#fix">The factory has changed since; check what it deploys.</a></>
+        : <span className="unknown-text">Whether it is deployed: unknown.</span>;
+  return <p className="fixline">NEAR core fixed this in <a href={PR}>PR #233</a> on 24 Mar 2026. {tail}</p>;
 }
 
 function provenance(s) {
+  if (s.failed) return `Unknown: the read failed (${s.failed}). Shown: recorded ${time(RECORDED.llamaReadAt)}.`;
+  if (s.gaps.length) return `Live reads failed (${s.gaps.join(', ')}). Shown: recorded ${time(RECORDED.llamaReadAt)}.`;
+  if (s.recorded) return `Recorded ${time(RECORDED.llamaReadAt)} · reading NEAR mainnet live…`;
+  return `Read live from NEAR mainnet, ${time(s.readAt)}.`;
+}
+
+// The exact figures, small print in section 02 (I1: each with its source and time).
+function exact(s) {
   const r = s.headlineOf;
-  const money = typeof r.exposedUsd === 'number' ? `${usd(r.exposedUsd)} of ${usd(r.lsTotal)}, NEAR-only TVL` : 'value unknown';
-  if (s.failed) return `Unknown: the page failed while reading (${s.failed}). Shown: the values recorded ${time(RECORDED.llamaReadAt)}.`;
-  if (s.gaps.length) return `Live reads failed at ${time(s.readAt)}: ${s.gaps.join(', ')}. The headline shows the values recorded ${time(RECORDED.llamaReadAt)} (DefiLlama) and ${RECORDED.chainRecordedOn} (chain).`;
-  if (s.recorded) return `Recorded values: DefiLlama ${money}, ${time(RECORDED.llamaReadAt)} · NEAR mainnet, ${RECORDED.chainRecordedOn}. Reading live now…`;
-  return `DefiLlama ${money}, read ${time(s.llamaReadAt)} · NEAR mainnet, read ${time(s.readAt)}`;
+  const money = typeof r.exposedUsd === 'number' ? `${usd(r.exposedUsd)} of ${typeof r.lsTotal === 'number' ? usd(r.lsTotal) : 'unknown'}` : 'unknown';
+  const llama = s.recorded || s.gaps.length || s.failed ? `recorded ${time(RECORDED.llamaReadAt)}` : `read ${time(s.llamaReadAt)}`;
+  return `Meta Pool + LiNEAR, NEAR-only TVL (DefiLlama): ${money} NEAR liquid staking, ${llama}.`;
 }
 
 // ---------------- the vault's sequence ----------------
@@ -75,38 +81,37 @@ function useVault(s) {
   const latest = useRef(s);
   latest.current = s;
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
-  const run = useCallback((mode) => {
+  const run = useCallback(() => {
     timers.current.forEach(clearTimeout); timers.current = [];
     const at = (ms, f) => timers.current.push(setTimeout(f, still() ? 0 : ms));
     const patch = (p) => set((x) => ({ ...x, ...p }));
-    const log = (...parts) => set((x) => ({ ...x, log: [...x.log, { t: stamp(), parts }].slice(-7) }));
+    const log = (...parts) => set((x) => ({ ...x, log: [...x.log, { t: stamp(), parts }].slice(-5) }));
     set({ ...IDLE, log: [] });
     const { keys, rows } = latest.current;
     const n = keys.count;
     if (n === null) { log('factory keys: ', ['unknown', 'unknown-text'], ' · the read failed, so the vault is not animated'); return; }
-    log([FACTORY, 'w'], ' · signing with its full-access keys');
+    log([FACTORY, 'w'], ` · signing with ${n} full-access key${n === 1 ? '' : 's'}`);
     const step = 650;
     for (let i = 0; i < n; i++) {
       at(500 + i * step, () => patch({ inK: i + 1 }));
-      at(1050 + i * step, () => { patch({ turned: i + 1 }); log([`key ${i + 1}`, 'novote'], ' turned'); });
+      at(1050 + i * step, () => { patch({ turned: i + 1 }); if (i === n - 1) log([n === 1 ? 'key 1' : `keys 1–${n}`, 'novote'], ' turned'); });
     }
     const t0 = 1050 + n * step;
     const owners = rows.map((r) => r.owner).filter(known);
-    at(t0, () => log('factory → ', ['update()', 'w'], ` on ${owners.length ? owners.join(', ') : 'the owner DAOs'}`));
+    at(t0, () => log('factory → ', ['update()', 'w'], ` on ${owners.length ? `${owners.length} owner DAO${owners.length === 1 ? '' : 's'}` : 'the owner DAOs'}`));
     const anyTrue = rows.some((r) => r.autoUpdate === true);
     const allFalse = rows.every((r) => r.autoUpdate === false);
-    if (mode === 't' && anyTrue) {
+    if (anyTrue) {
       at(t0 + 500, () => { patch({ vote: 'bypass' }); log('auto_update: ', ['true', 'novote'], ' · proposal: ', ['none', 'novote'], ' · vote: ', ['none', 'novote']); });
       at(t0 + 800, () => patch({ spin: true }));
-      at(t0 + 2000, () => { patch({ retract: true }); log('bolts retracted'); });
+      at(t0 + 2000, () => patch({ retract: true }));
       at(t0 + 2600, () => patch({ open: true }));
       at(t0 + 3900, () => log(['vault open · ', 'g'], TOTAL, [' · nobody was asked', 'g']));
-    } else if (mode === 'f' || allFalse) {
-      at(t0 + 500, () => { patch({ vote: 'req' }); log('auto_update: ', ['false', 'optedout'], ' · a DAO proposal is required'); });
+    } else if (allFalse) {
+      at(t0 + 500, () => { patch({ vote: 'req' }); log('auto_update: ', ['false', 'optedout'], ' · proposal required'); });
       at(t0 + 800, () => patch({ jam: true }));
-      at(t0 + 1400, () => { patch({ shake: true }); log(['update rejected', 'optedout'], mode === 'f' ? ' · as in the mainnet test, tx 772n4Z…' : ''); });
-      at(t0 + 2400, () => log(['vault stays shut', 'w'], ' · the members decide'));
-    } else {
+      at(t0 + 1400, () => { patch({ shake: true }); log(['update rejected', 'optedout']); });
+          } else {
       at(t0 + 500, () => log('auto_update: ', ['unknown', 'unknown-text'], ' · the read failed; the vault is shown shut'));
     }
   }, []);
@@ -192,47 +197,37 @@ function Vault({ s, st, frameRef }) {
 
 function Hero({ s }) {
   const [st, run] = useVault(s);
-  const [mode, setMode] = useState('t');
   const frameRef = useRef(null);
   useEffect(() => {
-    const f = frameRef.current; if (!f || typeof IntersectionObserver !== 'function') { run('t'); return undefined; }
-    const o = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { run('t'); o.disconnect(); } }, { threshold: 0.25 });
+    const f = frameRef.current; if (!f || typeof IntersectionObserver !== 'function') { run(); return undefined; }
+    const o = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { run(); o.disconnect(); } }, { threshold: 0.25 });
     o.observe(f);
     return () => o.disconnect();
   }, [run]);
-  const pick = (m) => { setMode(m); run(m); };
   const live = !s.recorded && !s.gaps.length && !s.failed;
   return (
     <div className="hero"><div className="wrap">
       <div className="hero-text">
         <div className="eyebrow">Docket · read from the chain alone</div>
-        <h1><Headline of={s.headlineOf} /></h1>
-        <Lede s={s} />
-        <p className={`prov${live ? ' live' : ''}`} aria-live="polite"><i /><span>{provenance(s)}</span></p>
-        <div className="modes" role="group" aria-label="Replay the vault">
-          <button type="button" className="t" aria-pressed={mode === 't'} onClick={() => pick('t')}><span>auto_update: true</span><small>how it reads today</small></button>
-          <button type="button" className="f" aria-pressed={mode === 'f'} onClick={() => pick('f')}><span>auto_update: false</span><small>after one proposal</small></button>
-        </div>
+        <h1><Headline s={s} /></h1>
+        <FixLine badge={s.badge} />
         <div className="cta">
-          <button type="button" className="btn gold" onClick={() => run(mode)}>Turn the keys ↻</button>
-          <a className="btn" href="optout.html?dao=stnear.sputnik-dao.near">Add the fourth lock →</a>
+          <a className="btn gold" href="account.html">Check an account →</a>
+          <a className="btn" href="#proof">See the proof ↓</a>
         </div>
-        <p className="checkit">Check it yourself: <code>node tools/verify.mjs</code> re-reads every claim from mainnet, no key needed · <a href={REPO}>the repo</a></p>
+        <p className={`prov${live ? ' live' : ''}`} aria-live="polite"><i /><span>{provenance(s)} Check it yourself: <a href={REPO}><code>node tools/verify.mjs</code></a></span></p>
       </div>
       <Vault s={s} st={st} frameRef={frameRef} />
     </div></div>
   );
 }
 
-// ---------------- the path: today, and after one proposal ----------------
-// Two lanes, the same keys. Today's lane is the read: the key count and how many DAOs read
-// auto_update: true. The other is the mainnet opt-out test (§16.5): the factory's update was rejected.
-// Motion: when the lanes scroll into view the steps light up in order; then a dot keeps running the
-// path (to the end today; to the ✕ after the proposal). Off under prefers-reduced-motion (home.css).
-function Story({ s }) {
-  const n = s.keys.count;
-  const open = s.rows.filter((x) => x.autoUpdate === true);
-  const keys = n === null ? 'keys: unknown' : `${n} keys`;
+// ---------------- 01 the proof: the same update, two endings ----------------
+// The mainnet opt-out test (§16.5) on docket-demo.sputnik-dao.near: the same receipt
+// sputnik-dao.near → docket-demo.sputnik-dao.near update(), with only auto_update changed. Each lane
+// links its transaction. Motion: the steps light up in order when the lanes scroll into view, then a
+// dot runs the path (to the end with true; to the ✕ with false). Off under prefers-reduced-motion.
+function Story() {
   const ref = useRef(null);
   const [play, setPlay] = useState(false);
   useEffect(() => {
@@ -243,28 +238,30 @@ function Story({ s }) {
   const node = (i, icon, label, dim) => <li className={`n${dim ? ' dim' : ''}`} style={{ '--i': i }}><svg aria-hidden="true"><use href={`#${icon}`} /></svg><b>{label}</b></li>;
   const arrow = (i, cls = '') => <li className={`a ${cls}`.trim()} style={{ '--i': i }} aria-hidden="true"><em /></li>;
   return (
-    <section className="s" id="story"><div className="wrap">
-      <div className="sh"><div className="n">01 · The path</div><div>
+    <section className="s" id="proof"><div className="wrap">
+      <div className="sh"><div className="n">01 · The proof</div><div>
         <h2>Same keys. <span className="novote">Different ending.</span></h2>
+        <p>On mainnet, the factory sent the same <Id>update()</Id> to a test DAO, docket-demo, twice. Only <Id>auto_update</Id> changed between them.</p>
       </div></div>
       <div ref={ref} className={`ends${play ? ' play' : ''}`}>
-        <div className={`end ${open.length ? 'novote' : 'unknown'}`}>
-          <h3>Today</h3>
-          <small>{open.length ? `auto_update: true on ${open.map((x) => x.name).join(', ')}` : 'auto_update: unknown'}</small>
-          <ol className="chain" aria-label="Today: the factory's keys replace the DAO's code">
-            {node(0, 'i-key', keys)}{arrow(1)}{node(2, 'i-factory', 'factory')}{arrow(3)}{node(4, open.length ? 'i-dao' : 'i-dao-u', 'DAO')}{arrow(5)}{node(6, 'i-coins', 'deposits')}
+        <div className="end novote">
+          <h3>auto_update: true</h3>
+          <small>step 9 · the default</small>
+          <ol className="chain" aria-label="auto_update true: the factory's update replaced the DAO's code">
+            {node(0, 'i-factory', 'sputnik-dao.near')}{arrow(1)}{node(2, 'i-dao', 'docket-demo')}{arrow(3)}{node(4, 'i-code', 'its code')}
           </ol>
-          <div className="end-out" style={{ '--i': 7 }}>{open.length ? <><b>replaced</b><span>no proposal, no vote</span></> : <><b className="unknown-text">unknown</b><span>auto_update unread</span></>}</div>
+          <div className="end-out" style={{ '--i': 5 }}><b>replaced</b><span>no proposal, no vote · <a href={TX(TX_TRUE)}>EZw51V5k… on nearblocks</a></span></div>
         </div>
         <div className="end optedout">
-          <h3>After one proposal</h3>
-          <small>auto_update: false</small>
-          <ol className="chain" aria-label="After the opt-out: the factory's update is rejected at the DAO">
-            {node(0, 'i-key', keys)}{arrow(1)}{node(2, 'i-factory', 'factory')}{arrow(3, 'stop')}{node(4, 'i-dao-v', 'DAO')}{arrow(5, 'dim')}{node(6, 'i-coins', 'deposits', true)}
+          <h3>auto_update: false</h3>
+          <small>step 5 · after one proposal</small>
+          <ol className="chain" aria-label="auto_update false: the factory's update was rejected at the DAO">
+            {node(0, 'i-factory', 'sputnik-dao.near')}{arrow(1, 'stop')}{node(2, 'i-dao-v', 'docket-demo')}{arrow(3, 'dim')}{node(4, 'i-code', 'its code', true)}
           </ol>
-          <div className="end-out" style={{ '--i': 7 }}><b>rejected</b><span>a vote is required · <a href={TX('772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS')}>tested on mainnet</a></span></div>
+          <div className="end-out" style={{ '--i': 5 }}><b>rejected</b><span><Id>ERR_MUST_BE_SELF_OR_FACTORY</Id> · <a href={TX(TX_FALSE)}>772n4ZWM… on nearblocks</a></span></div>
         </div>
       </div>
+      <p className="why-line"><b>Why it exists:</b> <Id>auto_update</Id> lets the factory rescue a broken DAO. The problem is that nobody downstream can see it, and NEAR’s own fix isn’t deployed.</p>
     </div></section>
   );
 }
@@ -279,7 +276,7 @@ function Deposits({ s }) {
     <section className="s" id="inside"><div className="wrap">
       <div className="sh"><div className="n">02 · Inside the vault</div><div>
         <h2>Each deposit is owned by a DAO the factory can upgrade <span className="novote">without a vote</span>.</h2>
-        <p>Each protocol's contract is owned by a Sputnik DAO. Each card shows that DAO's <Id>auto_update</Id>, read from the chain.</p>
+        <p>Each protocol's contract is owned by a Sputnik DAO. Each card shows that DAO's <Id>auto_update</Id>.</p>
       </div></div>
       <div className="deposits">
         {s.rows.map((x, i) => {
@@ -308,6 +305,7 @@ function Deposits({ s }) {
         <span>{ok ? `${valued.map((x) => x.name).join(' + ')} = ${pct0(r.exposedUsd, r.lsTotal)} of ${usdShort(r.lsTotal)} NEAR liquid staking (DefiLlama, NEAR-only TVL)` : 'Share of NEAR liquid staking: unknown'}</span>
         <span>{nx ? `${nx.name}: staked NEAR, no USD figure` : ''}</span>
       </div>
+      <p className="fine">{exact(s)}</p>
     </div></section>
   );
 }
@@ -328,7 +326,7 @@ function Keys({ s }) {
     <section className="s" id="keys"><div className="wrap">
       <div className="sh"><div className="n">03 · Who holds the keys</div><div>
         <h2>The factory's full-access keys open every one. <span className="novote">The DAO's vote is not a lock.</span></h2>
-        <p>With <Id>auto_update: true</Id>, the factory's <Id>update()</Id> replaces a DAO's code. No proposal is created, so there is nothing for members to vote on.</p>
+        <p>With <Id>auto_update: true</Id>, the factory's <Id>update()</Id> replaces a DAO's code. No proposal is created, so members have nothing to vote on.</p>
       </div></div>
       <div className="keys">
         <div className="keyring">
@@ -372,7 +370,7 @@ function Doors({ c }) {
     <section className="s" id="doors"><div className="wrap">
       <div className="sh"><div className="n">04 · Every door like this one</div><div>
         <h2>{ok ? <>This is not one vault. <span className="novote">{fmt(k.true)} of {fmt(c.c.denominator)}</span> DAOs have the same lock.</> : 'Most DAOs on the factory have the same lock.'}</h2>
-        <p>One square per DAO created by <Id>{FACTORY}</Id>, from the dated census in graph.json. Hover a square for its account id; click it to read its proposals.</p>
+        <p>One square per DAO created by <Id>{FACTORY}</Id>, from the dated census. Click a square to read its proposals.</p>
       </div></div>
       {ok ? <Waffle records={c.records} counts={k} /> : <p className="unknown-text">{c.status === 'reading' ? 'Reading the census…' : `Census unknown: ${c.reason}`}</p>}
       <div className="census-foot">
@@ -444,7 +442,7 @@ export default function Home() {
 
       <main id="main">
         <Hero s={s} />
-        <Story s={s} />
+        <Story />
         <Deposits s={s} />
         <Keys s={s} />
         <Doors c={c} />
@@ -482,6 +480,7 @@ export default function Home() {
         <symbol id="i-dao-v" viewBox="0 0 64 64"><g fill="#6A3FB5"><path d="M32 6 L58 20 H6 Z" /><rect x="10" y="24" width="6" height="24" /><rect x="22" y="24" width="6" height="24" /><rect x="36" y="24" width="6" height="24" /><rect x="48" y="24" width="6" height="24" /><rect x="6" y="50" width="52" height="7" /></g></symbol>
         <symbol id="i-dao-u" viewBox="0 0 64 64"><g fill="none" stroke="#8C7D87" strokeWidth="2.5" strokeDasharray="4 3"><path d="M32 6 L58 20 H6 Z" /><rect x="8" y="24" width="48" height="33" /></g></symbol>
         <symbol id="i-coins" viewBox="0 0 64 64"><ellipse cx="32" cy="48" rx="20" ry="7" fill="#45333F" /><rect x="12" y="34" width="40" height="14" fill="#45333F" /><ellipse cx="32" cy="34" rx="20" ry="7" fill="#6E5C68" /><rect x="12" y="20" width="40" height="14" fill="#6E5C68" /><ellipse cx="32" cy="20" rx="20" ry="7" fill="#B3A4AE" /></symbol>
+        <symbol id="i-code" viewBox="0 0 64 64"><rect x="6" y="10" width="52" height="44" rx="5" fill="#45333F" /><path d="M24 24 L15 32 L24 40 M40 24 L49 32 L40 40 M35 21 L29 43" stroke="#F8F4F7" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none" /></symbol>
         <g id="keyshape"><circle cx="17" cy="14" r="12" fill="none" stroke="url(#kg)" strokeWidth="6" /><rect x="14" y="25" width="6" height="52" rx="2" fill="url(#kg)" /><rect x="20" y="58" width="9" height="5" fill="url(#kg)" /><rect x="20" y="68" width="6" height="5" fill="url(#kg)" /></g>
       </defs></svg>
     </>

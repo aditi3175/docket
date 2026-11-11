@@ -45,15 +45,19 @@ test('I20: the waffle draws the same graph.json records the counts come from, on
   assert.match(readFileSync(new URL('../app/src/Home.jsx', import.meta.url), 'utf8'), /<Waffle records=\{c\.records\} counts=\{k\} \/>/);
 });
 
-test('flowcharts: each tool page draws its three-box flowchart; the homepage draws the path as two lanes, from reads', () => {
+test('flowcharts: each tool page draws its three-box flowchart; the homepage draws the proof as two lanes, each linked to its transaction', () => {
   for (const p of ['account', 'register', 'optout']) {
     const html = readFileSync(new URL(`../web/${p}.html`, import.meta.url), 'utf8');
     assert.match(html, /drawFlow\(document\.getElementById\('how'\)/, p);
   }
   const home = readFileSync(new URL('../app/src/Home.jsx', import.meta.url), 'utf8');
   assert.match(home, /className=\{`ends\$\{play \? ' play' : ''\}`\}/);
-  // today's lane is the reads: the key count and the DAOs reading auto_update: true; the other lane
-  // is the mainnet opt-out test, linked by its transaction
-  assert.match(home, /const n = s\.keys\.count;\s+const open = s\.rows\.filter\(\(x\) => x\.autoUpdate === true\);/);
-  assert.match(home, /TX\('772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS'\)}>tested on mainnet/);
+  // the two lanes are the mainnet opt-out test (ARCHITECTURE.md §16.5): true ran (step 9), false was
+  // rejected (step 5), each linked by its transaction; "See the proof" scrolls to them
+  assert.match(home, /const TX_TRUE = 'EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b';/);
+  assert.match(home, /const TX_FALSE = '772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS';/);
+  assert.match(home, /<b>replaced<\/b>[^\n]*href=\{TX\(TX_TRUE\)\}/);
+  assert.match(home, /<b>rejected<\/b>[^\n]*ERR_MUST_BE_SELF_OR_FACTORY[^\n]*href=\{TX\(TX_FALSE\)\}/);
+  assert.match(home, /id="proof"/);
+  assert.match(home, /href="#proof">See the proof/);
 });

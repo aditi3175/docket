@@ -1,5 +1,15 @@
 # Docket
 
+> **The claim.** Three full-access keys on `sputnik-dao.near` can replace the code of the DAOs behind
+> **$126.7M** of NEAR liquid staking (Meta Pool + LiNEAR, NEAR-only TVL, DefiLlama 2026-11-06). No vote needed.\
+> NEAR core fixed this in [PR #233](https://github.com/near-daos/sputnik-dao-contract/pull/233) (merged 2026-03-24); the factory has never deployed the fix.\
+> **Live:** [doc-ket-project.vercel.app](https://doc-ket-project.vercel.app). Every figure is read in your browser from NEAR mainnet and DefiLlama.\
+> **Check it yourself** (no key, no install): `node tools/verify.mjs` re-reads every claim from mainnet.\
+> **The proof** (mainnet, test DAO `docket-demo.sputnik-dao.near`, the same factory `update()` twice):\
+> `auto_update: true` → code replaced, no vote: [EZw51V5k…](https://nearblocks.io/txns/EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b)\
+> `auto_update: false` → rejected, `ERR_MUST_BE_SELF_OR_FACTORY`: [772n4ZWM…](https://nearblocks.io/txns/772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS)\
+> The opt-out is one proposal; Docket drafts it. 1,607 of 2,086 Sputnik DAOs still read `true` (census 2026-11-07).
+
 **Who can change a NEAR account without a vote, read from the chain alone.**
 
 **Live: [doc-ket-project.vercel.app](https://doc-ket-project.vercel.app)** · try
@@ -13,9 +23,9 @@
 ![backend: none](https://img.shields.io/badge/backend-none-2b1d26)
 ![keys held: none](https://img.shields.io/badge/keys%20held-none-2b1d26)
 
-![The Docket homepage: "$129.7M of NEAR liquid staking can be rewritten by three keys, without a vote", beside a vault with one keyhole per factory key](docs/screenshots/home.png)
+![The Docket homepage's first screen: "Three keys can replace the code behind $127.9M of NEAR liquid staking. No vote needed.", the PR #233 line, two buttons, and the vault opened by the factory's three keys](docs/screenshots/home.png)
 
-<sub>The homepage, read live on 2026-11-11 19:26 UTC. The dollar figure is DefiLlama's at the moment of the read, so it moves; the spec's dated figure is $126.7M (2026-11-06).</sub>
+<sub>The homepage's first screen at 1440×800, read live on 2026-11-11 19:54 UTC. The dollar figure is DefiLlama's at the moment of the read, so it moves; the spec's dated figure is $126.7M (2026-11-06).</sub>
 
 Docket follows every path by which an account's code or rules can change: its
 access keys, its owner, the global contract it runs, and, for a Sputnik DAO, the
@@ -264,7 +274,7 @@ npm run preview                    # serves dist/ at http://localhost:4173
 | do | see |
 |---|---|
 | Open http://localhost:4173 | The finding in one sentence. It starts from values recorded on 2026-11-06, labelled as recorded, then switches to live figures with their read times. |
-| Click "auto_update: false", then "Turn the keys" | The same keys turn, but the update is rejected and the door stays shut. This replays the mainnet opt-out test (transaction `772n4Z…`), not any DAO's current state. |
+| Click "See the proof" | The mainnet opt-out test: the same factory update with `auto_update: true` (replaced) and `false` (rejected, `ERR_MUST_BE_SELF_OR_FACTORY`), each linked to its transaction on nearblocks. |
 | Turn off the network and reload | The headline keeps the recorded values and names each read that failed. Unread values show as "unknown", never as zero. |
 
 `dist/` is static (HTML, JS, CSS, fonts, the tool pages and `graph.json`) and

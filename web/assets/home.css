@@ -228,7 +228,7 @@ footer a { color: var(--ink); }
   .hero > .wrap { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
   .hero-text { display: contents; }
   .hero-text > * { order: 3; }
-  .hero-text > .eyebrow, .hero-text > h1 { order: 1; }
+  .hero-text > .eyebrow, .hero-text > h1, .hero-text > .fixline, .hero-text > .fixline ~ .cta { order: 1; }
   .stage { order: 2; margin: 24px 0 8px; }
   .keys, .why, .deposits, .cards { grid-template-columns: 1fr; }
   .dep + .dep, .card + .card, .flow { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); }
@@ -448,3 +448,17 @@ footer a { color: var(--ink); }
 .checkit { margin-top: 16px; font-size: 14px; color: var(--mute); max-width: 540px; }
 .checkit code { font: 500 13px var(--mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line-2); border-radius: 5px; padding: 2px 7px; white-space: nowrap; }
 .checkit a { color: var(--ink-2); }
+
+/* ---------- the homepage's short hero (app/src/Home.jsx): headline, fix line, two buttons, one small line ---------- */
+.fixline { margin-top: 18px; font-size: 18px; line-height: 1.5; color: var(--ink-2); max-width: 560px; }
+.fixline a { color: inherit; }
+.hero-text .cta { margin-top: 24px; }
+.hero-text .prov { margin-top: 18px; }
+.prov code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line-2); border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
+.prov a { text-decoration: none; }
+.why-line { margin-top: 22px; font-size: 16px; line-height: 1.55; color: var(--ink-2); max-width: 760px; }
+.fine { margin-top: 10px; font-size: 12.5px; color: var(--mute); }
+.end-out .id { font-size: 12.5px; }
+.hero:has(.fixline) { padding-top: 26px; }
+.hero-text .prov { max-width: 600px; }
+@media (max-width: 980px) { .hero-text > .fixline ~ .cta { margin-bottom: 4px; } }
