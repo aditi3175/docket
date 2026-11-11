@@ -83,7 +83,7 @@ submission is a bug.
 |---|---|---|---|
 | 1 | **4 of 5** NEAR DeFi protocols with ≥ $10M NEAR-only TVL (excluding CEX, Chain and \*Bridge\* categories) are administered by a Sputnik DAO. The fifth, RHEA LST, is administered by **one full-access key** on `rhealab.near` | all 5 named, by rule — dollar figures in §2 | owner resolution across 5 protocols; the rule and every exclusion in §2 |
 | 2 | Sputnik's `auto_update` lets the factory replace a DAO's code with **no vote**, and **`true` is the default** | **$126.7M** (DefiLlama, 2026-11-06), plus NearX's 2,553,885 NEAR read on chain; systemic in principle | deployed v3.2 source + on-chain census |
-| 3 | The authority path from three private keys to $126.7M (DefiLlama, 2026-11-06) is public. NEAR core fixed it on 2026-03-24 (sputnik-dao-contract PR #233: a two-week delay plus a visible proposal), and **the factory has never shipped the fix** | — | `view_access_key_list` + `get_contracts_metadata` + `get_default_code_hash` + PR #233 (§3.4) |
+| 3 | The authority path from three private keys to $126.7M (DefiLlama, 2026-11-06) is public. Sputnik's maintainers fixed it on 2026-03-24 (sputnik-dao-contract PR #233: a two-week delay plus a visible proposal), and **the factory has never shipped the fix** | — | `view_access_key_list` + `get_contracts_metadata` + `get_default_code_hash` + PR #233 (§3.4) |
 | 4 | Reading an account's `code_hash` no longer tells you what code it runs | all of NEAR | NEP-591 global contracts |
 
 Finding 2 is the headline. Finding 4 is the one that makes the tool non-trivial
@@ -353,7 +353,7 @@ holds **three full-access keys**. Not a DAO. Not a multisig contract.
 Every edge is a public view call. `auto_update` is a documented field, the
 contract is open source, and the rescue-a-bricked-DAO rationale is sound.
 
-**NEAR core has seen this edge, and has fixed it.**
+**Sputnik's maintainers have seen this edge, and have fixed it.**
 
 ```bash
 gh api repos/near-daos/sputnik-dao-contract/pulls/233 \
@@ -923,7 +923,7 @@ than no tool.
 
 Finding 2 concerns $126.7M of live deposits (DefiLlama, 2026-11-06), plus
 NearX's 2,553,885 NEAR read on chain (§2). The risk is not
-unknown. NEAR core acknowledged it and fixed it in PR #233 (§3.4), and the fix
+unknown. Sputnik's maintainers acknowledged it and fixed it in PR #233 (§3.4), and the fix
 has never been published to the factory. So this is **reporting, not
 disclosure**: Docket reports that an existing fix is undeployed, says who is
 exposed until it ships, and gives the opt-out that covers the gap. The aim is
@@ -1042,7 +1042,7 @@ counted RHEA LST's TVL against the wrong contract.
 ### 12.9 "The path has never been assembled, and nothing surfaces it." **Wrong.**
 
 §1 finding 3 said nothing surfaces the path. §3.4 said "the path has never been
-assembled". Both were false. NEAR core assembled the path and fixed it:
+assembled". Both were false. Sputnik's maintainers assembled the path and fixed it:
 `near-daos/sputnik-dao-contract` PR #233 (`frol`, branch
 `feat/delay-auto-updates`, merged 2026-03-24, merge commit `9e96c75410a9`) adds a
 two-week delay and a visible `UpgradeSelf` proposal before a factory auto-update
@@ -1603,7 +1603,7 @@ is not in the dollar figure because DefiLlama does not value it, §2.)
 
 And what makes it a report rather than an accusation:
 
-> **NEAR core found this and fixed it on 24 March 2026, with a two-week delay and
+> **Sputnik's maintainers found this and fixed it on 24 March 2026, with a two-week delay and
 > a visible proposal. The factory has never shipped the fix. None of the three
 > exposed DAOs runs it, and `get_default_code_hash` still returns the February
 > build.**
