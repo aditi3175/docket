@@ -266,7 +266,7 @@ function Story() {
       </div>
       <p className="proof-note">This shows the switch works. The no-vote path itself comes from the contract source and live reads: the factory's <Id>update()</Id> is not a proposal. <a href={SOURCE.updateAssert.href}>upgrade.rs lines 117–128</a></p>
       <p className="why-line"><b>Who holds the keys?</b> Docket can’t see who holds them. The risk isn’t the maintainers; it’s that three keys are a single point of failure. PR #233’s own title says the fix is “to counter the risk of taking control if the factory account is compromised.” <a href={PR}>PR #233</a></p>
-      <p className="why-line"><b>Why it exists:</b> <Id>auto_update</Id> lets the factory rescue a broken DAO. The problem is that nobody downstream can see it, and NEAR’s own fix isn’t deployed.</p>
+      <p className="why-line"><b>Why it exists:</b> <Id>auto_update</Id> lets the factory rescue a broken DAO. The problem is that nobody downstream can see it, and Sputnik’s own fix isn’t deployed.</p>
     </div></section>
   );
 }
@@ -399,6 +399,7 @@ function Fix({ badge }) {
     <section className="s" id="fix"><div className="wrap">
       <div className="sh"><div className="n">05 · The fourth lock</div><div>
         <h2>A fix exists and is not deployed. <span className="optedout">One proposal</span> fits the lock today.</h2>
+        <p>The fourth lock is the DAO’s own vote: one proposal sets <Id>auto_update</Id> to false, and after that the factory can’t change the DAO’s code unless its members approve.</p>
       </div></div>
       <div className="cards">
         <article className="card"><div className="tag">The factory fix</div>
