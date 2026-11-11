@@ -1146,7 +1146,7 @@ that day, not the last hour.
 | Nov 11 | Each of I1–I15, I19, I20 has a test; README; clone into a clean machine and run the README cold | pre-screen would pass. **Done 2026-11-07** (IST): each of I1–I15, I19 and I20 is named by at least one test (`npm test`, 201 passing on 2026-11-09). The README was run cold from fresh clones. The first cold run caught an inline-script error in a page, which `test/pages.test.mjs` now guards against; the second ran clean. Whether a pre-screen would pass is not something Docket can test. Commits: `3f2b6f1` (I1), `be559ca` (I13), `ae3b2d0` (README), `bbcd6e6` (the page-script guard), `b09dd5b` (fixes from the cold run) |
 | Nov 12 | Demo video, X post drafted | both reviewed against the README |
 | Nov 12–13 | **Stretch, only if every row above is done:** §17 `@docket/guard` + MCP server, then the delegate on the demo DAO | a planted proposal in the #1741/#1743 pattern is declined; one approve and one escalation on mainnet; I16–I18 hold. Otherwise §17 stays unbuilt and its track is not entered (§15) | **Done 2026-11-07/08** (IST): `@docket/guard` (`250ddd8`) and its MCP server (`bbce794`); the delegate and `policy.json` (`ab35362`, `c009e9d`, `62522e4`, `5a56bbd`, `a148641`). On mainnet (§17.5): setup T1–T6 (`7d1507a`, `7613f12`, `ce5ea73`); the delegate's approval of #7 (`4fd9e41`), passed by the human vote (`97aecd6`); the planted #8 escalated with three high flags and no vote (`302f665`). I16 and I17 hold; `verify.mjs` re-reads I17 and both outcomes (`037bbf5`, `4e6db95`). I18 was withdrawn with the LLM layer, which was not built (§17.4) |
-| Nov 14 | Submit | repo public, links live, submitted by midday UTC |
+| Nov 14 | Submit | repo public, links live, submitted by midday UTC. **Moved to 2026-11-12**: the author submits early, so publication moved from "on or after 2026-11-14" (the report, §11) to 2026-11-12; NEAR security, Stader and Meta Pool were told on 2026-11-12 at 00:52 IST (`REPORT.md`, Follow-up 3) |
 
 The Nov 6 gate stands: if the authority walk does not reproduce the §3.4
 chain cold, stop before building anything else. §17 is the first thing cut if
@@ -1167,9 +1167,11 @@ any row slips; it is not moved later to make room.
   built at NEAR HACKATHON, with the video attached (rules re-read 2026-11-10 at
   nearhackathon.com/HACKATHON.md; a hosted demo is a plus, Q-012). The form also
   takes a mainnet payout account, chosen by the author, and its `website` field
-  must stay empty. The repo must be public by 2026-11-14 23:59 UTC; per §11,
-  nothing about the finding goes public before LiNEAR has the report, so that
-  timing is the author's call.
+  must stay empty. The repo must be public by 2026-11-14 23:59 UTC. The report
+  promised publication on or after 2026-11-14; the author submits early, so it
+  moved to 2026-11-12, and the recipients were told first (2026-11-12 00:52 IST,
+  `REPORT.md`, Follow-up 3). LiNEAR still has no private channel; NEAR security
+  was asked to forward the report (Follow-up 2).
 - The AI pre-screen checks the repo runs and does what the README says, so the
   README's first command is `node tools/verify.mjs`, and it must print the
   §3.4 chain with no key, no account and no configuration.

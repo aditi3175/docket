@@ -53,6 +53,22 @@ This is the draft as it was shown before sending, with the closing line the
 author chose. If the sent text differs anywhere else, the sent text governs and
 this copy will be corrected.
 
+**Follow-up 3: publication moved to 2026-11-12.** The author is submitting to
+the NEAR Hackathon early, so the finding is published on 2026-11-12, not on or
+after 2026-11-14 as the report and Follow-up 2 said. Sent 2026-11-12 to tell the
+three recipients above. The time is as reported by the sender. LiNEAR was not
+told directly: it still has no private channel (Follow-up 2 asked NEAR security
+to forward the report to it). The text of this notice is not reproduced here.
+
+| recipient | channel | sent (IST) | sent (UTC) | response |
+|---|---|---|---|---|
+| NEAR security | security@near.org | 2026-11-12 00:52 | 2026-11-11 19:22 | none yet |
+| Stader | admin@staderlabs.com | 2026-11-12 00:52 | 2026-11-11 19:22 | none yet |
+| Meta Pool | bug-bounty form | 2026-11-12 00:52 | 2026-11-11 19:22 | none yet |
+
+The texts below, and Follow-up 2 above, are kept exactly as sent. Where they say
+"on or after 2026-11-14", Follow-up 3 moved that date to 2026-11-12.
+
 Every response will be published verbatim at submission, including "no
 response" (§11). Everything between the first two `✂` lines is the report text that was
 sent.

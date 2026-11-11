@@ -13,9 +13,9 @@
 ![backend: none](https://img.shields.io/badge/backend-none-2b1d26)
 ![keys held: none](https://img.shields.io/badge/keys%20held-none-2b1d26)
 
-![The Docket homepage: "$123.7M of NEAR liquid staking can be rewritten by three keys, without a vote", beside a vault with one keyhole per factory key](docs/screenshots/home.png)
+![The Docket homepage: "$129.7M of NEAR liquid staking can be rewritten by three keys, without a vote", beside a vault with one keyhole per factory key](docs/screenshots/home.png)
 
-<sub>The homepage, read live on 2026-11-09 18:28 UTC. The dollar figure is DefiLlama's at the moment of the read, so it moves; the spec's dated figure is $126.7M (2026-11-06).</sub>
+<sub>The homepage, read live on 2026-11-11 19:26 UTC. The dollar figure is DefiLlama's at the moment of the read, so it moves; the spec's dated figure is $126.7M (2026-11-06).</sub>
 
 Docket follows every path by which an account's code or rules can change: its
 access keys, its owner, the global contract it runs, and, for a Sputnik DAO, the
@@ -211,6 +211,8 @@ flowchart LR
 ### The Account page
 
 ![Account page for meta-pool.near: 3 keys on 1 account can change it with no vote; the path drawn as a tower from the value down to the keys](docs/screenshots/account.png)
+
+<sub>Read live on 2026-11-11 19:26 UTC; Meta Pool $81.9M is DefiLlama's NEAR-only TVL at that moment.</sub>
 
 `meta-pool.near`, read live: its owner is `stnear.sputnik-dao.near`, which
 reads `auto_update: true`, so the factory `sputnik-dao.near` can replace its
@@ -508,8 +510,11 @@ Every transaction of the setup and the demo, including three first attempts at
 Before this repository was public, the finding went to NEAR security (asked to
 forward it to the sputnik-dao-contract maintainers), Meta Pool and Stader.
 LiNEAR has been asked for a private security contact and has not yet been sent
-the details. [REPORT.md](REPORT.md) has the text that was sent, to whom, when,
-and every reply.
+the details; NEAR security has been asked to forward the report to it. The
+report said it would be published on or after 2026-11-14. Because the project
+was submitted early, publication moved to 2026-11-12, and the three recipients
+were told so on 2026-11-12 at 00:52 IST, before it went public.
+[REPORT.md](REPORT.md) has the text that was sent, to whom, when, and every reply.
 
 ---
 
