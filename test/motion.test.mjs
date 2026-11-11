@@ -56,8 +56,8 @@ test('flowcharts: each tool page draws its three-box flowchart; the homepage dra
   // rejected (step 5), each linked by its transaction; "See the proof" scrolls to them
   assert.match(home, /const TX_TRUE = 'EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b';/);
   assert.match(home, /const TX_FALSE = '772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS';/);
-  assert.match(home, /<b>replaced<\/b>[^\n]*href=\{TX\(TX_TRUE\)\}/);
-  assert.match(home, /<b>rejected<\/b>[^\n]*ERR_MUST_BE_SELF_OR_FACTORY[^\n]*href=\{TX\(TX_FALSE\)\}/);
+  assert.match(home, /<b>Replaced\.<\/b>[^\n]*href=\{TX\(TX_TRUE\)\}/);
+  assert.match(home, /<b>Rejected:<\/b>[^\n]*ERR_MUST_BE_SELF_OR_FACTORY[^\n]*href=\{TX\(TX_FALSE\)\}/);
   assert.match(home, /id="proof"/);
   assert.match(home, /href="#proof">See the proof/);
 });

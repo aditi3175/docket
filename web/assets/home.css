@@ -462,3 +462,7 @@ footer a { color: var(--ink); }
 .hero:has(.fixline) { padding-top: 26px; }
 .hero-text .prov { max-width: 600px; }
 @media (max-width: 980px) { .hero-text > .fixline ~ .cta { margin-bottom: 4px; } }
+.plain { margin-top: 16px; font-size: 17px; line-height: 1.5; color: var(--ink-2); max-width: 560px; }
+.hero-text > .plain + .fixline { margin-top: 10px; }
+@media (max-width: 980px) { .hero-text > .plain { order: 1; } }
+.proof-note { margin-top: 18px; font-size: 14.5px; line-height: 1.55; color: var(--mute); max-width: 760px; }

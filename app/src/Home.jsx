@@ -210,6 +210,7 @@ function Hero({ s }) {
       <div className="hero-text">
         <div className="eyebrow">Docket · read from the chain alone</div>
         <h1><Headline s={s} /></h1>
+        <p className="plain">These protocols are run by Sputnik DAOs. The “factory” that created those DAOs can still swap their code, unless a DAO switches it off.</p>
         <FixLine badge={s.badge} />
         <div className="cta">
           <a className="btn gold" href="account.html">Check an account →</a>
@@ -241,7 +242,7 @@ function Story() {
     <section className="s" id="proof"><div className="wrap">
       <div className="sh"><div className="n">01 · The proof</div><div>
         <h2>Same keys. <span className="novote">Different ending.</span></h2>
-        <p>On mainnet, the factory sent the same <Id>update()</Id> to a test DAO, docket-demo, twice. Only <Id>auto_update</Id> changed between them.</p>
+        <p>The same factory <Id>update()</Id> reached our test DAO twice. Only <Id>auto_update</Id> changed.</p>
       </div></div>
       <div ref={ref} className={`ends${play ? ' play' : ''}`}>
         <div className="end novote">
@@ -250,7 +251,7 @@ function Story() {
           <ol className="chain" aria-label="auto_update true: the factory's update replaced the DAO's code">
             {node(0, 'i-factory', 'sputnik-dao.near')}{arrow(1)}{node(2, 'i-dao', 'docket-demo')}{arrow(3)}{node(4, 'i-code', 'its code')}
           </ol>
-          <div className="end-out" style={{ '--i': 5 }}><b>replaced</b><span>no proposal, no vote · <a href={TX(TX_TRUE)}>EZw51V5k… on nearblocks</a></span></div>
+          <div className="end-out" style={{ '--i': 5 }}><b>Replaced.</b><span>The factory's <Id>update()</Id> went through. · <a href={TX(TX_TRUE)}>EZw51V5k… on nearblocks</a></span></div>
         </div>
         <div className="end optedout">
           <h3>auto_update: false</h3>
@@ -258,9 +259,10 @@ function Story() {
           <ol className="chain" aria-label="auto_update false: the factory's update was rejected at the DAO">
             {node(0, 'i-factory', 'sputnik-dao.near')}{arrow(1, 'stop')}{node(2, 'i-dao-v', 'docket-demo')}{arrow(3, 'dim')}{node(4, 'i-code', 'its code', true)}
           </ol>
-          <div className="end-out" style={{ '--i': 5 }}><b>rejected</b><span><Id>ERR_MUST_BE_SELF_OR_FACTORY</Id> · <a href={TX(TX_FALSE)}>772n4ZWM… on nearblocks</a></span></div>
+          <div className="end-out" style={{ '--i': 5 }}><b>Rejected:</b><span><Id>ERR_MUST_BE_SELF_OR_FACTORY</Id>. A vote is now required. · <a href={TX(TX_FALSE)}>772n4ZWM… on nearblocks</a></span></div>
         </div>
       </div>
+      <p className="proof-note">This shows the switch works. The no-vote path itself comes from the contract source and live reads: the factory's <Id>update()</Id> is not a proposal. <a href={SOURCE.updateAssert.href}>upgrade.rs lines 117–128</a></p>
       <p className="why-line"><b>Why it exists:</b> <Id>auto_update</Id> lets the factory rescue a broken DAO. The problem is that nobody downstream can see it, and NEAR’s own fix isn’t deployed.</p>
     </div></section>
   );

@@ -1272,7 +1272,7 @@ the refusal and its reason, and drafts no transaction.
    `UpgradeSelf`, then `FactoryInfoUpdate` to `false`. While `true` is in force, the
    factory's keys can again replace the code with no vote.
 
-   None of the twelve `false` DAOs (§3.3) has an `UpgradeSelf` proposal after
+   None of the 12 DAOs that opted out before Docket (13 `false` in the census with docket-demo, §3.3) has an `UpgradeSelf` proposal after
    its opt-out (chain, read 2026-11-06), so the answer comes from
    `docket-demo.sputnik-dao.near` (v3.2, §16.5), as a controlled pair: the same
    `UpgradeSelf` to the code the DAO already runs (`DtHZA1mU…XuF`), with only

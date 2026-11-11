@@ -2,13 +2,19 @@
 
 > **The claim.** Three full-access keys on `sputnik-dao.near` can replace the code of the DAOs behind
 > **$126.7M** of NEAR liquid staking (Meta Pool + LiNEAR, NEAR-only TVL, DefiLlama 2026-11-06). No vote needed.\
-> NEAR core fixed this in [PR #233](https://github.com/near-daos/sputnik-dao-contract/pull/233) (merged 2026-03-24); the factory has never deployed the fix.\
+> NEAR core fixed this in [PR #233](https://github.com/near-daos/sputnik-dao-contract/pull/233) (merged 2026-03-24); the factory has not deployed it as of the last read (`verify.mjs` re-checks it).\
 > **Live:** [doc-ket-project.vercel.app](https://doc-ket-project.vercel.app). Every figure is read in your browser from NEAR mainnet and DefiLlama.\
 > **Check it yourself** (no key, no install): `node tools/verify.mjs` re-reads every claim from mainnet.\
 > **The proof** (mainnet, test DAO `docket-demo.sputnik-dao.near`, the same factory `update()` twice):\
-> `auto_update: true` → code replaced, no vote: [EZw51V5k…](https://nearblocks.io/txns/EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b)\
+> `auto_update: true` → code replaced, the factory's `update()` went through: [EZw51V5k…](https://nearblocks.io/txns/EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b)\
 > `auto_update: false` → rejected, `ERR_MUST_BE_SELF_OR_FACTORY`: [772n4ZWM…](https://nearblocks.io/txns/772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS)\
-> The opt-out is one proposal; Docket drafts it. 1,607 of 2,086 Sputnik DAOs still read `true` (census 2026-11-07).
+> The opt-out is one proposal; Docket drafts it. 1,607 of 2,086 Sputnik DAOs still read `true` (census 2026-11-07).\
+> The site shows the live figure; $126.7M is the dated record (DefiLlama, 2026-11-06).
+
+> **Check it in 60 seconds**
+> 1. Open [doc-ket-project.vercel.app](https://doc-ket-project.vercel.app): the first screen states the finding, read live.
+> 2. Run `node tools/verify.mjs` in this repo (Node 22, no install, no key): it re-reads every claim from mainnet and exits 0 if they all hold.
+> 3. Look at the two proof transactions: [EZw51V5k…](https://nearblocks.io/txns/EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b) (`auto_update: true`, the factory's update went through) and [772n4ZWM…](https://nearblocks.io/txns/772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS) (`false`, rejected).
 
 **Who can change a NEAR account without a vote, read from the chain alone.**
 
@@ -23,9 +29,9 @@
 ![backend: none](https://img.shields.io/badge/backend-none-2b1d26)
 ![keys held: none](https://img.shields.io/badge/keys%20held-none-2b1d26)
 
-![The Docket homepage's first screen: "Three keys can replace the code behind $127.9M of NEAR liquid staking. No vote needed.", the PR #233 line, two buttons, and the vault opened by the factory's three keys](docs/screenshots/home.png)
+![The Docket homepage's first screen: "Three keys can replace the code behind $127.9M of NEAR liquid staking. No vote needed.", a plain-English line, the PR #233 line, two buttons, and the vault opened by the factory's three keys](docs/screenshots/home.png)
 
-<sub>The homepage's first screen at 1440×800, read live on 2026-11-11 19:54 UTC. The dollar figure is DefiLlama's at the moment of the read, so it moves; the spec's dated figure is $126.7M (2026-11-06).</sub>
+<sub>The homepage's first screen at 1440×800, read live on 2026-11-11 20:03 UTC. The dollar figure is DefiLlama's at the moment of the read, so it moves; the spec's dated figure is $126.7M (2026-11-06).</sub>
 
 Docket follows every path by which an account's code or rules can change: its
 access keys, its owner, the global contract it runs, and, for a Sputnik DAO, the
@@ -264,7 +270,7 @@ flowchart LR
 
 ### Try it locally
 
-**Built (Node 22.12 or later):**
+**Built (Node 22.12 or later).** The frontend needs an install (`npm run build` runs `npm ci` in `app/` for you); `node tools/verify.mjs` and `npm test` need none.
 
 ```bash
 npm run build                      # installs app/ from its lockfile, builds to dist/
