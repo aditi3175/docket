@@ -2,6 +2,11 @@
   "name": "docket",
   "version": "1.0.0",
   "description": "Who can change a NEAR account without asking, read from the chain alone",
+  "homepage": "https://doc-ket-project.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aditi3175/docket.git"
+  },
   "scripts": {
     "test": "node --test \"test/*.test.mjs\"",
     "verify": "node tools/verify.mjs",
