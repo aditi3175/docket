@@ -28,7 +28,7 @@
 
 <main id="main" class="wrap">
   <section class="page-head compact">
-    <div class="eyebrow">Opt out · the fourth lock</div>
+    <div class="eyebrow">Opt out · switch off the factory’s no-vote update</div>
     <h1>Opt a Sputnik DAO out of factory auto-update</h1>
     <p class="intro">One proposal closes the gap. Docket drafts it, your DAO votes, the chain confirms. Docket signs nothing.</p>
     <div id="how" class="how" aria-label="How this page works"></div>
@@ -46,7 +46,7 @@
   <div class="wrap">
     <a href="https://github.com/aditi3175/docket">github.com/aditi3175/docket</a>
     <span>Read-only, holds no key</span>
-    <span id="footer-census">Census: reading graph.json…</span>
+    <span id="footer-census">Our scan of all DAOs: loading…</span>
   </div>
 </footer>
 
@@ -180,8 +180,8 @@ run(q ?? document.getElementById('dao').value);
 fetch('../graph.json').then((r) => (r.ok ? r.json() : null)).then((g) => {
   if (!g) throw new Error('unread');
   const c = census(Object.values(g.daos));
-  document.getElementById('footer-census').textContent = `Census ${g.crawl?.lastRunAt?.slice(0, 10) ?? 'undated'}${g.crawl?.complete ? '' : ' (incomplete)'}: ${c.denominator.toLocaleString('en-US')} DAOs`;
-}).catch(() => { document.getElementById('footer-census').textContent = 'Census: unknown (graph.json unread)'; });
+  document.getElementById('footer-census').textContent = `Our scan of all DAOs (${g.crawl?.lastRunAt?.slice(0, 10) ?? 'undated'}${g.crawl?.complete ? '' : ', incomplete'}): ${c.denominator.toLocaleString('en-US')} DAOs`;
+}).catch(() => { document.getElementById('footer-census').textContent = 'Our scan of all DAOs: unknown (could not be loaded)'; });
 </script>
 </body>
 </html>

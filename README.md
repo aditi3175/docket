@@ -1,27 +1,14 @@
 # Docket
 
-> **The claim.** Three full-access keys on `sputnik-dao.near` can replace the code of the DAOs behind
-> **$126.7M** of NEAR liquid staking (Meta Pool + LiNEAR, NEAR-only TVL, DefiLlama 2026-11-06). No vote needed.\
-> NEAR core fixed this in [PR #233](https://github.com/near-daos/sputnik-dao-contract/pull/233) (merged 2026-03-24); the factory has not deployed it as of the last read (`verify.mjs` re-checks it).\
-> **Live:** [doc-ket-project.vercel.app](https://doc-ket-project.vercel.app). Every figure is read in your browser from NEAR mainnet and DefiLlama.\
-> **Check it yourself** (no key, no install): `node tools/verify.mjs` re-reads every claim from mainnet.\
-> **The proof** (mainnet, test DAO `docket-demo.sputnik-dao.near`, the same factory `update()` twice):\
-> `auto_update: true` → code replaced, the factory's `update()` went through: [EZw51V5k…](https://nearblocks.io/txns/EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b)\
-> `auto_update: false` → rejected, `ERR_MUST_BE_SELF_OR_FACTORY`: [772n4ZWM…](https://nearblocks.io/txns/772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS)\
-> The opt-out is one proposal; Docket drafts it. 1,607 of 2,086 Sputnik DAOs still read `true` (census 2026-11-07).\
-> The site shows the live figure; $126.7M is the dated record (DefiLlama, 2026-11-06).
+> **Three full-access keys on `sputnik-dao.near` can replace the code of the DAOs that run Meta Pool, LiNEAR and NearX. No vote needed.**\
+> Live: [doc-ket-project.vercel.app](https://doc-ket-project.vercel.app), read from NEAR mainnet in your browser (the site shows the figure live).\
+> Dated record: $126.7M (Meta Pool + LiNEAR, NEAR-only TVL, DefiLlama 2026-11-06), plus NearX: 2.55M NEAR staked (DefiLlama doesn't value it).\
+> Sputnik's maintainers fixed this in [PR #233](https://github.com/near-daos/sputnik-dao-contract/pull/233) (merged 2026-03-24); the factory has not deployed it as of the last read (`verify.mjs` re-checks it).
 
 > **Check it in 60 seconds**
 > 1. Open [doc-ket-project.vercel.app](https://doc-ket-project.vercel.app): the first screen states the finding, read live.
 > 2. Run `node tools/verify.mjs` in this repo (Node 22, no install, no key): it re-reads every claim from mainnet and exits 0 if they all hold.
-> 3. Look at the two proof transactions: [EZw51V5k…](https://nearblocks.io/txns/EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b) (`auto_update: true`, the factory's update went through) and [772n4ZWM…](https://nearblocks.io/txns/772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS) (`false`, rejected).
-
-**Who can change a NEAR account without a vote, read from the chain alone.**
-
-**Live: [doc-ket-project.vercel.app](https://doc-ket-project.vercel.app)** · try
-[meta-pool.near](https://doc-ket-project.vercel.app/account?account=meta-pool.near),
-[Burrow's proposals](https://doc-ket-project.vercel.app/docket?dao=burrow.sputnik-dao.near&from=1741&limit=4),
-[the register](https://doc-ket-project.vercel.app/register)
+> 3. Look at the two proof transactions on a test DAO, the same factory `update()` twice: [EZw51V5k…](https://nearblocks.io/txns/EZw51V5kCMeCCMsmNw5WqDsSUK8R2CHs4WyeK4jTtB1b) (`auto_update: true`, it went through) and [772n4ZWM…](https://nearblocks.io/txns/772n4ZWMRtmXwsWuVTSP5F1UkbZ27UNyM9SqVzgXnXFS) (`false`, rejected with `ERR_MUST_BE_SELF_OR_FACTORY`).
 
 ![license: MIT](https://img.shields.io/badge/license-MIT-2b1d26)
 ![node ≥ 22](https://img.shields.io/badge/node-%E2%89%A5%2022-2b1d26)
@@ -31,7 +18,7 @@
 
 ![The Docket homepage's first screen: "Three keys can replace the code behind $127.9M of NEAR liquid staking. No vote needed.", a plain-English line, the PR #233 line, two buttons, and the vault opened by the factory's three keys](docs/screenshots/home.png)
 
-<sub>The homepage's first screen at 1440×800, read live on 2026-11-11 20:03 UTC. The dollar figure is DefiLlama's at the moment of the read, so it moves; the spec's dated figure is $126.7M (2026-11-06).</sub>
+<sub>The homepage's first screen at 1440×800, read live on 2026-11-11 20:10 UTC. The dollar figure is read live, so it moves.</sub>
 
 Docket follows every path by which an account's code or rules can change: its
 access keys, its owner, the global contract it runs, and, for a Sputnik DAO, the
@@ -39,15 +26,6 @@ factory and the DAO's voting policy. It reads public view calls and nothing
 else. It holds no key, needs no account and signs nothing. The one exception is
 the optional delegate (below): it signs its own votes with a key that can do
 nothing else.
-
-| | |
-|---|---|
-| **3** | full-access keys on `sputnik-dao.near`, the only authority over the factory |
-| **1,607 of 2,086** | Sputnik DAOs read `auto_update: true`: the factory can replace their code with no vote (census 2026-11-07) |
-| **$126.7M + 2,553,885 NEAR** | behind the three DAOs that own Meta Pool, LiNEAR and NearX (DefiLlama 2026-11-06; NearX from chain) |
-| **13** | DAOs have opted out; one proposal does it, and Docket drafts it |
-| **PR #233** | the fix, merged 2026-03-24, still not in the factory's default build (read live) |
-| **0** | dependencies to verify it: `node tools/verify.mjs` re-reads every claim from mainnet |
 
 ---
 
@@ -85,7 +63,7 @@ flowchart TB
     P1["meta-pool.near<br/>Meta Pool"]
     P2["linear-protocol.near<br/>LiNEAR"]
     P3["nearx.stader-labs.near<br/>NearX"]
-    V["$126.7M of deposits (DefiLlama, 2026-11-06)<br/>+ 2,553,885 NEAR staked in NearX (chain)"]
+    V["$126.7M of deposits (DefiLlama, 2026-11-06)<br/>plus NearX: 2.55M NEAR staked<br/>(DefiLlama doesn't value it)"]
 
     K -->|sign as| F
     F -->|"update(code)<br/>no proposal, no vote<br/>auto_update: true"| D1 & D2 & D3
@@ -118,7 +96,7 @@ flowchart TB
     A ~~~ B
 ```
 
-**The fix exists and is not deployed.** NEAR core fixed this in
+**The fix exists and is not deployed.** Sputnik's maintainers fixed this in
 near-daos/sputnik-dao-contract **PR #233**, merged 2026-03-24 (an `UpgradeSelf`
 proposal with a two-week delay). The factory still publishes build
 `2b0f34a38604` as its default, which predates the fix. So this is reporting,
@@ -218,7 +196,7 @@ flowchart LR
 
 | page | the question | how it answers | the diagram |
 |---|---|---|---|
-| **Overview** | Is this real, and how big? | Counts the factory's keys live, reads the three DAOs' `auto_update`, values the deposits on DefiLlama | a vault with one keyhole per key; "Same keys. Different ending.": today's path from the reads beside the mainnet opt-out test, run by a moving dot; the census as three blocks of squares (1,607 / 13 / 466); the fix as a timeline; the contract's check as a code card |
+| **Overview** | Is this real, and how big? | Counts the factory's keys live, reads the three DAOs' `auto_update`, values the deposits on DefiLlama | a vault with one keyhole per key; "Same keys. Different ending.": the mainnet opt-out test, two transactions (true went through, false rejected), run by a moving dot; the census as three blocks of squares (1,607 / 13 / 466); the fix as a timeline; the contract's check as a code card |
 | **Account** | Who can change *this* account without a vote? | Walks keys, owner (five getters, in order), global contract, factory and policy, up to six hops | a tower: the value on top, each account a floor, the keys as the foundation, a red crack where no vote stands; the keys as chips; the check as a code card with the facts as tags; vote gates as cards (k of n from `get_policy`) |
 | **Proposals** | Does what members vote on match what it does? | Decodes all 17 proposal kinds and runs nine checks against the description | each proposal as a document, with every flag stamped in its margin |
 | **Register** | Where is the value, and who can move it? | Ranks every DAO the factory lists by the value it administers | a treemap of administered value, red where the factory can replace the code |

@@ -30,7 +30,7 @@
   <section class="page-head compact">
     <div class="eyebrow">Register · every DAO, by reach</div>
     <h1>The register: every Sputnik DAO, by reach</h1>
-    <p id="stats" class="stats">Reading the census (graph.json)…</p>
+    <p id="stats" class="stats">Reading our scan of all DAOs…</p>
     <p class="intro"><strong id="floor"></strong> Mapped protocols first, by the value they hold; then every other DAO by its own balance.</p>
     <div id="how" class="how" aria-label="How this page works"></div>
     <p id="prov" class="provenance recorded-note"></p>
@@ -52,7 +52,7 @@
   <div class="wrap">
     <a href="https://github.com/aditi3175/docket">github.com/aditi3175/docket</a>
     <span>Read-only, holds no key</span>
-    <span id="footer-census">Census: reading graph.json…</span>
+    <span id="footer-census">Our scan of all DAOs: loading…</span>
   </div>
 </footer>
 
@@ -134,10 +134,10 @@ function build(graph, llama, factoryKeys) {
 // never blank: the committed census draws at once; DefiLlama and the factory keys fill in as they arrive
 const graph = await fetch('../graph.json').then((r) => (r.ok ? r.json() : null)).catch(() => null);
 if (!graph) {
-  document.getElementById('stats').textContent = 'Census unknown';
-  document.getElementById('tm').replaceChildren(el('p', 'Unknown: graph.json could not be loaded.', 'unknown-text'));
-  out.replaceChildren(el('p', 'Unknown: graph.json could not be loaded. Serve the repository root, so that ../graph.json is reachable, or run node tools/crawl.mjs.', 'unknown-text'));
-  document.getElementById('footer-census').textContent = 'Census: unknown (graph.json unread)';
+  document.getElementById('stats').textContent = 'Our scan of all DAOs: unknown';
+  document.getElementById('tm').replaceChildren(el('p', 'Unknown: our scan of all DAOs could not be loaded.', 'unknown-text'));
+  out.replaceChildren(el('p', 'Unknown: our scan of all DAOs could not be loaded. If you run this locally, serve the repository root, so that ../graph.json is reachable, or run node tools/crawl.mjs.', 'unknown-text'));
+  document.getElementById('footer-census').textContent = 'Our scan of all DAOs: unknown (could not be loaded)';
 } else {
   const c = census(Object.values(graph.daos));
   const when = graph.crawl?.lastRunAt;
@@ -149,9 +149,9 @@ if (!graph) {
   bar.setAttribute('aria-label', `${c.counts.true} of ${c.denominator} read auto_update: true, ${c.counts.false} false, ${unk} unknown`);
   for (const [n, cls] of [[c.counts.true, 'novote'], [c.counts.false, 'f'], [unk, 'u']]) { const i = el('i', undefined, cls); i.style.flexGrow = String(n); bar.append(i); }
   stats.after(bar);
-  document.getElementById('footer-census').textContent = `Census ${when?.slice(0, 10) ?? 'undated'}${graph.crawl?.complete ? '' : ' (incomplete)'}: ${c.denominator.toLocaleString('en-US')} DAOs`;
+  document.getElementById('footer-census').textContent = `Our scan of all DAOs (${when?.slice(0, 10) ?? 'undated'}${graph.crawl?.complete ? '' : ', incomplete'}): ${c.denominator.toLocaleString('en-US')} DAOs`;
   const prov = document.getElementById('prov');
-  const setProv = (llama) => { prov.textContent = `Rows: census by tools/crawl.mjs, ${time(when)}${graph.crawl?.complete ? '' : ', incomplete'} (the factory listed ${graph.numberDaos}) · Values: DefiLlama ${llama ? (llama.status === 'ok' ? `read ${time(llama.readAt)}` : `unknown (${llama.reason})`) : 'reading now…'}`; };
+  const setProv = (llama) => { prov.textContent = `Rows: our scan of all DAOs (tools/crawl.mjs), ${time(when)}${graph.crawl?.complete ? '' : ', incomplete'} (the factory listed ${graph.numberDaos}) · Values: DefiLlama ${llama ? (llama.status === 'ok' ? `read ${time(llama.readAt)}` : `unknown (${llama.reason})`) : 'reading now…'}`; };
   setProv(null);
   document.getElementById('q').addEventListener('input', draw);
   document.getElementById('onlyTrue').addEventListener('change', draw);

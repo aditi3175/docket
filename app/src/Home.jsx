@@ -46,10 +46,10 @@ function Headline({ s }) {
 // I19: "never been deployed" is said only while the live factory read says so.
 function FixLine({ badge }) {
   const tail = !badge ? <>Whether it is deployed: reading the factory…</>
-    : badge.state === 'not-shipped' ? <><a href="#fix">The fix has never been deployed.</a></>
+    : badge.state === 'not-shipped' ? <><a href="#fix">The fix isn’t deployed (checked live).</a></>
       : badge.state === 'factory-changed' ? <><a href="#fix">The factory has changed since; check what it deploys.</a></>
         : <span className="unknown-text">Whether it is deployed: unknown.</span>;
-  return <p className="fixline">NEAR core fixed this in <a href={PR}>PR #233</a> on 24 Mar 2026. {tail}</p>;
+  return <p className="fixline">Sputnik’s maintainers fixed this in <a href={PR}>PR #233</a> on 24 Mar 2026. {tail}</p>;
 }
 
 function provenance(s) {
@@ -64,7 +64,9 @@ function exact(s) {
   const r = s.headlineOf;
   const money = typeof r.exposedUsd === 'number' ? `${usd(r.exposedUsd)} of ${typeof r.lsTotal === 'number' ? usd(r.lsTotal) : 'unknown'}` : 'unknown';
   const llama = s.recorded || s.gaps.length || s.failed ? `recorded ${time(RECORDED.llamaReadAt)}` : `read ${time(s.llamaReadAt)}`;
-  return `Meta Pool + LiNEAR, NEAR-only TVL (DefiLlama): ${money} NEAR liquid staking, ${llama}.`;
+  const nx = s.rows.find((x) => !x.slug);
+  const nearx = nx ? `, plus ${nx.name}: ${valueOf(nx) === 'unknown' ? 'staked NEAR unknown' : `${valueOf(nx)} staked`} (DefiLlama doesn’t value it)` : '';
+  return `Meta Pool + LiNEAR, NEAR-only TVL (DefiLlama): ${money} NEAR liquid staking, ${llama}${nearx}.`;
 }
 
 // ---------------- the vault's sequence ----------------
@@ -263,6 +265,7 @@ function Story() {
         </div>
       </div>
       <p className="proof-note">This shows the switch works. The no-vote path itself comes from the contract source and live reads: the factory's <Id>update()</Id> is not a proposal. <a href={SOURCE.updateAssert.href}>upgrade.rs lines 117–128</a></p>
+      <p className="why-line"><b>Who holds the keys?</b> Docket can’t see who holds them. The risk isn’t the maintainers; it’s that three keys are a single point of failure. PR #233’s own title says the fix is “to counter the risk of taking control if the factory account is compromised.” <a href={PR}>PR #233</a></p>
       <p className="why-line"><b>Why it exists:</b> <Id>auto_update</Id> lets the factory rescue a broken DAO. The problem is that nobody downstream can see it, and NEAR’s own fix isn’t deployed.</p>
     </div></section>
   );
@@ -305,7 +308,7 @@ function Deposits({ s }) {
       </div>
       <div className="share-l">
         <span>{ok ? `${valued.map((x) => x.name).join(' + ')} = ${pct0(r.exposedUsd, r.lsTotal)} of ${usdShort(r.lsTotal)} NEAR liquid staking (DefiLlama, NEAR-only TVL)` : 'Share of NEAR liquid staking: unknown'}</span>
-        <span>{nx ? `${nx.name}: staked NEAR, no USD figure` : ''}</span>
+        <span>{nx ? `plus ${nx.name}: ${valueOf(nx) === 'unknown' ? 'staked NEAR unknown' : `${valueOf(nx)} staked`} (DefiLlama doesn’t value it)` : ''}</span>
       </div>
       <p className="fine">{exact(s)}</p>
     </div></section>
@@ -372,11 +375,11 @@ function Doors({ c }) {
     <section className="s" id="doors"><div className="wrap">
       <div className="sh"><div className="n">04 · Every door like this one</div><div>
         <h2>{ok ? <>This is not one vault. <span className="novote">{fmt(k.true)} of {fmt(c.c.denominator)}</span> DAOs have the same lock.</> : 'Most DAOs on the factory have the same lock.'}</h2>
-        <p>One square per DAO created by <Id>{FACTORY}</Id>, from the dated census. Click a square to read its proposals.</p>
+        <p>One square per DAO created by <Id>{FACTORY}</Id>, from our scan of all DAOs (dated). Click a square to read its proposals.</p>
       </div></div>
-      {ok ? <Waffle records={c.records} counts={k} /> : <p className="unknown-text">{c.status === 'reading' ? 'Reading the census…' : `Census unknown: ${c.reason}`}</p>}
+      {ok ? <Waffle records={c.records} counts={k} /> : <p className="unknown-text">{c.status === 'reading' ? 'Reading our scan of all DAOs…' : `Our scan of all DAOs: unknown (${c.reason})`}</p>}
       <div className="census-foot">
-        <span>{ok ? `${pct(c.c.shareTrueOfAnswered)} of the ${fmt(c.c.answered)} that answered read auto_update: true. Census ${c.when?.slice(0, 10) ?? 'undated'}${c.complete ? '' : ', incomplete'}.` : 'The census is computed from graph.json’s records.'}</span>
+        <span>{ok ? `${pct(c.c.shareTrueOfAnswered)} of the ${fmt(c.c.answered)} that answered read auto_update: true. Our scan of all DAOs, ${c.when?.slice(0, 10) ?? 'undated'}${c.complete ? '' : ', incomplete'}.` : 'The counts come from our scan of all DAOs.'}</span>
         <a href="register.html">Every DAO in the register →</a>
         <button type="button" className="btn" onClick={recount} disabled={busy}>Recount from the chain now (about 15 minutes)</button>
         {live && <span className="census-live" aria-live="polite">{live}</span>}
@@ -433,7 +436,7 @@ export default function Home() {
   const s = useFinding();
   const c = useCensus();
   useEffect(() => startMotion(), []); // sections rise into view (presentation only; off for reduced motion)
-  const censusLine = c.status === 'ok' ? `Census ${c.when?.slice(0, 10)}${c.complete ? '' : ' (incomplete)'}: ${c.c.denominator.toLocaleString('en-US')} DAOs` : c.status === 'reading' ? 'Census: reading graph.json…' : 'Census: unknown (graph.json unread)';
+  const censusLine = c.status === 'ok' ? `Our scan of all DAOs (${c.when?.slice(0, 10)}${c.complete ? '' : ', incomplete'}): ${c.c.denominator.toLocaleString('en-US')} DAOs` : c.status === 'reading' ? 'Our scan of all DAOs: loading…' : 'Our scan of all DAOs: unknown (could not be loaded)';
   return (
     <>
       <a className="skip" href="#main">Skip to the finding</a>

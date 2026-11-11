@@ -160,7 +160,7 @@
 <footer><div class="wrap">
   <a href="https://github.com/aditi3175/docket">github.com/aditi3175/docket</a>
   <span>Read-only, holds no key</span>
-  <span id="footer-census">Census: reading graph.json…</span>
+  <span id="footer-census">Our scan of all DAOs: loading…</span>
 </div></footer>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -210,7 +210,7 @@ function setHeadline(r) {
 function setLede() {
   const valued = S.rows.filter((x) => x.slug && x.autoUpdate === true).map((x) => x.name).join(' and ');
   const nearx = S.rows.find((x) => !x.slug && x.autoUpdate === true && x.near);
-  const lead = typeof S.exposedUsd === 'number' ? `The vault holds ${valued || 'none of them'}, ${pct0(S.exposedUsd, S.lsTotal)} of NEAR liquid staking${nearx ? `, plus ${nearShort(nearx.near)} in NearX` : ''}. ` : 'The dollar figure is unknown right now. ';
+  const lead = typeof S.exposedUsd === 'number' ? `The vault holds ${valued || 'none of them'}, ${pct0(S.exposedUsd, S.lsTotal)} of NEAR liquid staking${nearx ? `, plus NearX: ${nearShort(nearx.near)} staked (DefiLlama doesn’t value it)` : ''}. ` : 'The dollar figure is unknown right now. ';
   const keys = S.keys === null ? ['How many keys open it is unknown right now.'] : [`Its locks are the ${S.keys} full-access key${S.keys === 1 ? '' : 's'} of `, el('span', FACTORY, 'id'), '. The DAO’s own vote is not one of them.'];
   put($('lede'), lead, ...keys);
 }
@@ -428,11 +428,11 @@ async function counter() {
     drawWaffle($('waffle'), recs, k); // one square per DAO, the same records as the counts (I20)
     put($('doors-h'), 'This is not one vault. ', el('span', `${k.true.toLocaleString('en-US')} of ${c.denominator.toLocaleString('en-US')}`, 'novote'), ' DAOs have the same lock.');
     $('census-note').textContent = `${pct(c.shareTrueOfAnswered)} of the ${c.answered.toLocaleString('en-US')} that answered read auto_update: true. Census ${when}${g.crawl?.complete ? '' : ', incomplete'}.`;
-    $('footer-census').textContent = `Census ${when}${g.crawl?.complete ? '' : ' (incomplete)'}: ${c.denominator.toLocaleString('en-US')} DAOs`;
+    $('footer-census').textContent = `Our scan of all DAOs (${when}${g.crawl?.complete ? '' : ', incomplete'}): ${c.denominator.toLocaleString('en-US')} DAOs`;
   } catch (e) {
     $('waffle').replaceChildren(el('p', 'Census unknown.', 'unknown-text'));
     $('census-note').textContent = `Census unknown: ${e.message}. Serve the repository root so ../graph.json is reachable.`;
-    $('footer-census').textContent = 'Census: unknown (graph.json unread)';
+    $('footer-census').textContent = 'Our scan of all DAOs: unknown (could not be loaded)';
   }
   const b = $('recount'); const live = $('recount-out');
   b.addEventListener('click', async () => {
