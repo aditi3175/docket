@@ -3,10 +3,23 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const ROOT = new URL('../', import.meta.url);
-const tracked = execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8' }).split('\n').filter(Boolean);
+// The repository's files: git's list when this is a clone; without git (a ZIP download, a copy) every
+// file on disk except installs and build output, so the check still runs on what the reader has.
+function filesOnDisk(dir = fileURLToPath(ROOT), base = '') {
+  return readdirSync(dir).flatMap((f) => {
+    if (['.git', 'node_modules', 'dist'].includes(f)) return [];
+    const rel = base ? `${base}/${f}` : f;
+    return statSync(`${dir}/${f}`).isDirectory() ? filesOnDisk(`${dir}/${f}`, rel) : [rel];
+  });
+}
+let tracked;
+try { tracked = execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).split('\n').filter(Boolean); }
+catch { tracked = filesOnDisk(); }
+if (!tracked.length) tracked = filesOnDisk();
 
 // A NEAR ed25519 secret key is 64 bytes: ~86-88 base58 chars after "ed25519:". Public keys are 32
 // bytes (43-44 chars) and are expected (e.g. the factory's three keys in the spec).
