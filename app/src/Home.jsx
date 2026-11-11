@@ -217,6 +217,7 @@ function Hero({ s }) {
           <button type="button" className="btn gold" onClick={() => run(mode)}>Turn the keys ↻</button>
           <a className="btn" href="optout.html?dao=stnear.sputnik-dao.near">Add the fourth lock →</a>
         </div>
+        <p className="checkit">Check it yourself: <code>node tools/verify.mjs</code> re-reads every claim from mainnet, no key needed · <a href={REPO}>the repo</a></p>
       </div>
       <Vault s={s} st={st} frameRef={frameRef} />
     </div></div>

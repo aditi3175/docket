@@ -443,3 +443,8 @@ footer a { color: var(--ink); }
 .promises li b { display: block; font: 400 22px/1.15 var(--serif); }
 .promises li span { font-size: 13.5px; color: var(--mute); }
 @media (max-width: 860px) { .why2 { grid-template-columns: 1fr; gap: 36px; } .codecard pre { font-size: 12.5px; } }
+
+/* the hero's "check it yourself" line: the one command that re-reads every claim */
+.checkit { margin-top: 16px; font-size: 14px; color: var(--mute); max-width: 540px; }
+.checkit code { font: 500 13px var(--mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line-2); border-radius: 5px; padding: 2px 7px; white-space: nowrap; }
+.checkit a { color: var(--ink-2); }

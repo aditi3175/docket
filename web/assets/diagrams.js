@@ -34,7 +34,7 @@ export function drawWaffle(host, records, counts, { href = (id) => `docket.html?
   const groups = [
     { k: 'novote', n: counts.true, label: 'can have their code replaced by the factory without a vote', pick: (a) => a === 'true', word: 'auto_update: true' },
     { k: 'optedout', n: counts.false, label: 'opted out: a vote is required', pick: (a) => a === 'false', word: 'auto_update: false' },
-    { k: 'unknown', n: unknown, label: `unknown: ${fmt(counts['no-factory-info'])} have no get_factory_info, ${fmt(counts.unread)} unread`, pick: (a) => a !== 'true' && a !== 'false', word: null },
+    { k: 'unknown', n: unknown, label: `unknown: older code without get_factory_info, so the setting can't be read${counts.unread ? ` (${fmt(counts.unread)} unread)` : ''}. Never counted as opted out.`, pick: (a) => a !== 'true' && a !== 'false', word: null },
   ];
   host.replaceChildren(); host.classList.add('waffle');
   const tip = el('p', 'waffle-tip', 'Hover a square for its DAO; click to read its proposals.');

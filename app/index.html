@@ -10,6 +10,12 @@
 </head>
 <body>
 <div id="root"></div>
+<noscript>
+  <p style="max-width:40rem;margin:3rem auto;padding:0 1.2rem;font:18px/1.55 system-ui,sans-serif;color:#241722">
+    <b>Docket: who can change a NEAR account without a vote.</b> The factory <code>sputnik-dao.near</code>, which answers only to its full-access keys, can replace the code of every Sputnik DAO that reads <code>auto_update: true</code> (the default), with no proposal and no vote. That includes the DAOs that own Meta Pool, LiNEAR and NearX.
+    This page reads NEAR mainnet live in your browser, so it needs JavaScript. Without it, check the claim yourself: <code>node tools/verify.mjs</code> in <a href="https://github.com/aditi3175/docket">the repository</a> (Node 22, nothing to install).
+  </p>
+</noscript>
 <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
